@@ -8,7 +8,7 @@ final class Lexer {
 
     public static TokenHandler lex(String line){
         List<Token> tokens = new ArrayList<>();
-        char[] chars = line.toCharArray();
+        char[] chars = line.trim().toCharArray();
         StringBuilder value;
 
         for(int i = 0; i < chars.length; i++){
