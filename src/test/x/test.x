@@ -1,5 +1,0 @@
-#madura
-
-public class Test{
-
-}

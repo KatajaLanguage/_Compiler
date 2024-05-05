@@ -15,7 +15,7 @@ public final class Compiler {
 
     public static void main(String[] args){
         var c = new Compiler();
-        c.compile("src/test/x/test.x", true);
+        c.compile("src/test/x/Test.x", true, true);
     }
 
     private final Parser parser;
@@ -31,17 +31,22 @@ public final class Compiler {
     public void setOutFolder(String folder) throws RuntimeException{
         File out = new File(folder);
 
-        if(out.exists()) if(!out.isDirectory()) throw new IllegalArgumentException("Expected folder, got file");
-        else if(!out.mkdirs()) throw new RuntimeException("Failed to create out Folder");
+        if(out.exists()) {
+            if (!out.isDirectory()) throw new IllegalArgumentException("Expected folder, got file");
+        }else{
+            if(!out.mkdirs()) throw new RuntimeException("Failed to create out Folder");
+        }
 
         outFolder = out;
     }
 
-    public void compile(String file, boolean execute) throws IllegalArgumentException{
+    public void compile(String file, boolean execute, boolean clearOutFolder) throws IllegalArgumentException{
         File f = new File(file);
 
         if(f.exists()){
             classes = parser.parseFile(f);
+
+            if(clearOutFolder) clearFolder(outFolder);
 
             for(String name:classes.keySet()) compileClass(name);
 
@@ -49,6 +54,15 @@ public final class Compiler {
                 //TODO execute
             }
         }else throw new IllegalArgumentException();
+    }
+
+    private void clearFolder(File folder){
+        if(folder.exists() && folder.isDirectory() && folder.listFiles() != null){
+            for(File file:folder.listFiles()){
+                if(file.isDirectory()) clearFolder(file);
+                if(!file.delete()) throw new RuntimeException(STR."Failed to delete \{file.getPath()}");
+            }
+        }
     }
 
     private void writeFile(ClassFile cf){
@@ -64,5 +78,11 @@ public final class Compiler {
         cf.setAccessFlags(AccessFlag.PUBLIC);
 
         writeFile(cf);
+    }
+
+    static String validateClassName(String name){
+        name = name.replace("/", ".");
+        name = name.replace("\\", ".");
+        return name;
     }
 }
