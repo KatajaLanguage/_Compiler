@@ -1,10 +1,10 @@
 package com.github.x.compiler;
 
+import com.github.x.bytecode.AccessFlag;
 import com.github.x.lang.Compilable;
 import com.github.x.lang.XClass;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
-import javassist.bytecode.AccessFlag;
 import javassist.bytecode.ClassFile;
 
 import java.io.File;
@@ -75,7 +75,7 @@ public final class Compiler {
 
     private void compileClass(String name){
         ClassFile cf = new ClassFile(false, name, null);
-        cf.setAccessFlags(AccessFlag.PUBLIC);
+        cf.setAccessFlags(classes.get(name).getAccessFlag());
 
         writeFile(cf);
     }

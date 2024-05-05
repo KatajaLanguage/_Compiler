@@ -1,4 +1,4 @@
 #madura
 
-class Test{
+public class Test{
 }

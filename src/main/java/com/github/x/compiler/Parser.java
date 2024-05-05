@@ -1,5 +1,6 @@
 package com.github.x.compiler;
 
+import com.github.x.bytecode.AccessFlag;
 import com.github.x.lang.Compilable;
 import com.github.x.lang.XClass;
 
@@ -36,7 +37,8 @@ final class Parser {
             if(!th.isEmpty()){
                 switch (th.next().s()){
                     case "#" -> {}
-                    case "class" -> parseClass();
+                    case "public", "private", "protected" -> parseModifier();
+                    case "class" -> parseClass(AccessFlag.ACC_PACKAGE_PRIVATE);
                     default -> err("illegal argument");
                 }
             }
@@ -57,13 +59,27 @@ final class Parser {
         return classes;
     }
 
-    private void parseClass(){
+    private void parseModifier(){
+        AccessFlag accessFlag = switch (th.current().s()){
+            case "public" -> AccessFlag.ACC_PUBLIC;
+            case "private" -> AccessFlag.ACC_PRIVATE;
+            case "protected" -> AccessFlag.ACC_PROTECTED;
+            default -> AccessFlag.ACC_PACKAGE_PRIVATE;
+        };
+
+        th.assertToken("class");
+        parseClass(accessFlag);
+    }
+
+    private void parseClass(AccessFlag accessFlag){
         String name = th.assertToken(Token.Type.IDENTIFIER).s();
 
         if(classes.containsKey(name)) err(STR."Class \{name} is already defined");
 
         th.assertToken("{");
         th.assertNull();
+
+        XClass clazz = new XClass(accessFlag, false, false);
 
         while (sc.hasNextLine()){
             nextLine();
@@ -72,7 +88,7 @@ final class Parser {
                 switch (th.next().s()){
                     case "}" -> {
                         th.assertNull();
-                        classes.put(name, new XClass());
+                        classes.put(name, clazz);
                         return;
                     }
                 }
