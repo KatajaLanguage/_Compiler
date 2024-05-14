@@ -1,0 +1,1 @@
+public type Test = a | b | c

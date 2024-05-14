@@ -2,12 +2,13 @@ package com.github.x.compiler;
 
 import com.github.x.bytecode.AccessFlag;
 import com.github.x.lang.Compilable;
+import com.github.x.lang.Modifier;
 import com.github.x.lang.XClass;
+import com.github.x.lang.XTypeClass;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 
 final class Parser {
 
@@ -37,8 +38,8 @@ final class Parser {
             if(!th.isEmpty()){
                 switch (th.next().s()){
                     case "#" -> {}
-                    case "public", "private", "protected" -> parseModifier();
-                    case "class" -> parseClass(AccessFlag.ACC_PACKAGE_PRIVATE);
+                    case "public", "private", "protected" -> parseModifier(true);
+                    case "class" -> parseClass(new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE));
                     default -> err("illegal argument");
                 }
             }
@@ -59,19 +60,60 @@ final class Parser {
         return classes;
     }
 
-    private void parseModifier(){
-        AccessFlag accessFlag = switch (th.current().s()){
-            case "public" -> AccessFlag.ACC_PUBLIC;
-            case "private" -> AccessFlag.ACC_PRIVATE;
-            case "protected" -> AccessFlag.ACC_PROTECTED;
-            default -> AccessFlag.ACC_PACKAGE_PRIVATE;
+    private void parseModifier(boolean allowClasses){
+        Modifier mod = switch (th.current().s()){
+            case "public" -> new Modifier(AccessFlag.ACC_PUBLIC);
+            case "private" -> new Modifier(AccessFlag.ACC_PRIVATE);
+            case "protected" -> new Modifier(AccessFlag.ACC_PROTECTED);
+            default -> {
+                th.last();
+                yield new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE);
+            }
         };
+        Set<String> modifier = Set.of("final", "abstract", "static", "synchronised", "const");
 
-        th.assertToken("class");
-        parseClass(accessFlag);
+        while (modifier.contains(th.next().s())){
+            switch (th.current().s()){
+                case "final" -> {
+                    if(mod.finaly) err(STR."modifier \{th.current().s()} is not allowed");
+                    mod.finaly = true;
+                }
+                case "abstract" -> {
+                    if(mod.abstrakt) err(STR."modifier \{th.current().s()} is not allowed");
+                    mod.abstrakt = true;
+                }
+                case "static" -> {
+                    if(mod.statik) err(STR."modifier \{th.current().s()} is not allowed");
+                    mod.statik = true;
+                }
+                case "synchronised" -> {
+                    if(mod.synchronised) err(STR."modifier \{th.current().s()} is not allowed");
+                    mod.synchronised = true;
+                }
+                case "const" -> {
+                    if(mod.constant) err(STR."modifier \{th.current().s()} is not allowed");
+                    mod.constant = true;
+                }
+            }
+        }
+        th.last();
+
+        if(allowClasses) {
+            switch (th.assertToken(Token.Type.IDENTIFIER).s()) {
+                case "class" -> parseClass(mod);
+                case "interface" -> parseInterface(mod);
+                case "record" -> parseRecord(mod);
+                case "enum" -> parseEnum(mod);
+                case "data" -> parseData(mod);
+                case "type" -> parseType(mod);
+                default -> err("illegal argument");
+            }
+        }else{
+            err("illegal argument");
+        }
     }
 
-    private void parseClass(AccessFlag accessFlag){
+    private void parseClass(Modifier modifier){
         String name = th.assertToken(Token.Type.IDENTIFIER).s();
 
         if(classes.containsKey(name)) err(STR."Class \{name} is already defined");
@@ -79,7 +121,7 @@ final class Parser {
         th.assertToken("{");
         th.assertNull();
 
-        XClass clazz = new XClass(accessFlag, false, false);
+        XClass clazz = new XClass(modifier);
 
         while (sc.hasNextLine()){
             nextLine();
@@ -91,11 +133,64 @@ final class Parser {
                         classes.put(name, clazz);
                         return;
                     }
+                    default -> parseModifier(false);
                 }
             }
         }
 
         err("Expected '}'");
+    }
+
+    private void parseInterface(Modifier modifier){
+
+    }
+
+    private void parseRecord(Modifier modifier){
+
+    }
+
+    private void parseEnum(Modifier modifier){
+
+    }
+
+    private void parseData(Modifier modifier){
+        if(!modifier.isValidForData()) err("illegal modifier");
+
+        String name = th.assertToken(Token.Type.IDENTIFIER).s();
+
+        if(classes.containsKey(name)) err(STR."Data Class \{name} is already defined");
+
+        th.assertToken("=");
+        th.assertToken("[");
+
+        while(th.hasNext() && !th.next().equals("]")){
+
+        }
+
+        if(!th.current().equals("]")) err("Expected ']'");
+        th.assertNull();
+    }
+
+    private void parseType(Modifier modifier){
+        if(!modifier.isValidForType()) err("illegal modifier");
+
+        String name = th.assertToken(Token.Type.IDENTIFIER).s();
+
+        if(classes.containsKey(name)) err(STR."Type Class \{name} is already defined");
+
+        th.assertToken("=");
+
+        ArrayList<String> types = new ArrayList<>();
+        types.add(th.assertToken(Token.Type.IDENTIFIER).s());
+
+        while (th.hasNext()){
+            th.assertToken("|");
+            String type = th.assertToken(Token.Type.IDENTIFIER).s();
+
+            if(!types.contains(type)) types.add(type);
+        }
+
+        classes.put(name, new XTypeClass(modifier, types.toArray(new String[0])));
     }
 
     private void nextLine() throws RuntimeException{

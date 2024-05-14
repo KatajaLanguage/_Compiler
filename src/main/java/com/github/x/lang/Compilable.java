@@ -4,18 +4,25 @@ import com.github.x.bytecode.AccessFlag;
 
 public abstract class Compilable {
 
-    protected final AccessFlag accessFlag;
+    protected final Modifier modifier;
 
-    public Compilable(AccessFlag accessFlag){
-        this.accessFlag = accessFlag;
+    public Compilable(Modifier modifier){
+        this.modifier = modifier;
     }
 
     public int getAccessFlag(){
-        return switch(accessFlag){
+        int accessFlag = switch (modifier.accessFlag){
+            case ACC_PACKAGE_PRIVATE -> 0;
             case ACC_PUBLIC -> AccessFlag.PUBLIC;
             case ACC_PRIVATE -> AccessFlag.PRIVATE;
             case ACC_PROTECTED -> AccessFlag.PROTECTED;
-            default -> 0;
         };
+
+        if(modifier.finaly || modifier.constant) accessFlag += AccessFlag.FINAL;
+        if(modifier.abstrakt) accessFlag += AccessFlag.ABSTRACT;
+        if(modifier.statik) accessFlag += AccessFlag.STATIC;
+        if(modifier.synchronised) accessFlag += AccessFlag.SYNCHRONIZED;
+
+        return accessFlag;
     }
 }

@@ -1,6 +1,6 @@
 package com.github.x.compiler;
 
-public record Token(String s, Type t){
+record Token(String s, Type t){
 
     public enum Type{
         SIMPLE, IDENTIFIER, STRING, OPERATOR, CHAR, INTEGER, LONG, DOUBLE, FLOAT, SHORT;
