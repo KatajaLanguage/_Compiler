@@ -1,11 +1,11 @@
 package com.github.x.compiler;
 
-import com.github.x.lang.XTypeClass;
+import com.github.x.lang.KtjTypeClass;
 import javassist.bytecode.*;
 
 final class ClassCompiler {
 
-    static void compileTypeClass(XTypeClass clazz, String name, String path){
+    static void compileTypeClass(KtjTypeClass clazz, String name, String path){
         ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java.lang.Enum");
         cf.setAccessFlags(clazz.getAccessFlag());
 
@@ -90,6 +90,6 @@ final class ClassCompiler {
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);
 
-        Compiler.getInstance().writeFile(cf);
+        Compiler.getInstance().compiledClasses.add(cf);
     }
 }

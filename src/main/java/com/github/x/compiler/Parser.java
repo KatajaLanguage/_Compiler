@@ -3,8 +3,8 @@ package com.github.x.compiler;
 import com.github.x.bytecode.AccessFlag;
 import com.github.x.lang.Compilable;
 import com.github.x.lang.Modifier;
-import com.github.x.lang.XClass;
-import com.github.x.lang.XTypeClass;
+import com.github.x.lang.KtjClass;
+import com.github.x.lang.KtjTypeClass;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,7 +24,7 @@ final class Parser {
 
         try{
             path = file.getPath().substring(0, file.getPath().length() - file.getName().length() - 1);
-            name = file.getName().substring(0, file.getName().length() - 2);
+            name = file.getName().substring(0, file.getName().length() - 4);
             classes = new HashMap<>();
             sc = new Scanner(file);
             line = 0;
@@ -121,7 +121,7 @@ final class Parser {
         th.assertToken("{");
         th.assertNull();
 
-        XClass clazz = new XClass(modifier);
+        KtjClass clazz = new KtjClass(modifier);
 
         while (sc.hasNextLine()){
             nextLine();
@@ -190,7 +190,7 @@ final class Parser {
             if(!types.contains(type)) types.add(type);
         }
 
-        classes.put(name, new XTypeClass(modifier, types.toArray(new String[0])));
+        classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0])));
     }
 
     private void nextLine() throws RuntimeException{

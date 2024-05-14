@@ -2,11 +2,11 @@ package com.github.x.lang;
 
 import com.github.x.bytecode.AccessFlag;
 
-public final class XTypeClass extends Compilable{
+public final class KtjTypeClass extends Compilable{
 
     public final String[] values;
 
-    public XTypeClass(Modifier modifier, String[] values) {
+    public KtjTypeClass(Modifier modifier, String[] values) {
         super(modifier);
         this.values = values;
     }
