@@ -15,8 +15,12 @@ public final class Modifier {
         this.accessFlag = accessFlag;
     }
 
+    public boolean isValidForField(){
+        return !(finaly || abstrakt);
+    }
+
     public boolean isValidForMethod(){
-        return !(finaly || constant);
+        return !(finaly || constant) && !(accessFlag == AccessFlag.ACC_PRIVATE && abstrakt);
     }
 
     public boolean isValidForType(){

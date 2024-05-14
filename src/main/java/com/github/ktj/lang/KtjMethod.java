@@ -11,10 +11,4 @@ public class KtjMethod extends Compilable{
         this.code = code;
     }
 
-    public KtjMethod(Modifier modifier, String returnType) {
-        super(modifier);
-        this.returnType = returnType;
-        this.code = null;
-    }
-
 }

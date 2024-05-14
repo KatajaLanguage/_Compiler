@@ -2,6 +2,7 @@ package com.github.ktj.compiler;
 
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
+import javassist.compiler.MemberResolver;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -34,11 +35,16 @@ final class Parser {
             nextLine();
 
             if(!th.isEmpty()){
-                switch (th.next().s()){
-                    case "#" -> {}
-                    case "public", "private", "protected" -> parseModifier(true);
-                    case "class" -> parseClass(new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE));
-                    default -> err("illegal argument");
+                try {
+                    switch (th.next().s()) {
+                        case "#" -> {}
+                        case "public", "private", "protected" -> parseModifier(true);
+                        case "class" -> parseClass(new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE));
+                        default -> err("illegal argument");
+                    }
+                }catch(RuntimeException e){
+                    if(e.getMessage().contains(" at ")) throw e;
+                    else err(e.getMessage());
                 }
             }
         }
@@ -104,9 +110,12 @@ final class Parser {
                 case "enum" -> parseEnum(mod);
                 case "data" -> parseData(mod);
                 case "type" -> parseType(mod);
-                default -> parseMethod(mod);
+                default -> {
+                    th.last();
+                    parseMethodAndField(mod);
+                }
             }
-        }else parseMethod(mod);
+        }else parseMethodAndField(mod);
     }
 
     private void parseClass(Modifier modifier){
@@ -220,8 +229,69 @@ final class Parser {
         return name;
     }
 
-    private void parseMethod(Modifier mod){
+    private void parseMethodAndField(Modifier mod){
+        String type = th.assertToken(Token.Type.IDENTIFIER).s();
+        String name = th.hasNext() ? th.next().s() : null;
 
+        if(name == null)
+            err("illegal argument");
+        else if(name.equals("("))
+            parseMethod(mod, "void", type);
+        else{
+            if(th.hasNext()){
+                th.assertToken("(");
+                parseMethod(mod, type, name);
+            }else parseField(mod, type, name);
+        }
+    }
+
+    private void parseField(Modifier mod, String type, String name){
+        if(!mod.isValidForField()) err("illegal modifier");
+
+        if(current instanceof KtjClass){
+            if(((KtjClass) current).addField(name, new KtjField(mod, type))) err("field is already defined");
+        }else err("illegal argument");
+    }
+
+    private void parseMethod(Modifier mod, String type, String name){
+        if(!mod.isValidForMethod()) err("illegal modifier");
+
+        if(type.equals("void")) type = null;
+
+        th.getInBracket().assertNull();
+
+        if(mod.abstrakt){
+            th.assertNull();
+            addMethod(name, new KtjMethod(mod, type, null));
+        }else {
+            th.assertToken("{");
+
+            StringBuilder code = new StringBuilder();
+
+            while (sc.hasNextLine()) {
+                nextLine();
+
+                if (!th.isEmpty()) {
+                    if (th.next().s().equals("}")) {
+                        addMethod(name, new KtjMethod(mod, type, code.toString()));
+                        return;
+                    } else {
+                        if (!code.isEmpty()) code.append("\n");
+                        code.append(th.toStringNonMarked());
+                    }
+                }
+            }
+
+            err("Expected '}'");
+        }
+    }
+
+    private void addMethod(String desc, KtjMethod method){
+        if (current instanceof KtjClass) {
+            if (((KtjClass) current).addMethod(desc, method)) err("method is already defined");
+        } else if (current instanceof KtjInterface) {
+            if (((KtjInterface) current).addMethod(desc, method)) err("method is already defined");
+        } else err("illegal argument");
     }
 
     private void nextLine() throws RuntimeException{
