@@ -1,4 +1,4 @@
-package com.github.x.lang;
+package com.github.ktj.lang;
 
 public class KtjClass extends Compilable{
 

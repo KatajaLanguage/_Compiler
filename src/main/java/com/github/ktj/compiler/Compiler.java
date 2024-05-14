@@ -1,7 +1,7 @@
-package com.github.x.compiler;
+package com.github.ktj.compiler;
 
-import com.github.x.lang.Compilable;
-import com.github.x.lang.KtjTypeClass;
+import com.github.ktj.lang.Compilable;
+import com.github.ktj.lang.KtjTypeClass;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.bytecode.ClassFile;
@@ -136,6 +136,27 @@ public final class Compiler {
         name = name.replace("/", ".");
         name = name.replace("\\", ".");
         return name;
+    }
+
+    static String toDesc(String...types){
+        StringBuilder desc = new StringBuilder();
+
+        for(String type:types){
+            switch (type){
+                case "int"     -> desc.append("I");
+                case "short"   -> desc.append("S");
+                case "long"    -> desc.append("J");
+                case "double"  -> desc.append("D");
+                case "float"   -> desc.append("F");
+                case "boolean" -> desc.append("Z");
+                case "char"    -> desc.append("C");
+                case "byte"    -> desc.append("B");
+                case "void"    -> desc.append("V");
+                default        -> desc.append("L").append(type).append(";"); //TODO arrays
+            }
+        }
+
+        return desc.toString();
     }
 
     public static Compiler getInstance(){

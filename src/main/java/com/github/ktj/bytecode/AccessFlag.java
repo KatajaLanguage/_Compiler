@@ -1,4 +1,4 @@
-package com.github.x.bytecode;
+package com.github.ktj.bytecode;
 
 public enum AccessFlag {
     ACC_PUBLIC, ACC_PRIVATE, ACC_PROTECTED, ACC_PACKAGE_PRIVATE;

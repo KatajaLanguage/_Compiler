@@ -1,6 +1,6 @@
-package com.github.x.compiler;
+package com.github.ktj.compiler;
 
-import com.github.x.lang.KtjTypeClass;
+import com.github.ktj.lang.KtjTypeClass;
 import javassist.bytecode.*;
 
 final class ClassCompiler {

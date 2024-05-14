@@ -1,4 +1,4 @@
-package com.github.x.compiler;
+package com.github.ktj.compiler;
 
 record Token(String s, Type t){
 

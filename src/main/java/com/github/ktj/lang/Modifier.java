@@ -1,6 +1,6 @@
-package com.github.x.lang;
+package com.github.ktj.lang;
 
-import com.github.x.bytecode.AccessFlag;
+import com.github.ktj.bytecode.AccessFlag;
 
 public final class Modifier {
 
@@ -15,11 +15,19 @@ public final class Modifier {
         this.accessFlag = accessFlag;
     }
 
+    public boolean isValidForMethod(){
+        return !(finaly || constant);
+    }
+
     public boolean isValidForType(){
         return !(abstrakt || synchronised || statik);
     }
 
     public boolean isValidForData(){
         return !(abstrakt || synchronised || statik);
+    }
+
+    public boolean isValidForInterface(){
+        return !(constant || finaly || synchronised || statik);
     }
 }

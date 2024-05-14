@@ -1,6 +1,6 @@
-package com.github.x.lang;
+package com.github.ktj.lang;
 
-import com.github.x.bytecode.AccessFlag;
+import com.github.ktj.bytecode.AccessFlag;
 
 public final class KtjTypeClass extends Compilable{
 

@@ -1,10 +1,7 @@
-package com.github.x.compiler;
+package com.github.ktj.compiler;
 
-import com.github.x.bytecode.AccessFlag;
-import com.github.x.lang.Compilable;
-import com.github.x.lang.Modifier;
-import com.github.x.lang.KtjClass;
-import com.github.x.lang.KtjTypeClass;
+import com.github.ktj.bytecode.AccessFlag;
+import com.github.ktj.lang.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,6 +14,7 @@ final class Parser {
     private TokenHandler th;
     private String path;
     private String name;
+    private Compilable current = null;
     private int line;
 
     public HashMap<String, Compilable> parseFile(File file) throws IllegalArgumentException{
@@ -106,11 +104,9 @@ final class Parser {
                 case "enum" -> parseEnum(mod);
                 case "data" -> parseData(mod);
                 case "type" -> parseType(mod);
-                default -> err("illegal argument");
+                default -> parseMethod(mod);
             }
-        }else{
-            err("illegal argument");
-        }
+        }else parseMethod(mod);
     }
 
     private void parseClass(Modifier modifier){
@@ -122,6 +118,7 @@ final class Parser {
         th.assertNull();
 
         KtjClass clazz = new KtjClass(modifier);
+        current = clazz;
 
         while (sc.hasNextLine()){
             nextLine();
@@ -129,6 +126,7 @@ final class Parser {
             if(!th.isEmpty()){
                 switch (th.next().s()){
                     case "}" -> {
+                        current = null;
                         th.assertNull();
                         classes.put(name, clazz);
                         return;
@@ -139,10 +137,6 @@ final class Parser {
         }
 
         err("Expected '}'");
-    }
-
-    private void parseInterface(Modifier modifier){
-
     }
 
     private void parseRecord(Modifier modifier){
@@ -156,9 +150,7 @@ final class Parser {
     private void parseData(Modifier modifier){
         if(!modifier.isValidForData()) err("illegal modifier");
 
-        String name = th.assertToken(Token.Type.IDENTIFIER).s();
-
-        if(classes.containsKey(name)) err(STR."Data Class \{name} is already defined");
+        String name = parseName();
 
         th.assertToken("=");
         th.assertToken("[");
@@ -174,9 +166,7 @@ final class Parser {
     private void parseType(Modifier modifier){
         if(!modifier.isValidForType()) err("illegal modifier");
 
-        String name = th.assertToken(Token.Type.IDENTIFIER).s();
-
-        if(classes.containsKey(name)) err(STR."Type Class \{name} is already defined");
+        String name = parseName();
 
         th.assertToken("=");
 
@@ -191,6 +181,47 @@ final class Parser {
         }
 
         classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0])));
+    }
+
+    private void parseInterface(Modifier modifier){
+        if(!modifier.isValidForInterface()) err("illegal modifier");
+
+        String name = parseName();
+
+        th.assertToken("{");
+
+        KtjInterface clazz = new KtjInterface(modifier);
+        current = clazz;
+
+        while (sc.hasNextLine()){
+            nextLine();
+
+            if(!th.isEmpty()){
+                if(th.next().s().equals("}")){
+                    current = null;
+                    th.assertNull();
+                    classes.put(name, clazz);
+                    return;
+                }else{
+                    th.last();
+                    parseModifier(false);
+                }
+            }
+        }
+
+        err("Expected '}'");
+    }
+
+    private String parseName(){
+        String name = th.assertToken(Token.Type.IDENTIFIER).s();
+
+        if(classes.containsKey(name)) err(STR."Type Class \{name} is already defined");
+
+        return name;
+    }
+
+    private void parseMethod(Modifier mod){
+
     }
 
     private void nextLine() throws RuntimeException{

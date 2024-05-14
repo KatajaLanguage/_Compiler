@@ -1,4 +1,4 @@
-package com.github.x;
+package com.github.ktj;
 
 public class Main {
     public static void main(String[] args) {
