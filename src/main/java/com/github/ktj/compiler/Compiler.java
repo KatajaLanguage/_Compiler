@@ -19,7 +19,8 @@ public final class Compiler {
         c.compile("src/test/kataja/Test.ktj", true, true);
     }
 
-    private static Compiler compiler = null;
+    private static Compiler COMPILER = null;
+    public static final String[] PRIMITIVES = new String[]{"int", "double", "float", "short", "long", "boolean", "char", "byte"};
 
     private final Parser parser;
 
@@ -160,8 +161,8 @@ public final class Compiler {
     }
 
     public static Compiler getInstance(){
-        if(compiler == null) compiler = new Compiler();
+        if(COMPILER == null) COMPILER = new Compiler();
 
-        return compiler;
+        return COMPILER;
     }
 }

@@ -1,7 +1,11 @@
 package com.github.ktj.compiler;
 
+import com.github.ktj.lang.KtjDataClass;
+import com.github.ktj.lang.KtjField;
 import com.github.ktj.lang.KtjTypeClass;
 import javassist.bytecode.*;
+
+import java.util.Arrays;
 
 final class ClassCompiler {
 
@@ -86,6 +90,47 @@ final class ClassCompiler {
         }
         code.addInvokestatic(name, "$values", STR."()[L\{name};");
         code.addPutstatic(name, "$VALUES", STR."[L\{name};");
+        code.add(Opcode.RETURN);
+        mInfo.setCodeAttribute(code.toCodeAttribute());
+        cf.addMethod2(mInfo);
+
+        Compiler.getInstance().compiledClasses.add(cf);
+    }
+
+    static void compileDataClass(KtjDataClass clazz, String name, String path){
+        ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java/lang/Object");
+        cf.setAccessFlags(clazz.getAccessFlag());
+
+        //Fields
+        for(String fieldName:clazz.fields.keySet()){
+            KtjField field = clazz.fields.get(fieldName);
+
+            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, Compiler.toDesc(field.type));
+            fInfo.setAccessFlags(field.getAccessFlag());
+            cf.addField2(fInfo);
+        }
+
+        //<init>
+        MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", STR."(\{Compiler.toDesc(Arrays.stream(clazz.fields.values().toArray(new KtjField[0])).map(field -> field.type).toArray(String[]::new))})V");
+        mInfo.setAccessFlags(AccessFlag.PUBLIC);
+        Bytecode code = new Bytecode(cf.getConstPool());
+        code.addAload(0);
+        code.addInvokespecial("java/lang/Object", "<init>", "()V");
+
+        int i = 1;
+        for(String field:clazz.fields.keySet()){
+            code.addAload(0);
+            String desc = Compiler.toDesc(clazz.fields.get(field).type);
+            switch(desc){
+                case "J" -> code.addLload(i);
+                case "D" -> code.addDload(i);
+                case "F" -> code.addFload(i);
+                case "I", "Z", "B", "C", "S" -> code.addIload(i);
+                default -> code.addAload(i);
+            }
+            code.addPutfield(name, field, desc);
+            i++;
+        }
         code.add(Opcode.RETURN);
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);

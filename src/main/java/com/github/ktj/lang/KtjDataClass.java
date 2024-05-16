@@ -1,14 +1,15 @@
 package com.github.ktj.lang;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
-public class KtjClass extends KtjInterface{
+public class KtjDataClass extends Compilable{
 
-    private final HashMap<String, KtjField> fields;
+    public final LinkedHashMap<String, KtjField> fields;
 
-    public KtjClass(Modifier modifier, HashMap<String, String> uses) {
+    public KtjDataClass(Modifier modifier, HashMap<String, String> uses){
         super(modifier, uses);
-        fields = new HashMap<>();
+        fields = new LinkedHashMap<>();
     }
 
     public boolean addField(String name, KtjField method){

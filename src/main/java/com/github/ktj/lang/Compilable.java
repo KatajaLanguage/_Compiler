@@ -2,12 +2,20 @@ package com.github.ktj.lang;
 
 import com.github.ktj.bytecode.AccessFlag;
 
+import java.util.HashMap;
+
 public abstract class Compilable {
 
     protected final Modifier modifier;
+    protected final HashMap<String, String> uses;
 
-    public Compilable(Modifier modifier){
+    public Compilable(Modifier modifier, HashMap<String, String> uses){
         this.modifier = modifier;
+        this.uses = uses;
+    }
+
+    public String getType(String type){
+        return uses.getOrDefault(type, null);
     }
 
     public int getAccessFlag(){

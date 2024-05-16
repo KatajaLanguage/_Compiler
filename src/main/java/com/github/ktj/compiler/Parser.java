@@ -2,7 +2,6 @@ package com.github.ktj.compiler;
 
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
-import javassist.compiler.MemberResolver;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,6 +10,7 @@ import java.util.*;
 final class Parser {
 
     private HashMap<String, Compilable> classes;
+    private HashMap<String, String> uses;
     private Scanner sc;
     private TokenHandler th;
     private String path;
@@ -25,6 +25,7 @@ final class Parser {
             path = file.getPath().substring(0, file.getPath().length() - file.getName().length() - 1);
             name = file.getName().substring(0, file.getName().length() - 4);
             classes = new HashMap<>();
+            uses = new HashMap<>();
             sc = new Scanner(file);
             line = 0;
         }catch(FileNotFoundException ignored){
@@ -38,6 +39,7 @@ final class Parser {
                 try {
                     switch (th.next().s()) {
                         case "#" -> {}
+                        case "uses" -> parseUse();
                         case "public", "private", "protected" -> parseModifier(true);
                         case "class" -> parseClass(new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE));
                         default -> err("illegal argument");
@@ -62,6 +64,51 @@ final class Parser {
         }
 
         return classes;
+    }
+
+    private void parseUse(){
+        String current = th.assertToken(Token.Type.IDENTIFIER).s();
+
+        if(th.assertToken("/", "from", ",").equals("/")){
+            StringBuilder path = new StringBuilder(current);
+            th.assertHasNext();
+
+            while (th.hasNext()){
+                if(th.assertToken("/", "as").equals("as")){
+                    if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s())) err(STR."\{th.current()} is already defined");
+                    uses.put(th.current().s(), path.toString());
+                }else{
+                    current = th.assertToken(Token.Type.IDENTIFIER).s();
+                    path.append("/").append(current);
+                }
+            }
+
+            if(uses.containsKey(current)) err(STR."\{current} is already defined");
+            uses.put(current, path.toString());
+        }else{
+            ArrayList<String> classes = new ArrayList<>();
+            classes.add(current);
+
+            if(th.current().equals(",")){
+                classes.add(th.assertToken(Token.Type.IDENTIFIER).s());
+                th.assertToken(",", "from");
+            }
+
+            StringBuilder path = new StringBuilder(th.assertToken(Token.Type.IDENTIFIER).s());
+
+            while (th.hasNext()){
+                if(th.assertToken("/", "as").equals("as")){
+                    if(classes.size() != 1) err("illegal argument");
+                    if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s())) err(STR."\{th.current()} is already defined");
+                    uses.put(th.current().s(), path + classes.getFirst());
+                }else path.append("/").append(th.assertToken(Token.Type.IDENTIFIER).s());
+            }
+
+            for(String clazz:classes){
+                if(uses.containsKey(clazz)) err(STR."\{clazz} is already defined");
+                uses.put(clazz, path.toString());
+            }
+        }
     }
 
     private void parseModifier(boolean allowClasses){
@@ -126,21 +173,20 @@ final class Parser {
         th.assertToken("{");
         th.assertNull();
 
-        KtjClass clazz = new KtjClass(modifier);
+        KtjClass clazz = new KtjClass(modifier, uses);
         current = clazz;
 
         while (sc.hasNextLine()){
             nextLine();
 
             if(!th.isEmpty()){
-                switch (th.next().s()){
-                    case "}" -> {
-                        current = null;
-                        th.assertNull();
-                        classes.put(name, clazz);
-                        return;
-                    }
-                    default -> parseModifier(false);
+                if (th.next().s().equals("}")) {
+                    current = null;
+                    th.assertNull();
+                    classes.put(name, clazz);
+                    return;
+                } else {
+                    parseModifier(false);
                 }
             }
         }
@@ -189,7 +235,7 @@ final class Parser {
             if(!types.contains(type)) types.add(type);
         }
 
-        classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0])));
+        classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0]), uses));
     }
 
     private void parseInterface(Modifier modifier){
@@ -199,7 +245,7 @@ final class Parser {
 
         th.assertToken("{");
 
-        KtjInterface clazz = new KtjInterface(modifier);
+        KtjInterface clazz = new KtjInterface(modifier, uses);
         current = clazz;
 
         while (sc.hasNextLine()){
@@ -249,7 +295,7 @@ final class Parser {
         if(!mod.isValidForField()) err("illegal modifier");
 
         if(current instanceof KtjClass){
-            if(((KtjClass) current).addField(name, new KtjField(mod, type))) err("field is already defined");
+            if(((KtjClass) current).addField(name, new KtjField(mod, type, uses))) err("field is already defined");
         }else err("illegal argument");
     }
 
@@ -262,7 +308,7 @@ final class Parser {
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(name, new KtjMethod(mod, type, null));
+            addMethod(name, new KtjMethod(mod, type, null, uses));
         }else {
             th.assertToken("{");
 
@@ -273,7 +319,7 @@ final class Parser {
 
                 if (!th.isEmpty()) {
                     if (th.next().s().equals("}")) {
-                        addMethod(name, new KtjMethod(mod, type, code.toString()));
+                        addMethod(name, new KtjMethod(mod, type, code.toString(), uses));
                         return;
                     } else {
                         if (!code.isEmpty()) code.append("\n");
