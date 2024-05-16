@@ -1,6 +1,7 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.lang.Compilable;
+import com.github.ktj.lang.KtjDataClass;
 import com.github.ktj.lang.KtjTypeClass;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
@@ -131,6 +132,18 @@ public final class Compiler {
         path = path.substring(0, path.length() - name.length() - 1);
 
         if(clazz instanceof KtjTypeClass) ClassCompiler.compileTypeClass((KtjTypeClass) clazz, name, path);
+        else if(clazz instanceof KtjDataClass) ClassCompiler.compileDataClass((KtjDataClass) clazz, name, path);
+    }
+
+    boolean classExist(String name){
+        if(isPrimitive(name)) return true;
+
+        try {
+            Class.forName(name);
+            return true;
+        }catch(ClassNotFoundException ignored){}
+
+        return classes.containsKey(name);
     }
 
     static String validateClassName(String name){
@@ -158,6 +171,12 @@ public final class Compiler {
         }
 
         return desc.toString();
+    }
+
+    static boolean isPrimitive(String type){
+        for(String p:PRIMITIVES) if(p.equals(type)) return true;
+
+        return false;
     }
 
     public static Compiler getInstance(){

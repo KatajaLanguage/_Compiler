@@ -105,6 +105,11 @@ final class ClassCompiler {
         for(String fieldName:clazz.fields.keySet()){
             KtjField field = clazz.fields.get(fieldName);
 
+            if(!Compiler.isPrimitive(field.type)){
+                if (field.uses.get(field.type) == null || !Compiler.getInstance().classExist(field.uses.get(field.type)))
+                    throw new RuntimeException(STR."Unknown type \{field.type} in class \{path}.\{name}");
+            }
+
             FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, Compiler.toDesc(field.type));
             fInfo.setAccessFlags(field.getAccessFlag());
             cf.addField2(fInfo);

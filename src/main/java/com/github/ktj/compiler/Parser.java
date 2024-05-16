@@ -55,10 +55,19 @@ final class Parser {
             String name = classes.keySet().toArray(new String[0])[0];
             Compilable clazz = classes.remove(name);
             classes.put(Compiler.validateClassName(STR."\{path}.\{name}"), clazz);
+
+            if(uses.containsKey(name)) err(STR.".\{name} is already defined");
+            uses.put(name, STR."\{Compiler.validateClassName(path)}.\{name}");
         }else{
             HashMap<String, Compilable> help = new HashMap<>();
 
-            for(String clazz: classes.keySet()) help.put(Compiler.validateClassName(STR."\{path}.\{name}.\{clazz}"), classes.get(clazz));
+            for(String clazz: classes.keySet()){
+                help.put(Compiler.validateClassName(STR."\{path}.\{name}.\{clazz}"), classes.get(clazz));
+
+                path = Compiler.validateClassName(path);
+                if(uses.containsKey(clazz)) err(STR.".\{clazz} is already defined");
+                uses.put(clazz, STR."\{path}.\{name}.\{clazz}");
+            }
 
             classes = help;
         }
@@ -206,16 +215,29 @@ final class Parser {
         if(!modifier.isValidForData()) err("illegal modifier");
 
         String name = parseName();
+        KtjDataClass clazz = new KtjDataClass(modifier, uses);
 
         th.assertToken("=");
         th.assertToken("[");
 
-        while(th.hasNext() && !th.next().equals("]")){
+        if(!th.next().equals("]")) {
+            th.last();
 
+            while (th.hasNext()) {
+                if (clazz.addField(th.assertToken(Token.Type.IDENTIFIER).s(), th.assertToken(Token.Type.IDENTIFIER).s()))
+                    err("field is already defined");
+
+                if (th.hasNext()){
+                    if(th.assertToken("]", ",").equals("]")) break;
+                    th.assertHasNext();
+                }
+            }
         }
 
         if(!th.current().equals("]")) err("Expected ']'");
         th.assertNull();
+
+        classes.put(name, clazz);
     }
 
     private void parseType(Modifier modifier){

@@ -1,1 +1,1 @@
-public type Test = a | b | c
+public data Test = [int i, Test t]

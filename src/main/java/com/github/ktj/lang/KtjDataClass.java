@@ -1,5 +1,7 @@
 package com.github.ktj.lang;
 
+import com.github.ktj.bytecode.AccessFlag;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -12,10 +14,10 @@ public class KtjDataClass extends Compilable{
         fields = new LinkedHashMap<>();
     }
 
-    public boolean addField(String name, KtjField method){
+    public boolean addField(String type, String name){
         if(fields.containsKey(name)) return true;
 
-        fields.put(name, method);
+        fields.put(name, new KtjField(new Modifier(AccessFlag.ACC_PUBLIC), type, uses));
         return false;
     }
 }
