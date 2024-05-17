@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 public class KtjClass extends KtjInterface{
 
-    private final HashMap<String, KtjField> fields;
+    public final HashMap<String, KtjField> fields;
 
     public KtjClass(Modifier modifier, HashMap<String, String> uses) {
         super(modifier, uses);
@@ -16,5 +16,9 @@ public class KtjClass extends KtjInterface{
 
         fields.put(name, method);
         return false;
+    }
+
+    public boolean isEmpty(){
+        return fields.isEmpty() && methods.isEmpty();
     }
 }

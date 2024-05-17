@@ -6,7 +6,7 @@ import java.util.HashMap;
 
 public abstract class Compilable {
 
-    protected final Modifier modifier;
+    public final Modifier modifier;
     public final HashMap<String, String> uses;
 
     public Compilable(Modifier modifier, HashMap<String, String> uses){

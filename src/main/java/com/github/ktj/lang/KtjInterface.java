@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 public class KtjInterface extends Compilable{
 
-    private final HashMap<String, KtjMethod> methods;
+    public final HashMap<String, KtjMethod> methods;
 
     public KtjInterface(Modifier modifier, HashMap<String, String> uses) {
         super(modifier, uses);

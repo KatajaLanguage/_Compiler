@@ -16,6 +16,7 @@ final class Parser {
     private String path;
     private String name;
     private Compilable current = null;
+    private KtjClass statik;
     private int line;
 
     public HashMap<String, Compilable> parseFile(File file) throws IllegalArgumentException{
@@ -27,6 +28,7 @@ final class Parser {
             classes = new HashMap<>();
             uses = new HashMap<>();
             sc = new Scanner(file);
+            statik = new KtjClass(new Modifier(AccessFlag.ACC_PUBLIC), uses);
             line = 0;
         }catch(FileNotFoundException ignored){
             throw new IllegalArgumentException(STR."Unable to find \{file.getPath()}");
@@ -40,15 +42,27 @@ final class Parser {
                     switch (th.next().s()) {
                         case "#" -> {}
                         case "uses" -> parseUse();
-                        case "public", "private", "protected" -> parseModifier(true);
-                        case "class" -> parseClass(new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE));
-                        default -> err("illegal argument");
+                        default -> parseModifier(true);
                     }
                 }catch(RuntimeException e){
                     if(e.getMessage().contains(" at ")) throw e;
                     else err(e.getMessage());
                 }
             }
+        }
+
+        if(!statik.isEmpty()) {
+            if (classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0]) && classes.get(name) instanceof KtjClass clazz) {
+                for(String field:statik.fields.keySet()){
+                    statik.fields.get(field).modifier.statik = true;
+                    if(clazz.addField(field, statik.fields.get(field))) err(STR."Field \{field} is already defined in Class \{name}");
+                }
+
+                for(String method:statik.methods.keySet()){
+                    statik.methods.get(method).modifier.statik = true;
+                    if(clazz.addMethod(method, statik.methods.get(method))) err(STR."Method \{method} is already defined in Class \{name}");
+                }
+            } else classes.put(STR."_\{name}File", statik);
         }
 
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
@@ -204,11 +218,11 @@ final class Parser {
     }
 
     private void parseRecord(Modifier modifier){
-
+        err("illegal argument");
     }
 
     private void parseEnum(Modifier modifier){
-
+        err("illegal argument");
     }
 
     private void parseData(Modifier modifier){
@@ -308,7 +322,7 @@ final class Parser {
         else{
             if(th.hasNext()){
                 th.assertToken("(");
-                parseMethod(mod, type, name);
+                parseField(mod, type, name);
             }else parseField(mod, type, name);
         }
     }
@@ -316,9 +330,14 @@ final class Parser {
     private void parseField(Modifier mod, String type, String name){
         if(!mod.isValidForField()) err("illegal modifier");
 
+        if(current == null){
+            if(statik.addField(name, new KtjField(mod, type, uses))) err("field is already defined");
+            return;
+        }
+
         if(current instanceof KtjClass){
             if(((KtjClass) current).addField(name, new KtjField(mod, type, uses))) err("field is already defined");
-        }else err("illegal argument");
+        }
     }
 
     private void parseMethod(Modifier mod, String type, String name){
@@ -355,11 +374,16 @@ final class Parser {
     }
 
     private void addMethod(String desc, KtjMethod method){
+        if(current == null){
+            if (statik.addMethod(desc, method)) err("method is already defined");
+            return;
+        }
+
         if (current instanceof KtjClass) {
             if (((KtjClass) current).addMethod(desc, method)) err("method is already defined");
         } else if (current instanceof KtjInterface) {
             if (((KtjInterface) current).addMethod(desc, method)) err("method is already defined");
-        } else err("illegal argument");
+        }
     }
 
     private void nextLine() throws RuntimeException{
