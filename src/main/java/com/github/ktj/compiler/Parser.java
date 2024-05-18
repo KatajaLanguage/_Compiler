@@ -62,7 +62,7 @@ final class Parser {
                     statik.methods.get(method).modifier.statik = true;
                     if(clazz.addMethod(method, statik.methods.get(method))) err(STR."Method \{method} is already defined in Class \{name}");
                 }
-            } else classes.put(STR."_\{name}File", statik);
+            } else classes.put(classes.isEmpty() ? name : STR."_\{name}File", statik);
         }
 
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
@@ -331,6 +331,7 @@ final class Parser {
         if(!mod.isValidForField()) err("illegal modifier");
 
         if(current == null){
+            mod.statik = true;
             if(statik.addField(name, new KtjField(mod, type, uses))) err("field is already defined");
             return;
         }
@@ -375,6 +376,7 @@ final class Parser {
 
     private void addMethod(String desc, KtjMethod method){
         if(current == null){
+            method.modifier.statik = true;
             if (statik.addMethod(desc, method)) err("method is already defined");
             return;
         }

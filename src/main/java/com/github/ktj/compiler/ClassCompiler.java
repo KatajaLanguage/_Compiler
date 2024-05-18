@@ -1,5 +1,6 @@
 package com.github.ktj.compiler;
 
+import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjDataClass;
 import com.github.ktj.lang.KtjField;
 import com.github.ktj.lang.KtjTypeClass;
@@ -136,6 +137,37 @@ final class ClassCompiler {
             code.addPutfield(name, field, desc);
             i++;
         }
+        code.add(Opcode.RETURN);
+        mInfo.setCodeAttribute(code.toCodeAttribute());
+        cf.addMethod2(mInfo);
+
+        Compiler.getInstance().compiledClasses.add(cf);
+    }
+
+    static void compileClass(KtjClass clazz, String name, String path){
+        ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java/lang/Object");
+        cf.setAccessFlags(clazz.getAccessFlag());
+
+        //Fields
+        for(String fieldName:clazz.fields.keySet()){
+            KtjField field = clazz.fields.get(fieldName);
+
+            if(!Compiler.isPrimitive(field.type)){
+                if (field.uses.get(field.type) == null || !Compiler.getInstance().classExist(field.uses.get(field.type)))
+                    throw new RuntimeException(STR."Unknown type \{field.type} in class \{path}.\{name}");
+            }
+
+            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, Compiler.toDesc(field.type));
+            fInfo.setAccessFlags(field.getAccessFlag());
+            cf.addField2(fInfo);
+        }
+
+        //<init>
+        MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", "()V");
+        mInfo.setAccessFlags(AccessFlag.PUBLIC);
+        Bytecode code = new Bytecode(cf.getConstPool());
+        code.addAload(0);
+        code.addInvokespecial("java/lang/Object", "<init>", "()V");
         code.add(Opcode.RETURN);
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);

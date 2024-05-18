@@ -1,6 +1,7 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.lang.Compilable;
+import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjDataClass;
 import com.github.ktj.lang.KtjTypeClass;
 import javassist.CannotCompileException;
@@ -133,6 +134,7 @@ public final class Compiler {
 
         if(clazz instanceof KtjTypeClass) ClassCompiler.compileTypeClass((KtjTypeClass) clazz, name, path);
         else if(clazz instanceof KtjDataClass) ClassCompiler.compileDataClass((KtjDataClass) clazz, name, path);
+        else if(clazz instanceof KtjClass) ClassCompiler.compileClass((KtjClass) clazz, name, path);
     }
 
     boolean classExist(String name){
