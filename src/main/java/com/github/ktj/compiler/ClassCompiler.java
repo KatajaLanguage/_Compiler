@@ -1,9 +1,6 @@
 package com.github.ktj.compiler;
 
-import com.github.ktj.lang.KtjClass;
-import com.github.ktj.lang.KtjDataClass;
-import com.github.ktj.lang.KtjField;
-import com.github.ktj.lang.KtjTypeClass;
+import com.github.ktj.lang.*;
 import javassist.bytecode.*;
 
 import java.util.Arrays;
@@ -144,6 +141,16 @@ final class ClassCompiler {
         Compiler.getInstance().compiledClasses.add(cf);
     }
 
+    static void compileInterface(KtjInterface clazz, String name, String path){
+        ClassFile cf = new ClassFile(true, STR."\{path}.\{name}", "java/lang/Object");
+        cf.setAccessFlags(clazz.getAccessFlag());
+
+        //Methods
+        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, cf.getConstPool(), clazz.methods.get(desc), desc));
+
+        Compiler.getInstance().compiledClasses.add(cf);
+    }
+
     static void compileClass(KtjClass clazz, String name, String path){
         ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java/lang/Object");
         cf.setAccessFlags(clazz.getAccessFlag());
@@ -160,6 +167,11 @@ final class ClassCompiler {
             FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, Compiler.toDesc(field.type));
             fInfo.setAccessFlags(field.getAccessFlag());
             cf.addField2(fInfo);
+        }
+
+        //Methods
+        for(String desc:clazz.methods.keySet()){
+
         }
 
         //<init>

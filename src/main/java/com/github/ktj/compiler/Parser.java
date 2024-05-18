@@ -293,10 +293,7 @@ final class Parser {
                     th.assertNull();
                     classes.put(name, clazz);
                     return;
-                }else{
-                    th.last();
-                    parseModifier(false);
-                }
+                }else parseModifier(false);
             }
         }
 
@@ -322,7 +319,7 @@ final class Parser {
         else{
             if(th.hasNext()){
                 th.assertToken("(");
-                parseField(mod, type, name);
+                parseMethod(mod, type, name);
             }else parseField(mod, type, name);
         }
     }
@@ -344,13 +341,11 @@ final class Parser {
     private void parseMethod(Modifier mod, String type, String name){
         if(!mod.isValidForMethod()) err("illegal modifier");
 
-        if(type.equals("void")) type = null;
-
         th.getInBracket().assertNull();
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(name, new KtjMethod(mod, type, null, uses));
+            addMethod(STR."\{name}%", new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses));
         }else {
             th.assertToken("{");
 
@@ -361,7 +356,7 @@ final class Parser {
 
                 if (!th.isEmpty()) {
                     if (th.next().s().equals("}")) {
-                        addMethod(name, new KtjMethod(mod, type, code.toString(), uses));
+                        addMethod(STR."\{name}%", new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses));
                         return;
                     } else {
                         if (!code.isEmpty()) code.append("\n");
@@ -384,6 +379,7 @@ final class Parser {
         if (current instanceof KtjClass) {
             if (((KtjClass) current).addMethod(desc, method)) err("method is already defined");
         } else if (current instanceof KtjInterface) {
+            if(!method.isAbstract()) err("expected abstract Method");
             if (((KtjInterface) current).addMethod(desc, method)) err("method is already defined");
         }
     }

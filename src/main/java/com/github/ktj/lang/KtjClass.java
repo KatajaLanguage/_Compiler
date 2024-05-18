@@ -1,5 +1,7 @@
 package com.github.ktj.lang;
 
+import com.github.ktj.bytecode.AccessFlag;
+
 import java.util.HashMap;
 
 public class KtjClass extends KtjInterface{
@@ -20,5 +22,13 @@ public class KtjClass extends KtjInterface{
 
     public boolean isEmpty(){
         return fields.isEmpty() && methods.isEmpty();
+    }
+
+    public void validateMethods(){
+
+    }
+
+    public int getAccessFlag(){
+        return super.getAccessFlag() - AccessFlag.INTERFACE;
     }
 }

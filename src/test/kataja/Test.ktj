@@ -1,1 +1,3 @@
-public int i
+public interface i{
+    abstract void a()
+}

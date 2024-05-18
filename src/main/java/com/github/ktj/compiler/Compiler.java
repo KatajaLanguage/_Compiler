@@ -1,9 +1,6 @@
 package com.github.ktj.compiler;
 
-import com.github.ktj.lang.Compilable;
-import com.github.ktj.lang.KtjClass;
-import com.github.ktj.lang.KtjDataClass;
-import com.github.ktj.lang.KtjTypeClass;
+import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.bytecode.ClassFile;
@@ -17,7 +14,7 @@ public final class Compiler {
 
     public static void main(String[] args){
         Compiler c = Compiler.getInstance();
-        c.setDebug(true);
+        //c.setDebug(true);
         c.compile("src/test/kataja/Test.ktj", true, true);
     }
 
@@ -71,6 +68,8 @@ public final class Compiler {
             classes = parser.parseFile(f);
 
             for(String name:classes.keySet()) compileClass(name);
+
+            for(String name:classes.keySet()) if(classes.get(name) instanceof KtjClass clazz) clazz.validateMethods();
 
             printDebug("parsing finished successfully");
 
@@ -135,6 +134,7 @@ public final class Compiler {
         if(clazz instanceof KtjTypeClass) ClassCompiler.compileTypeClass((KtjTypeClass) clazz, name, path);
         else if(clazz instanceof KtjDataClass) ClassCompiler.compileDataClass((KtjDataClass) clazz, name, path);
         else if(clazz instanceof KtjClass) ClassCompiler.compileClass((KtjClass) clazz, name, path);
+        else if(clazz instanceof KtjInterface) ClassCompiler.compileInterface((KtjInterface) clazz, name, path);
     }
 
     boolean classExist(String name){
@@ -168,7 +168,7 @@ public final class Compiler {
                 case "char"    -> desc.append("C");
                 case "byte"    -> desc.append("B");
                 case "void"    -> desc.append("V");
-                default        -> desc.append("L").append(type).append(";"); //TODO arrays
+                default        -> desc.append("L").append(type).append(";");
             }
         }
 

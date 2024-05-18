@@ -1,5 +1,7 @@
 package com.github.ktj.lang;
 
+import com.github.ktj.bytecode.AccessFlag;
+
 import java.util.HashMap;
 
 public class KtjInterface extends Compilable{
@@ -16,5 +18,9 @@ public class KtjInterface extends Compilable{
 
         methods.put(desc, method);
         return false;
+    }
+
+    public int getAccessFlag(){
+        return super.getAccessFlag() + AccessFlag.INTERFACE;
     }
 }
