@@ -1,7 +1,6 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.bytecode.AccessFlag;
-import com.github.ktj.compiler.lang.*;
 import com.github.ktj.lang.*;
 
 import java.io.File;
@@ -69,17 +68,17 @@ final class Parser {
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
             String name = classes.keySet().toArray(new String[0])[0];
             Compilable clazz = classes.remove(name);
-            classes.put(Compiler.validateClassName(STR."\{path}.\{name}"), clazz);
+            classes.put(CompilerUtil.validateClassName(STR."\{path}.\{name}"), clazz);
 
             if(uses.containsKey(name)) err(STR.".\{name} is already defined");
-            uses.put(name, STR."\{Compiler.validateClassName(path)}.\{name}");
+            uses.put(name, STR."\{CompilerUtil.validateClassName(path)}.\{name}");
         }else{
             HashMap<String, Compilable> help = new HashMap<>();
 
             for(String clazz: classes.keySet()){
-                help.put(Compiler.validateClassName(STR."\{path}.\{name}.\{clazz}"), classes.get(clazz));
+                help.put(CompilerUtil.validateClassName(STR."\{path}.\{name}.\{clazz}"), classes.get(clazz));
 
-                path = Compiler.validateClassName(path);
+                path = CompilerUtil.validateClassName(path);
                 if(uses.containsKey(clazz)) err(STR.".\{clazz} is already defined");
                 uses.put(clazz, STR."\{path}.\{name}.\{clazz}");
             }
