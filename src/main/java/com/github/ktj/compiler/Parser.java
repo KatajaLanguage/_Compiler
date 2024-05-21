@@ -51,19 +51,7 @@ final class Parser {
             }
         }
 
-        if(!statik.isEmpty()) {
-            if (classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0]) && classes.get(name) instanceof KtjClass clazz) {
-                for(String field:statik.fields.keySet()){
-                    statik.fields.get(field).modifier.statik = true;
-                    if(clazz.addField(field, statik.fields.get(field))) err(STR."Field \{field} is already defined in Class \{name}");
-                }
-
-                for(String method:statik.methods.keySet()){
-                    statik.methods.get(method).modifier.statik = true;
-                    if(clazz.addMethod(method, statik.methods.get(method))) err(STR."Method \{method} is already defined in Class \{name}");
-                }
-            } else classes.put(classes.isEmpty() ? name : STR."_\{name}File", statik);
-        }
+        if(!statik.isEmpty()) classes.put(classes.isEmpty() ? name : STR."_\{name}", statik);
 
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
             String name = classes.keySet().toArray(new String[0])[0];
