@@ -1,6 +1,8 @@
 package com.github.ktj.lang;
 
 import com.github.ktj.bytecode.AccessFlag;
+import com.github.ktj.compiler.Compiler;
+import com.github.ktj.compiler.CompilerUtil;
 
 import java.util.HashMap;
 
@@ -16,6 +18,16 @@ public abstract class Compilable {
 
     public String getType(String type){
         return uses.getOrDefault(type, null);
+    }
+
+    public abstract void validateTypes();
+
+    protected String validateType(String type) throws RuntimeException{
+        if(CompilerUtil.isPrimitive(type)) return type;
+
+        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException(STR."Unknown Type \{type}");
+
+        return uses.get(type);
     }
 
     public int getAccessFlag(){

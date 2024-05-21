@@ -13,18 +13,17 @@ import java.util.HashMap;
 public final class Compiler {
 
     public static void main(String[] args){
-        Compiler c = Compiler.getInstance();
+        Compiler c = Compiler.Instance();
         //c.setDebug(true);
         c.compile("src/test/kataja/Test.ktj", true, true);
     }
 
     private static Compiler COMPILER = null;
-    public static final String[] PRIMITIVES = new String[]{"int", "double", "float", "short", "long", "boolean", "char", "byte"};
 
     private final Parser parser;
 
     private File outFolder;
-    private HashMap<String, Compilable> classes;
+    HashMap<String, Compilable> classes;
 
     private boolean debug;
 
@@ -69,7 +68,13 @@ public final class Compiler {
 
             for(String name:classes.keySet()) compileClass(name);
 
-            for(String name:classes.keySet()) if(classes.get(name) instanceof KtjClass clazz) clazz.validateMethods();
+            for(String name:classes.keySet()){
+                try {
+                    classes.get(name).validateTypes();
+                }catch(RuntimeException e){
+                    throw new RuntimeException(STR."\{e} in Class \{name}");
+                }
+            }
 
             printDebug("parsing finished successfully");
 
@@ -137,53 +142,11 @@ public final class Compiler {
         else if(clazz instanceof KtjInterface) ClassCompiler.compileInterface((KtjInterface) clazz, name, path);
     }
 
-    boolean classExist(String name){
-        if(isPrimitive(name)) return true;
-
-        try {
-            Class.forName(name);
-            return true;
-        }catch(ClassNotFoundException ignored){}
-
-        return classes.containsKey(name);
+    public static Compiler Instance(){
+        return COMPILER == null ? NewInstance() : COMPILER;
     }
 
-    static String validateClassName(String name){
-        name = name.replace("/", ".");
-        name = name.replace("\\", ".");
-        return name;
-    }
-
-    static String toDesc(String...types){
-        StringBuilder desc = new StringBuilder();
-
-        for(String type:types){
-            switch (type){
-                case "int"     -> desc.append("I");
-                case "short"   -> desc.append("S");
-                case "long"    -> desc.append("J");
-                case "double"  -> desc.append("D");
-                case "float"   -> desc.append("F");
-                case "boolean" -> desc.append("Z");
-                case "char"    -> desc.append("C");
-                case "byte"    -> desc.append("B");
-                case "void"    -> desc.append("V");
-                default        -> desc.append("L").append(type).append(";");
-            }
-        }
-
-        return desc.toString();
-    }
-
-    static boolean isPrimitive(String type){
-        for(String p:PRIMITIVES) if(p.equals(type)) return true;
-
-        return false;
-    }
-
-    public static Compiler getInstance(){
-        if(COMPILER == null) COMPILER = new Compiler();
-
-        return COMPILER;
+    public static Compiler NewInstance(){
+        return (COMPILER = new Compiler());
     }
 }

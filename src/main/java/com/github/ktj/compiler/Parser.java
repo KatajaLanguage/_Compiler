@@ -1,6 +1,7 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.bytecode.AccessFlag;
+import com.github.ktj.compiler.lang.*;
 import com.github.ktj.lang.*;
 
 import java.io.File;
@@ -341,11 +342,29 @@ final class Parser {
     private void parseMethod(Modifier mod, String type, String name){
         if(!mod.isValidForMethod()) err("illegal modifier");
 
-        th.getInBracket().assertNull();
+        TokenHandler parameterList = th.getInBracket();
+        ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();
+
+        while(parameterList.hasNext()){
+            String pType = parameterList.assertToken(Token.Type.IDENTIFIER).s();
+            String pName = parameterList.assertToken(Token.Type.IDENTIFIER).s();
+
+            for(KtjMethod.Parameter p:parameter) if(pName.equals(p.name())) err(STR."Parameter \{pName} is already defined");
+
+            parameter.add(new KtjMethod.Parameter(pType, pName));
+
+            if(parameterList.hasNext()){
+                parameterList.assertToken(",");
+                parameterList.assertHasNext();
+            }
+        }
+
+        StringBuilder desc = new StringBuilder(name);
+        for(KtjMethod.Parameter p:parameter) desc.append(STR."%\{p.type()}");
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(STR."\{name}%", new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses));
+            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses));
         }else {
             th.assertToken("{");
 
@@ -356,7 +375,7 @@ final class Parser {
 
                 if (!th.isEmpty()) {
                     if (th.next().s().equals("}")) {
-                        addMethod(STR."\{name}%", new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses));
+                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses));
                         return;
                     } else {
                         if (!code.isEmpty()) code.append("\n");

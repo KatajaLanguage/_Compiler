@@ -92,7 +92,7 @@ final class ClassCompiler {
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);
 
-        Compiler.getInstance().compiledClasses.add(cf);
+        Compiler.Instance().compiledClasses.add(cf);
     }
 
     static void compileDataClass(KtjDataClass clazz, String name, String path){
@@ -103,18 +103,13 @@ final class ClassCompiler {
         for(String fieldName:clazz.fields.keySet()){
             KtjField field = clazz.fields.get(fieldName);
 
-            if(!Compiler.isPrimitive(field.type)){
-                if (field.uses.get(field.type) == null || !Compiler.getInstance().classExist(field.uses.get(field.type)))
-                    throw new RuntimeException(STR."Unknown type \{field.type} in class \{path}.\{name}");
-            }
-
-            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, Compiler.toDesc(field.type));
+            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, CompilerUtil.toDesc(field.type));
             fInfo.setAccessFlags(field.getAccessFlag());
             cf.addField2(fInfo);
         }
 
         //<init>
-        MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", STR."(\{Compiler.toDesc(Arrays.stream(clazz.fields.values().toArray(new KtjField[0])).map(field -> field.type).toArray(String[]::new))})V");
+        MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", STR."(\{CompilerUtil.toDesc(Arrays.stream(clazz.fields.values().toArray(new KtjField[0])).map(field -> field.type).toArray(String[]::new))})V");
         mInfo.setAccessFlags(AccessFlag.PUBLIC);
         Bytecode code = new Bytecode(cf.getConstPool());
         code.addAload(0);
@@ -123,7 +118,7 @@ final class ClassCompiler {
         int i = 1;
         for(String field:clazz.fields.keySet()){
             code.addAload(0);
-            String desc = Compiler.toDesc(clazz.fields.get(field).type);
+            String desc = CompilerUtil.toDesc(clazz.fields.get(field).type);
             switch(desc){
                 case "J" -> code.addLload(i);
                 case "D" -> code.addDload(i);
@@ -138,7 +133,7 @@ final class ClassCompiler {
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);
 
-        Compiler.getInstance().compiledClasses.add(cf);
+        Compiler.Instance().compiledClasses.add(cf);
     }
 
     static void compileInterface(KtjInterface clazz, String name, String path){
@@ -148,7 +143,7 @@ final class ClassCompiler {
         //Methods
         for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, cf.getConstPool(), clazz.methods.get(desc), desc));
 
-        Compiler.getInstance().compiledClasses.add(cf);
+        Compiler.Instance().compiledClasses.add(cf);
     }
 
     static void compileClass(KtjClass clazz, String name, String path){
@@ -159,12 +154,7 @@ final class ClassCompiler {
         for(String fieldName:clazz.fields.keySet()){
             KtjField field = clazz.fields.get(fieldName);
 
-            if(!Compiler.isPrimitive(field.type)){
-                if (field.uses.get(field.type) == null || !Compiler.getInstance().classExist(field.uses.get(field.type)))
-                    throw new RuntimeException(STR."Unknown type \{field.type} in class \{path}.\{name}");
-            }
-
-            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, Compiler.toDesc(field.type));
+            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, CompilerUtil.toDesc(field.type));
             fInfo.setAccessFlags(field.getAccessFlag());
             cf.addField2(fInfo);
         }
@@ -184,6 +174,6 @@ final class ClassCompiler {
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);
 
-        Compiler.getInstance().compiledClasses.add(cf);
+        Compiler.Instance().compiledClasses.add(cf);
     }
 }

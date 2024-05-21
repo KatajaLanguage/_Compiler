@@ -6,17 +6,17 @@ import java.util.HashMap;
 
 public class KtjClass extends KtjInterface{
 
-    public final HashMap<String, KtjField> fields;
+    public HashMap<String, KtjField> fields;
 
     public KtjClass(Modifier modifier, HashMap<String, String> uses) {
         super(modifier, uses);
         fields = new HashMap<>();
     }
 
-    public boolean addField(String name, KtjField method){
+    public boolean addField(String name, KtjField field){
         if(fields.containsKey(name)) return true;
 
-        fields.put(name, method);
+        fields.put(name, field);
         return false;
     }
 
@@ -24,8 +24,11 @@ public class KtjClass extends KtjInterface{
         return fields.isEmpty() && methods.isEmpty();
     }
 
-    public void validateMethods(){
+    @Override
+    public void validateTypes() {
+        super.validateTypes();
 
+        for(KtjField field:fields.values()) field.validateTypes();
     }
 
     public int getAccessFlag(){

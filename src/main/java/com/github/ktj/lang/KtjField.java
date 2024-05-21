@@ -10,4 +10,9 @@ public class KtjField extends Compilable{
         super(modifier, uses);
         this.type = type;
     }
+
+    @Override
+    public void validateTypes() {
+        type = validateType(type);
+    }
 }

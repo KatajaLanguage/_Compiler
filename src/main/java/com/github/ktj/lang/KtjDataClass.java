@@ -14,6 +14,11 @@ public class KtjDataClass extends Compilable{
         fields = new LinkedHashMap<>();
     }
 
+    @Override
+    public void validateTypes() {
+        for(KtjField field:fields.values()) field.validateTypes();
+    }
+
     public boolean addField(String type, String name){
         if(fields.containsKey(name)) return true;
 

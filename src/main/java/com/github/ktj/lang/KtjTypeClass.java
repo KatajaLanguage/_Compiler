@@ -20,6 +20,11 @@ public final class KtjTypeClass extends Compilable{
     }
 
     @Override
+    public void validateTypes() {
+
+    }
+
+    @Override
     public int getAccessFlag() {
         return super.getAccessFlag() + AccessFlag.ENUM + (modifier.finaly ? 0 : AccessFlag.FINAL);
     }
