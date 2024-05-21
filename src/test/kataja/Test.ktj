@@ -1,3 +1,11 @@
 public interface i{
-    abstract void a()
+
 }
+
+public class c{
+
+}
+
+public data d = []
+
+public type t = a | b

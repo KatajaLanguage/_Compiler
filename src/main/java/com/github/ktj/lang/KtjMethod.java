@@ -20,6 +20,7 @@ public class KtjMethod extends Compilable{
 
     @Override
     public void validateTypes() {
+        if(!returnType.equals("void")) returnType = validateType(returnType);
         Arrays.stream(parameter).forEach(p -> new Parameter(validateType(p.type), p.name));
     }
 

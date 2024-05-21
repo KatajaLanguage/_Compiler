@@ -11,9 +11,7 @@ public class MethodCompiler {
         String name = desc.split("%", 2)[0];
         StringBuilder descBuilder = new StringBuilder("(");
 
-        descBuilder.append(")");
-        if(!Compiler.isPrimitive(method.returnType) && !method.returnType.equals("void")) descBuilder.append(method.uses.get(method.returnType));
-        else descBuilder.append(Compiler.toDesc(method.returnType));
+        descBuilder.append(")").append(CompilerUtil.toDesc(method.returnType));
 
         MethodInfo mInfo = new MethodInfo(cp, name, descBuilder.toString());
         mInfo.setAccessFlags(method.getAccessFlag());
