@@ -3,7 +3,7 @@
 public class c{
     static int i
 
-    init(){
+    c(){
 
     }
 }

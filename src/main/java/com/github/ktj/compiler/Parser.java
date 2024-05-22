@@ -42,7 +42,7 @@ final class Parser {
                     switch (th.next().s()) {
                         case "#" -> {}
                         case "uses" -> parseUse();
-                        default -> parseModifier(true);
+                        default -> parseModifier(null);
                     }
                 }catch(RuntimeException e){
                     if(e.getMessage().contains(" at ")) throw e;
@@ -122,7 +122,7 @@ final class Parser {
         }
     }
 
-    private void parseModifier(boolean allowClasses){
+    private void parseModifier(String clazzName){
         Modifier mod = switch (th.current().s()){
             case "public" -> new Modifier(AccessFlag.ACC_PUBLIC);
             case "private" -> new Modifier(AccessFlag.ACC_PRIVATE);
@@ -160,7 +160,7 @@ final class Parser {
         }
         th.last();
 
-        if(allowClasses) {
+        if(clazzName != null) {
             switch (th.assertToken(Token.Type.IDENTIFIER).s()) {
                 case "class" -> parseClass(mod);
                 case "interface" -> parseInterface(mod);
@@ -168,10 +168,10 @@ final class Parser {
                 case "type" -> parseType(mod);
                 default -> {
                     th.last();
-                    parseMethodAndField(mod);
+                    parseMethodAndField(mod, clazzName);
                 }
             }
-        }else parseMethodAndField(mod);
+        }else parseMethodAndField(mod, null);
     }
 
     private void parseClass(Modifier modifier){
@@ -195,7 +195,7 @@ final class Parser {
                     classes.put(name, clazz);
                     return;
                 } else {
-                    parseModifier(false);
+                    parseModifier(name);
                 }
             }
         }
@@ -226,7 +226,7 @@ final class Parser {
             }
         }
 
-        if(!th.current().equals("]")) err("Expected ']'");
+        if(!th.current().equals(")")) err("Expected ')'");
         th.assertNull();
 
         classes.put(name, clazz);
@@ -271,7 +271,7 @@ final class Parser {
                     th.assertNull();
                     classes.put(name, clazz);
                     return;
-                }else parseModifier(false);
+                }else parseModifier(name);
             }
         }
 
@@ -286,15 +286,16 @@ final class Parser {
         return name;
     }
 
-    private void parseMethodAndField(Modifier mod){
+    private void parseMethodAndField(Modifier mod, String clazzName){
         String type = th.assertToken(Token.Type.IDENTIFIER).s();
         String name = th.hasNext() ? th.next().s() : null;
 
         if(name == null)
             err("illegal argument");
-        else if(name.equals("("))
+        else if(name.equals("(")) {
+            if(type.equals(clazzName)) type = "<init>";
             parseMethod(mod, "void", type);
-        else{
+        }else{
             if(th.hasNext()){
                 th.assertToken("(");
                 parseMethod(mod, type, name);

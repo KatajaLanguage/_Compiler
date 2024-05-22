@@ -11,7 +11,6 @@ public class MethodCompiler {
         String name = desc.split("%", 2)[0];
         StringBuilder descBuilder = new StringBuilder("(");
 
-        if(name.equals("init")) name = "<inti>";
         descBuilder.append(")").append(CompilerUtil.toDesc(method.returnType));
 
         MethodInfo mInfo = new MethodInfo(cp, name, descBuilder.toString());

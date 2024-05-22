@@ -163,7 +163,7 @@ final class ClassCompiler {
         for(String desc:clazz.methods.keySet()){
 
         }
-
+/*
         //<init>
         MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", "()V");
         mInfo.setAccessFlags(AccessFlag.PUBLIC);
@@ -173,7 +173,7 @@ final class ClassCompiler {
         code.add(Opcode.RETURN);
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);
-
+*/
         Compiler.Instance().compiledClasses.add(cf);
     }
 }
