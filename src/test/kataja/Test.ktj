@@ -1,11 +1,9 @@
-public interface i{
 
-}
 
 public class c{
+    static int i
 
+    init(){
+
+    }
 }
-
-public data d = []
-
-public type t = a | b

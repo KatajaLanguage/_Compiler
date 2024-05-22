@@ -164,8 +164,6 @@ final class Parser {
             switch (th.assertToken(Token.Type.IDENTIFIER).s()) {
                 case "class" -> parseClass(mod);
                 case "interface" -> parseInterface(mod);
-                case "record" -> parseRecord(mod);
-                case "enum" -> parseEnum(mod);
                 case "data" -> parseData(mod);
                 case "type" -> parseType(mod);
                 default -> {
@@ -205,14 +203,6 @@ final class Parser {
         err("Expected '}'");
     }
 
-    private void parseRecord(Modifier modifier){
-        err("illegal argument");
-    }
-
-    private void parseEnum(Modifier modifier){
-        err("illegal argument");
-    }
-
     private void parseData(Modifier modifier){
         if(!modifier.isValidForData()) err("illegal modifier");
 
@@ -220,9 +210,9 @@ final class Parser {
         KtjDataClass clazz = new KtjDataClass(modifier, uses);
 
         th.assertToken("=");
-        th.assertToken("[");
+        th.assertToken("(");
 
-        if(!th.next().equals("]")) {
+        if(!th.next().equals(")")) {
             th.last();
 
             while (th.hasNext()) {
@@ -230,7 +220,7 @@ final class Parser {
                     err("field is already defined");
 
                 if (th.hasNext()){
-                    if(th.assertToken("]", ",").equals("]")) break;
+                    if(th.assertToken(")", ",").equals(")")) break;
                     th.assertHasNext();
                 }
             }
@@ -336,7 +326,7 @@ final class Parser {
             String pType = parameterList.assertToken(Token.Type.IDENTIFIER).s();
             String pName = parameterList.assertToken(Token.Type.IDENTIFIER).s();
 
-            for(KtjMethod.Parameter p:parameter) if(pName.equals(p.name())) err(STR."Parameter \{pName} is already defined");
+            for(KtjMethod.Parameter p:parameter) if(pName.equals(p.name())) err(STR."Method \{pName} is already defined");
 
             parameter.add(new KtjMethod.Parameter(pType, pName));
 
