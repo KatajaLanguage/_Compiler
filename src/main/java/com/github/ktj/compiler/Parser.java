@@ -28,7 +28,7 @@ final class Parser {
             classes = new HashMap<>();
             uses = new HashMap<>();
             sc = new Scanner(file);
-            statik = new KtjClass(new Modifier(AccessFlag.ACC_PUBLIC), uses);
+            statik = new KtjClass(new Modifier(AccessFlag.ACC_PUBLIC), uses, STR."\{path}\\\{name}", -1);
             line = 0;
         }catch(FileNotFoundException ignored){
             throw new IllegalArgumentException(STR."Unable to find \{file.getPath()}");
@@ -182,7 +182,7 @@ final class Parser {
         th.assertToken("{");
         th.assertNull();
 
-        KtjClass clazz = new KtjClass(modifier, uses);
+        KtjClass clazz = new KtjClass(modifier, uses, STR."\{path}\\\{name}", line);
         current = clazz;
 
         while (sc.hasNextLine()){
@@ -207,7 +207,7 @@ final class Parser {
         if(!modifier.isValidForData()) err("illegal modifier");
 
         String name = parseName();
-        KtjDataClass clazz = new KtjDataClass(modifier, uses);
+        KtjDataClass clazz = new KtjDataClass(modifier, uses, STR."\{path}\\\{name}", line);
 
         th.assertToken("=");
         th.assertToken("(");
@@ -216,7 +216,7 @@ final class Parser {
             th.last();
 
             while (th.hasNext()) {
-                if (clazz.addField(th.assertToken(Token.Type.IDENTIFIER).s(), th.assertToken(Token.Type.IDENTIFIER).s()))
+                if (clazz.addField(th.assertToken(Token.Type.IDENTIFIER).s(), th.assertToken(Token.Type.IDENTIFIER).s(), line))
                     err("field is already defined");
 
                 if (th.hasNext()){
@@ -249,7 +249,7 @@ final class Parser {
             if(!types.contains(type)) types.add(type);
         }
 
-        classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0]), uses));
+        classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0]), uses, STR."\{path}\\\{name}", line));
     }
 
     private void parseInterface(Modifier modifier){
@@ -259,7 +259,7 @@ final class Parser {
 
         th.assertToken("{");
 
-        KtjInterface clazz = new KtjInterface(modifier, uses);
+        KtjInterface clazz = new KtjInterface(modifier, uses, STR."\{path}\\\{name}", line);
         current = clazz;
 
         while (sc.hasNextLine()){
@@ -342,7 +342,7 @@ final class Parser {
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses));
+            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
         }else {
             th.assertToken("{");
 
@@ -353,7 +353,7 @@ final class Parser {
 
                 if (!th.isEmpty()) {
                     if (th.next().s().equals("}")) {
-                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses));
+                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
                         return;
                     } else {
                         if (!code.isEmpty()) code.append("\n");
