@@ -10,10 +10,14 @@ public abstract class Compilable {
 
     public final Modifier modifier;
     public final HashMap<String, String> uses;
+    public final String file;
+    public final int line;
 
-    public Compilable(Modifier modifier, HashMap<String, String> uses){
+    public Compilable(Modifier modifier, HashMap<String, String> uses, String file, int line){
         this.modifier = modifier;
         this.uses = uses;
+        this.file = file;
+        this.line = line;
     }
 
     public String getType(String type){
@@ -25,7 +29,7 @@ public abstract class Compilable {
     protected String validateType(String type) throws RuntimeException{
         if(CompilerUtil.isPrimitive(type)) return type;
 
-        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException(STR."Unknown Type \{type}");
+        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException(STR."Unknown Type \{type} at \{file}:\{line}");
 
         return uses.get(type);
     }

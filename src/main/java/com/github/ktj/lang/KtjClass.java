@@ -8,8 +8,8 @@ public class KtjClass extends KtjInterface{
 
     public HashMap<String, KtjField> fields;
 
-    public KtjClass(Modifier modifier, HashMap<String, String> uses) {
-        super(modifier, uses);
+    public KtjClass(Modifier modifier, HashMap<String, String> uses, String file, int line){
+        super(modifier, uses, file, line);
         fields = new HashMap<>();
     }
 

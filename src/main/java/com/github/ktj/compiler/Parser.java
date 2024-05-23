@@ -160,7 +160,7 @@ final class Parser {
         }
         th.last();
 
-        if(clazzName != null) {
+        if(clazzName == null) {
             switch (th.assertToken(Token.Type.IDENTIFIER).s()) {
                 case "class" -> parseClass(mod);
                 case "interface" -> parseInterface(mod);
@@ -168,10 +168,10 @@ final class Parser {
                 case "type" -> parseType(mod);
                 default -> {
                     th.last();
-                    parseMethodAndField(mod, clazzName);
+                    parseMethodAndField(mod, null);
                 }
             }
-        }else parseMethodAndField(mod, null);
+        }else parseMethodAndField(mod, clazzName);
     }
 
     private void parseClass(Modifier modifier){
@@ -308,12 +308,12 @@ final class Parser {
 
         if(current == null){
             mod.statik = true;
-            if(statik.addField(name, new KtjField(mod, type, uses))) err("field is already defined");
+            if(statik.addField(name, new KtjField(mod, type, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
             return;
         }
 
         if(current instanceof KtjClass){
-            if(((KtjClass) current).addField(name, new KtjField(mod, type, uses))) err("field is already defined");
+            if(((KtjClass) current).addField(name, new KtjField(mod, type, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
         }
     }
 

@@ -38,7 +38,7 @@ final class ClassCompiler {
         mInfo = new MethodInfo(cf.getConstPool(), "valueOf", STR."(Ljava/lang/String;)L\{name};");
         mInfo.setAccessFlags(0x9);
         code = new Bytecode(cf.getConstPool());
-        code.addLdc(STR."L\{name};.class");
+        code.addLdc(STR."L\{name};.class"); //TODO Check
         code.addAload(0);
         code.addInvokestatic("java/lang/Enum", "valueOf", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;");
         code.addCheckcast(name);
@@ -160,9 +160,7 @@ final class ClassCompiler {
         }
 
         //Methods
-        for(String desc:clazz.methods.keySet()){
-
-        }
+        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, cf.getConstPool(), clazz.methods.get(desc), desc));
 /*
         //<init>
         MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", "()V");

@@ -8,8 +8,8 @@ public final class KtjTypeClass extends Compilable{
 
     public final String[] values;
 
-    public KtjTypeClass(Modifier modifier, String[] values, HashMap<String, String> uses) {
-        super(modifier, uses);
+    public KtjTypeClass(Modifier modifier, String[] values, HashMap<String, String> uses, String file, int line){
+        super(modifier, uses, file, line);
         this.values = values;
     }
 

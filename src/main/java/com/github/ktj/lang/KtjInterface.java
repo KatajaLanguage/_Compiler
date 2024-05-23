@@ -8,8 +8,8 @@ public class KtjInterface extends Compilable{
 
     public HashMap<String, KtjMethod> methods;
 
-    public KtjInterface(Modifier modifier, HashMap<String, String> uses) {
-        super(modifier, uses);
+    public KtjInterface(Modifier modifier, HashMap<String, String> uses, String file, int line){
+        super(modifier, uses, file, line);
         methods = new HashMap<>();
     }
 

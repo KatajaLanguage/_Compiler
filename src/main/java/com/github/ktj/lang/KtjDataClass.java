@@ -9,8 +9,8 @@ public class KtjDataClass extends Compilable{
 
     public final LinkedHashMap<String, KtjField> fields;
 
-    public KtjDataClass(Modifier modifier, HashMap<String, String> uses){
-        super(modifier, uses);
+    public KtjDataClass(Modifier modifier, HashMap<String, String> uses, String file, int line){
+        super(modifier, uses, file, line);
         fields = new LinkedHashMap<>();
     }
 
@@ -19,10 +19,10 @@ public class KtjDataClass extends Compilable{
         for(KtjField field:fields.values()) field.validateTypes();
     }
 
-    public boolean addField(String type, String name){
+    public boolean addField(String type, String name, int line){
         if(fields.containsKey(name)) return true;
 
-        fields.put(name, new KtjField(new Modifier(AccessFlag.ACC_PUBLIC), type, uses));
+        fields.put(name, new KtjField(new Modifier(AccessFlag.ACC_PUBLIC), type, uses, file, line));
         return false;
     }
 }

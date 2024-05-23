@@ -6,8 +6,8 @@ public class KtjField extends Compilable{
 
     public String type;
 
-    public KtjField(Modifier modifier, String type, HashMap<String, String> uses) {
-        super(modifier, uses);
+    public KtjField(Modifier modifier, String type, HashMap<String, String> uses, String file, int line){
+        super(modifier, uses, file, line);
         this.type = type;
     }
 
