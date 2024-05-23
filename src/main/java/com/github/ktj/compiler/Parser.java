@@ -357,7 +357,12 @@ final class Parser {
                         return;
                     } else {
                         if (!code.isEmpty()) code.append("\n");
-                        code.append(th.toStringNonMarked());
+                        if(th.toStringNonMarked().contains(";")){
+                            for(String statement:th.toStringNonMarked().split(";")){
+                                if (!code.toString().endsWith("\n")) code.append("\n");
+                                code.append(statement);
+                            }
+                        }else code.append(th.toStringNonMarked());
                     }
                 }
             }
