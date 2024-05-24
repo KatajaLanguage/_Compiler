@@ -11,7 +11,7 @@ public abstract class Compilable {
     public final Modifier modifier;
     public final HashMap<String, String> uses;
     public final String file;
-    public final int line;
+    public int line;
 
     public Compilable(Modifier modifier, HashMap<String, String> uses, String file, int line){
         this.modifier = modifier;

@@ -46,7 +46,14 @@ final class Parser {
                     }
                 }catch(RuntimeException e){
                     if(e.getMessage().contains(" at ")) throw e;
-                    else err(e.getMessage());
+                    else{
+                        try {
+                            err(e.getMessage());
+                        }catch(RuntimeException err){
+                            err.setStackTrace(e.getStackTrace());
+                            throw err;
+                        }
+                    }
                 }
             }
         }
@@ -347,15 +354,24 @@ final class Parser {
             th.assertToken("{");
 
             StringBuilder code = new StringBuilder();
+            int i = 1;
 
             while (sc.hasNextLine()) {
                 nextLine();
 
-                if (!th.isEmpty()) code.append("\n");
+                if (th.isEmpty()) code.append("\n");
                 else if (th.next().s().equals("}")) {
-                    addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
-                    return;
-                } else {
+                    i--;
+
+                    if(i > 0){
+                        if (!code.isEmpty()) code.append("\n");
+                        else code.append(th.toStringNonMarked());
+                    }else {
+                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
+                        return;
+                    }
+                }else{
+                    if(Set.of("if", "while").contains(th.current().s())) i++;
                     if (!code.isEmpty()) code.append("\n");
                     else code.append(th.toStringNonMarked());
                 }

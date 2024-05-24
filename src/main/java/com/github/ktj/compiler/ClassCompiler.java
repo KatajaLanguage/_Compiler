@@ -141,7 +141,7 @@ final class ClassCompiler {
         cf.setAccessFlags(clazz.getAccessFlag());
 
         //Methods
-        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, cf.getConstPool(), clazz.methods.get(desc), desc));
+        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, STR."\{path}.\{name}", cf.getConstPool(), clazz.methods.get(desc), desc));
 
         Compiler.Instance().compiledClasses.add(cf);
     }
@@ -160,7 +160,7 @@ final class ClassCompiler {
         }
 
         //Methods
-        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, cf.getConstPool(), clazz.methods.get(desc), desc));
+        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, STR."\{path}.\{name}", cf.getConstPool(), clazz.methods.get(desc), desc));
 /*
         //<init>
         MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", "()V");

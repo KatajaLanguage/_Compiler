@@ -1,9 +1,8 @@
 
 
 public class c{
-    static int i
 
-    c(){
+    public void test(){
 
     }
 }

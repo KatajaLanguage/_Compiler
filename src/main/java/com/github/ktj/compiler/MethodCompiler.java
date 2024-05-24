@@ -8,7 +8,7 @@ import javassist.bytecode.MethodInfo;
 
 final class MethodCompiler {
 
-    static MethodInfo compileMethod(KtjInterface clazz, ConstPool cp, KtjMethod method, String desc){
+    static MethodInfo compileMethod(KtjInterface clazz, String clazzName, ConstPool cp, KtjMethod method, String desc){
         String name = desc.split("%", 2)[0];
         StringBuilder descBuilder = new StringBuilder("(");
 
@@ -24,6 +24,8 @@ final class MethodCompiler {
                 code.addAload(0);
                 code.addInvokespecial("java/lang/Object", "<init>", "()V");
             }
+
+            new SyntacticParser().parseAst(clazz, clazzName, method, method.code);
 
             if(method.returnType.equals("void")) code.addReturn(null);
 
