@@ -351,19 +351,13 @@ final class Parser {
             while (sc.hasNextLine()) {
                 nextLine();
 
-                if (!th.isEmpty()) {
-                    if (th.next().s().equals("}")) {
-                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
-                        return;
-                    } else {
-                        if (!code.isEmpty()) code.append("\n");
-                        if(th.toStringNonMarked().contains(";")){
-                            for(String statement:th.toStringNonMarked().split(";")){
-                                if (!code.toString().endsWith("\n")) code.append("\n");
-                                code.append(statement);
-                            }
-                        }else code.append(th.toStringNonMarked());
-                    }
+                if (!th.isEmpty()) code.append("\n");
+                else if (th.next().s().equals("}")) {
+                    addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
+                    return;
+                } else {
+                    if (!code.isEmpty()) code.append("\n");
+                    else code.append(th.toStringNonMarked());
                 }
             }
 
