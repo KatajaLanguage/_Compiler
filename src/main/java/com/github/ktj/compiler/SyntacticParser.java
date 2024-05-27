@@ -9,7 +9,7 @@ import java.util.Set;
 
 final class SyntacticParser {
 
-    private final class Scope{
+    private static final class Scope{
         public final Scope last;
         private final HashMap<String, String> vars = new HashMap<>();
 
@@ -35,8 +35,8 @@ final class SyntacticParser {
         }
     }
 
-    private final Set<String> BOOL_OPERATORS = Set.of("==", "!=", "|", "&", ">", "<", ">=", "<=");
-    private final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
+    static final Set<String> BOOL_OPERATORS = Set.of("==", "!=", "||", "&&", ">", "<", ">=", "<=");
+    static final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
 
     private TokenHandler th;
     private Compilable clazz;
@@ -72,13 +72,7 @@ final class SyntacticParser {
         ArrayList<AST> ast = new ArrayList<>();
         nextLine();
 
-        if(!th.isEmpty()) {
-            switch (th.assertToken(Token.Type.IDENTIFIER).s()) {
-                case "if" -> ast.add(parseIf());
-                case "while" -> ast.add(parseWhile());
-                default -> ast.addAll(parseNextLine());
-            }
-        }
+        if(!th.isEmpty()) ast.addAll(parseNextLine());
 
         return ast;
     }
@@ -161,10 +155,29 @@ final class SyntacticParser {
         return statement;
     }
 
+    private AST.Return parseReturn(){
+        AST.Return ast = new AST.Return();
+        ast.calc = parseCalc();
+        ast.type = ast.calc.type;
+
+        if(!ast.type.equals(method.returnType)) throw new RuntimeException(STR."Expected type \{method.returnType} got \{ast.type}");
+
+        return ast;
+    }
+
     private ArrayList<AST> parseNextLine(){
         ArrayList<AST> ast = new ArrayList<>();
         while (th.hasNext()) ast.add(parseStatement());
         return ast;
+    }
+
+    private AST parseStatement(){
+        return switch(th.next().s()){
+            case "if" -> parseIf();
+            case "while" -> parseWhile();
+            case "return" -> parseReturn();
+            default -> null;
+        };
     }
 
     private AST.Calc parseCalc(){
@@ -183,10 +196,6 @@ final class SyntacticParser {
         return calc;
     }
 
-    private AST parseStatement(){
-        return null;
-    }
-
     private AST.Value parseValue(){
         AST.Value value = new AST.Value();
 
@@ -199,7 +208,7 @@ final class SyntacticParser {
                 if(th.current().equals("true") || th.current().equals("false")){
                     value.token = th.current();
                     value.type = "boolean";
-                }
+                }else throw new RuntimeException("illegal argument");
             }
             default -> throw new RuntimeException("illegal argument");
         }
