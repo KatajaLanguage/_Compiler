@@ -52,11 +52,49 @@ final class SyntacticParser {
 
         ArrayList<AST> ast = new ArrayList<>();
 
-        while(hasNext()) {
-
-        }
+        while(hasNext()) ast.add(parseNextLine());
 
         return ast.toArray(new AST[0]);
+    }
+
+    private AST parseNextLine(){
+        nextLine();
+
+        return parseVarAssignment();
+    }
+
+    private AST.VarAssignment parseVarAssignment(){
+        AST.VarAssignment ast = new AST.VarAssignment();
+
+        ast.type = th.assertToken(Token.Type.IDENTIFIER).s();
+        ast.name = th.assertToken(Token.Type.IDENTIFIER).s();
+        th.assertToken("=");
+        ast.calc = parseCalc();
+
+        return ast;
+    }
+
+    private AST.Calc parseCalc(){
+        AST.Calc ast = new AST.Calc();
+
+        ast.value = parseValue();
+        ast.type = ast.value.type;
+
+        return ast;
+    }
+
+    private AST.Value parseValue(){
+        AST.Value ast = new AST.Value();
+
+        switch(th.next().t()){
+            case CHAR, SHORT, INTEGER, LONG, DOUBLE, FLOAT, STRING -> {
+                ast.token = th.current();
+                ast.type = th.current().t().toString();
+            }
+            default -> throw new RuntimeException("illegal argument");
+        }
+
+        return ast;
     }
 
     private void nextLine(){

@@ -100,7 +100,7 @@ final class Lexer {
 
                 i++;
 
-                tokens.add(new Token(value.append("\"").toString(), Token.Type.STRING));
+                tokens.add(new Token(value.toString(), Token.Type.STRING));
 
             }else if(chars[i] == '\''){
 
