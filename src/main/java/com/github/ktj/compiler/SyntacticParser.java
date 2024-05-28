@@ -99,7 +99,8 @@ final class SyntacticParser {
 
     private void nextLine(){
         clazz.line++;
-        th = Lexer.lex(code[index++]);
+        index++;
+        th = Lexer.lex(code[index]);
     }
 
     private boolean hasNext(){

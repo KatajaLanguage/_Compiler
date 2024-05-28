@@ -1,2 +1,3 @@
 public test(){
+    float i = 5.0f
 }

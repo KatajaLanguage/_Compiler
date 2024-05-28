@@ -1,12 +1,10 @@
 package com.github.ktj.compiler;
 
-import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
 import javassist.bytecode.Bytecode;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.MethodInfo;
-import javassist.bytecode.Opcode;
 
 import java.util.Set;
 
@@ -31,6 +29,95 @@ final class MethodCompiler {
         this.clazzName = clazzName;
         os = OperandStack.forMethod(method);
         AST[] ast = parser.parseAst(clazz, clazzName, method, ktjCode);
+
+        for(int i = 0;i < ast.length;i++) compileAST(ast[i]);
+    }
+
+    private void compileAST(AST ast){
+        if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
+    }
+
+    private void compileVarAssignment(AST.VarAssignment ast){
+        compileValue(ast.calc.value);
+        compileStore(ast.name, ast.type);
+    }
+
+    private void compileValue(AST.Value ast){
+        switch (ast.token.t().toString()){
+            case "int", "short", "byte", "char" -> {
+                int intValue;
+                if(ast.type.equals("char"))
+                    intValue = ast.token.s().toCharArray()[1];
+                else
+                    intValue = Integer.parseInt(ast.token.s());
+
+                if(intValue < 6 && intValue >= 0)
+                    code.addIconst(intValue);
+                else
+                    code.add(0x10 ,intValue); //Bipush
+
+                os.push(1);
+            }
+            case "boolean" -> {
+                code.addIconst(ast.token.s().equals("true") ? 1 : 0);
+                os.push(1);
+            }
+            case "float" -> {
+                int index = 0;
+                float floatValue = Float.parseFloat(ast.token.s());
+                cp.addFloatInfo(floatValue);
+                while(index < cp.getSize()){
+                    try{
+                        if(cp.getFloatInfo(index) == floatValue) break;
+                        else index++;
+                    }catch(Exception ignored){index++;}
+                }
+                code.addLdc(index);
+                os.push(1);
+            }
+            case "double" -> {
+                int index = 0;
+                double doubleValue = Double.parseDouble(ast.token.s());
+                cp.addDoubleInfo(doubleValue);
+                while(index < cp.getSize()){
+                    try{
+                        if(cp.getDoubleInfo(index) == doubleValue) break;
+                        else index++;
+                    }catch(Exception ignored){index++;}
+                }
+                code.addLdc(index);
+                os.push(2);
+            }
+            case "long" -> {
+                int index = 0;
+                long longValue = Long.parseLong(ast.token.s());
+                cp.addLongInfo(longValue);
+                while(index < cp.getSize()){
+                    try{
+                        if(cp.getLongInfo(index) == longValue) break;
+                        else index++;
+                    }catch(Exception ignored){index++;}
+                }
+                code.addLdc(index);
+                os.push(2);
+            }
+        }
+    }
+
+    private void compileStore(String name, String type){
+        int where = os.get(name);
+
+        if(where == -1) {
+            os.pop();
+            where = os.push(name, Set.of("double", "long").contains(type) ? 2 : 1);
+        }
+
+        switch (type) {
+            case "int", "boolean", "char", "byte", "short" -> code.addIstore(where);
+            case "float" -> code.addFstore(where);
+            case "double" -> code.addDstore(where);
+            case "long" -> code.addLstore(where);
+        }
     }
 
     static MethodCompiler getInstance(){
