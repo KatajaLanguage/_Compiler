@@ -35,9 +35,6 @@ final class SyntacticParser {
         }
     }
 
-    static final Set<String> BOOL_OPERATORS = Set.of("==", "!=", "||", "&&", ">", "<", ">=", "<=");
-    static final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
-
     private TokenHandler th;
     private Compilable clazz;
     private KtjMethod method;
@@ -46,6 +43,8 @@ final class SyntacticParser {
     private int index;
 
     AST[] parseAst(Compilable clazz, String clazzName, KtjMethod method, String code){
+        if(code.trim().isEmpty()) return new AST[0];
+
         this.clazz = clazz;
         this.method = method;
         scope = new Scope(clazzName);
@@ -167,12 +166,15 @@ final class SyntacticParser {
 
     private ArrayList<AST> parseNextLine(){
         ArrayList<AST> ast = new ArrayList<>();
-        while (th.hasNext()) ast.add(parseStatement());
+        while (th.hasNext()){
+            ast.add(parseStatement());
+            if(th.hasNext()) th.assertToken(";");
+        }
         return ast;
     }
 
     private AST parseStatement(){
-        return switch(th.next().s()){
+        return switch(th.assertToken(Token.Type.IDENTIFIER).s()){
             case "if" -> parseIf();
             case "while" -> parseWhile();
             case "return" -> parseReturn();
@@ -191,6 +193,39 @@ final class SyntacticParser {
             calc = new AST.Calc();
             calc.value = parseValue();
             calc.type = calc.value.type;
+        }
+
+        while(th.hasNext()){
+            if(th.next().t() != Token.Type.OPERATOR || th.current().equals("->")){
+                th.last();
+                return calc;
+            }
+
+            calc.setRight();
+            calc.opp = th.current().s();
+            th.assertHasNext();
+
+            if(th.next().equals("(")){
+                calc.left = parseCalc();
+                th.assertToken(")");
+
+                String returnType = CompilerUtil.getOperatorReturnType(calc.right.type, calc.left.type, calc.opp);
+
+                if(returnType == null)
+                    throw new RuntimeException(STR."Operator \{calc.opp} is not defined for \{calc.left.type} and \{calc.value.type}");
+
+                calc.type = returnType;
+            }else{
+                th.last();
+                calc.value = parseValue();
+
+                String returnType = CompilerUtil.getOperatorReturnType(calc.right.type, calc.value.type, calc.opp);
+
+                if(returnType == null)
+                    throw new RuntimeException(STR."Operator \{calc.opp} is not defined for \{calc.right.type} and \{calc.value.type}");
+
+                calc.type = returnType;
+            }
         }
 
         return calc;

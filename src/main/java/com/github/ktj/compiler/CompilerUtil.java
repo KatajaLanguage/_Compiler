@@ -1,8 +1,44 @@
 package com.github.ktj.compiler;
 
+import java.util.Set;
+
 public class CompilerUtil {
 
     public static final String[] PRIMITIVES = new String[]{"int", "double", "float", "short", "long", "boolean", "char", "byte"};
+    public static final Set<String> BOOL_OPERATORS = Set.of("==", "!=", "||", "&&", ">", "<", ">=", "<=");
+    public static final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
+
+    public static String operatorToIdentifier(String operator){
+        return switch (operator){
+            case "==" -> "equals";
+            case "&&" -> "and";
+            case "||" -> "or";
+            default -> {
+                StringBuilder result = new StringBuilder();
+
+                for(char c:operator.toCharArray()){
+                    result.append(switch(c){
+                        case '=' -> "equals";
+                        case '+' -> "add";
+                        case '-' -> "subtract";
+                        case '*' -> "multiply";
+                        case '/' -> "divide";
+                        case '<' -> "lessThan";
+                        case '>' -> "greaterThan";
+                        case '!' -> "not";
+                        case '%' -> "mod";
+                        case '&' -> "and";
+                        case '|' -> "or";
+                        case '^' -> "exponentiation";
+                        case '~' -> "proportional";
+                        default -> throw new RuntimeException("internal Compiler error");
+                    });
+                }
+
+                yield result.toString();
+            }
+        };
+    }
 
     public static String validateClassName(String name){
         name = name.replace("/", ".");
@@ -40,6 +76,20 @@ public class CompilerUtil {
         }catch(ClassNotFoundException ignored){}
 
         return Compiler.Instance().classes.containsKey(name);
+    }
+
+    public static String getOperatorReturnType(String type1, String type2, String operator){
+        if(isPrimitive(type1)){
+            if(!type1.equals(type2))
+                return null;
+
+            if(BOOL_OPERATORS.contains(operator))
+                return "boolean";
+
+            if(NUMBER_OPERATORS.contains(operator))
+                return type1.equals("boolean") ? null : type1;
+        }
+        return null;
     }
 
     public static boolean isPrimitive(String type){

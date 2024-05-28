@@ -126,6 +126,6 @@ final class Lexer {
     }
 
     private static boolean isOperator(char c){
-        return String.valueOf(c).matches("[-+*/!=<>%&|^]");
+        return String.valueOf(c).matches("[-+*/!=<>%&|^~]");
     }
 }

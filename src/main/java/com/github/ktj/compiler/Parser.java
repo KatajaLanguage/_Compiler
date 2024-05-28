@@ -41,7 +41,7 @@ final class Parser {
                 try {
                     switch (th.next().s()) {
                         case "#" -> {}
-                        case "uses" -> parseUse();
+                        case "use" -> parseUse();
                         default -> parseModifier(null);
                     }
                 }catch(RuntimeException e){

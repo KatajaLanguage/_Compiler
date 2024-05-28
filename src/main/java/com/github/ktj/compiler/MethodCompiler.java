@@ -203,7 +203,7 @@ final class MethodCompiler {
                         }
                     }
                     os.pop();
-                    if(SyntacticParser.BOOL_OPERATORS.contains(calc.opp)) {
+                    if(CompilerUtil.BOOL_OPERATORS.contains(calc.opp)) {
                         os.pop();
                         os.push(1);
                     }
@@ -220,7 +220,7 @@ final class MethodCompiler {
                         }
                     }
                     os.pop();
-                    if(SyntacticParser.BOOL_OPERATORS.contains(calc.opp)) {
+                    if(CompilerUtil.BOOL_OPERATORS.contains(calc.opp)) {
                         os.pop();
                         os.push(1);
                     }
@@ -237,7 +237,7 @@ final class MethodCompiler {
                         }
                     }
                     os.pop();
-                    if(SyntacticParser.BOOL_OPERATORS.contains(calc.opp)) {
+                    if(CompilerUtil.BOOL_OPERATORS.contains(calc.opp)) {
                         os.pop();
                         os.push(1);
                     }
@@ -254,7 +254,7 @@ final class MethodCompiler {
                         }
                     }
                     os.pop();
-                    if(SyntacticParser.BOOL_OPERATORS.contains(calc.opp)) {
+                    if(CompilerUtil.BOOL_OPERATORS.contains(calc.opp)) {
                         os.pop();
                         os.push(1);
                     }
