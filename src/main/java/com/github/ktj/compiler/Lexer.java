@@ -18,7 +18,7 @@ final class Lexer {
 
                 while (i < chars.length && chars[i] != '#')
                     i++;
-            }else if(Character.isDigit(chars[i]) || (chars[i] == '-' && chars.length >= i + 1 && Character.isDigit(chars[i+1]))){
+            }else if(Character.isDigit(chars[i])){
 
                 value = new StringBuilder();
                 value.append(chars[i]);
