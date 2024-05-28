@@ -148,7 +148,115 @@ final class MethodCompiler {
     }
 
     private void compileCalc(AST.Calc ast){
+        if(ast.right == null) {
+            if(ast.value.call != null)
+                compileCall(ast.value.call);
+            else
+                addValue(ast.value);
+        }else{
+            if(ast.opp.equals("=") || ast.opp.equals("#")){
+                compileCalc(ast.left, code, cp, os);
+                if(ast.opp.equals("=")) code.add(Opcode.DUP);
+                compileStore(ast.right.value.call.call, ast.type, ast.right.value.call.clazz);
+                return;
+            }
 
+            compileCalc(ast.right, code, cp, os);
+
+            if(ast.left == null) {
+                if(ast.value.call != null)
+                    compileCall(ast.value.call);
+                else
+                    addValue(ast.value);
+            }else
+                compileCalc(ast.left, code, cp, os);
+
+            switch(ast.type){
+                case "int", "char", "byte", "short", "boolean" -> {
+                    switch (ast.opp){
+                        case "+" -> code.add(Opcode.IADD);
+                        case "-" -> code.add(Opcode.ISUB);
+                        case "*" -> code.add(Opcode.IMUL);
+                        case "/" -> code.add(Opcode.IDIV);
+                        case "==", "!=", "<", "<=", ">", ">=" -> {
+                            switch(ast.opp) {
+                                case "==" -> code.addOpcode(Opcode.IF_ICMPEQ);
+                                case "!=" -> code.addOpcode(Opcode.IF_ICMPNE);
+                                case "<" -> code.addOpcode(Opcode.IF_ICMPLT);
+                                case "<=" -> code.addOpcode(Opcode.IF_ICMPLE);
+                                case ">" -> code.addOpcode(Opcode.IF_ICMPGT);
+                                case ">=" -> code.addOpcode(Opcode.IF_ICMPGE);
+                            }
+                            int branchLocation = code.getSize();
+                            code.addIndex(0);
+                            code.addIconst(0);
+                            code.addOpcode(Opcode.GOTO);
+                            int endLocation = code.getSize();
+                            code.addIndex(0);
+                            code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
+                            code.addIconst(1);
+                            code.write16bit(endLocation, code.getSize() - endLocation + 1);
+                        }
+                    }
+                    os.pop();
+                    if(CompilerUtil.BOOL_OPERATORS.contains(ast.opp)) {
+                        os.pop();
+                        os.push(1);
+                    }
+                }
+                case "double" -> {
+                    switch (ast.opp){
+                        case "+" -> code.add(Opcode.DADD);
+                        case "-" -> code.add(Opcode.DSUB);
+                        case "*" -> code.add(Opcode.DMUL);
+                        case "/" -> code.add(Opcode.DDIV);
+                        case "==", "!=", "<=", "<", ">=", ">" -> {
+                            code.add(Opcode.DCMPG);
+                            compileBoolOp(ast);
+                        }
+                    }
+                    os.pop();
+                    if(CompilerUtil.BOOL_OPERATORS.contains(ast.opp)) {
+                        os.pop();
+                        os.push(1);
+                    }
+                }
+                case "float" -> {
+                    switch (ast.opp){
+                        case "+" -> code.add(Opcode.FADD);
+                        case "-" -> code.add(Opcode.FSUB);
+                        case "*" -> code.add(Opcode.FMUL);
+                        case "/" -> code.add(Opcode.FDIV);
+                        case "==", "!=", "<=", "<", ">=", ">" -> {
+                            code.add(Opcode.FCMPG);
+                            compileBoolOp(ast);
+                        }
+                    }
+                    os.pop();
+                    if(CompilerUtil.BOOL_OPERATORS.contains(ast.opp)) {
+                        os.pop();
+                        os.push(1);
+                    }
+                }
+                case "long" -> {
+                    switch (ast.opp){
+                        case "+" -> code.add(Opcode.LADD);
+                        case "-" -> code.add(Opcode.LSUB);
+                        case "*" -> code.add(Opcode.LMUL);
+                        case "/" -> code.add(Opcode.LDIV);
+                        case "==", "!=", "<=", "<", ">=", ">" -> {
+                            code.add(Opcode.LCMP);
+                            compileBoolOp(ast);
+                        }
+                    }
+                    os.pop();
+                    if(CompilerUtil.BOOL_OPERATORS.contains(ast.opp)) {
+                        os.pop();
+                        os.push(1);
+                    }
+                }
+            }
+        }
     }
 
     private void compileCalc(AST.Calc calc, Bytecode code, ConstPool cp, OperandStack os){

@@ -5,7 +5,6 @@ import com.github.ktj.lang.KtjMethod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
 
 final class SyntacticParser {
 
@@ -178,8 +177,28 @@ final class SyntacticParser {
             case "if" -> parseIf();
             case "while" -> parseWhile();
             case "return" -> parseReturn();
-            default -> null;
+            default -> parseVarAssignment();
         };
+    }
+
+    private AST.VarAssignment parseVarAssignment(){
+        AST.VarAssignment ast = new AST.VarAssignment();
+
+        String type = th.current().s();
+
+        if(th.assertToken("=", Token.Type.IDENTIFIER).equals("=")){
+            ast.name = type;
+            ast.calc = parseCalc();
+            ast.type = ast.calc.type;
+        }else{
+            ast.name = th.current().s();
+            ast.type = type;
+            th.assertToken("=");
+            ast.calc = parseCalc();
+            if(!ast.calc.type.equals(type)) throw new RuntimeException(STR."Expected type \{type} got \{ast.calc.type}");
+        }
+
+        return ast;
     }
 
     private AST.Calc parseCalc(){
