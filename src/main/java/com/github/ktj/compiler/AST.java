@@ -72,6 +72,5 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Return, AST.Va
     static final class VarAssignment extends AST{
         Calc calc = null;
         String name = null;
-        Call call = null;
     }
 }
