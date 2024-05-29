@@ -43,7 +43,7 @@ final class MethodCompiler {
         os.newScope();
         int start = code.getSize();
         compileCalc(ast.condition);
-        code.addOpcode(Opcode.IFGT);
+        code.addOpcode(Opcode.IFEQ);
         int branch = code.getSize();
         code.addIndex(0);
 
@@ -51,7 +51,7 @@ final class MethodCompiler {
             compileAST(statement);
 
         code.addOpcode(Opcode.GOTO);
-        code.addIndex(-(code.getSize() - start));
+        code.addIndex(-(code.getSize() - start) + 1);
         code.write16bit(branch, code.getSize() - branch + 1);
         os.clearScope(code);
     }
