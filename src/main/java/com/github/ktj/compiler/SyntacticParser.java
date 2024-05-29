@@ -68,7 +68,38 @@ final class SyntacticParser {
         nextLine();
         if(th.isEmpty()) return null;
 
-        return parseVarAssignment();
+        return switch(th.assertToken("}", Token.Type.IDENTIFIER).s()){
+            case "while" -> parseWhile();
+            case "}" -> null;
+            default -> {
+                th.last();
+                yield parseVarAssignment();
+            }
+        };
+    }
+
+    private AST.While parseWhile(){
+        AST.While ast = new AST.While();
+
+        th.assertHasNext();
+        ast.condition = parseCalc();
+        th.assertToken("{");
+        th.assertNull();
+
+        ArrayList<AST> astList = new ArrayList<>();
+        while(hasNext() && !th.toStringNonMarked().startsWith("}")){
+            AST current = parseNextLine();
+            if(current != null) astList.add(current);
+        }
+        ast.ast = astList.toArray(new AST[0]);
+
+        if(th.toStringNonMarked().startsWith("}")){
+            th.last();
+            th.assertToken("}");
+            th.assertNull();
+        }else throw new RuntimeException("Expected }");
+
+        return ast;
     }
 
     private AST.VarAssignment parseVarAssignment(){

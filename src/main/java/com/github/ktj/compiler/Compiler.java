@@ -3,7 +3,7 @@ package com.github.ktj.compiler;
 import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
-import javassist.bytecode.ClassFile;
+import javassist.bytecode.*;
 
 import java.io.File;
 import java.io.IOException;

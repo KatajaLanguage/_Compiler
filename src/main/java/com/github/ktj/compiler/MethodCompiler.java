@@ -36,6 +36,24 @@ final class MethodCompiler {
 
     private void compileAST(AST ast){
         if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
+        else if(ast instanceof AST.While) compileWhile((AST.While) ast);
+    }
+
+    private void compileWhile(AST.While ast){
+        os.newScope();
+        int start = code.getSize();
+        compileCalc(ast.condition);
+        code.addOpcode(Opcode.IFGT);
+        int branch = code.getSize();
+        code.addIndex(0);
+
+        for(AST statement: ast.ast)
+            compileAST(statement);
+
+        code.addOpcode(Opcode.GOTO);
+        code.addIndex(-(code.getSize() - start));
+        code.write16bit(branch, code.getSize() - branch + 1);
+        os.clearScope(code);
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){
@@ -49,16 +67,16 @@ final class MethodCompiler {
         if(ast.op != null) compileOperator(ast);
     }
 
-    private void compileOperator(AST.Calc calc){
-        switch(calc.type){
+    private void compileOperator(AST.Calc ast){
+        switch(ast.type){
             case "int", "char", "byte", "short", "boolean" -> {
-                switch (calc.op){
+                switch (ast.op){
                     case "+" -> code.add(Opcode.IADD);
                     case "-" -> code.add(Opcode.ISUB);
                     case "*" -> code.add(Opcode.IMUL);
                     case "/" -> code.add(Opcode.IDIV);
                     case "==", "!=", "<", "<=", ">", ">=" -> {
-                        switch(calc.op) {
+                        switch(ast.op) {
                             case "==" -> code.addOpcode(Opcode.IF_ICMPEQ);
                             case "!=" -> code.addOpcode(Opcode.IF_ICMPNE);
                             case "<" -> code.addOpcode(Opcode.IF_ICMPLT);
@@ -79,44 +97,44 @@ final class MethodCompiler {
                 }
             }
             case "double" -> {
-                switch (calc.op){
+                switch (ast.op){
                     case "+" -> code.add(Opcode.DADD);
                     case "-" -> code.add(Opcode.DSUB);
                     case "*" -> code.add(Opcode.DMUL);
                     case "/" -> code.add(Opcode.DDIV);
                     case "==", "!=", "<=", "<", ">=", ">" -> {
                         code.add(Opcode.DCMPG);
-                        compileBoolOp(calc);
+                        compileBoolOp(ast);
                     }
                 }
             }
             case "float" -> {
-                switch (calc.op){
+                switch (ast.op){
                     case "+" -> code.add(Opcode.FADD);
                     case "-" -> code.add(Opcode.FSUB);
                     case "*" -> code.add(Opcode.FMUL);
                     case "/" -> code.add(Opcode.FDIV);
                     case "==", "!=", "<=", "<", ">=", ">" -> {
                         code.add(Opcode.FCMPG);
-                        compileBoolOp(calc);
+                        compileBoolOp(ast);
                     }
                 }
             }
             case "long" -> {
-                switch (calc.op){
+                switch (ast.op){
                     case "+" -> code.add(Opcode.LADD);
                     case "-" -> code.add(Opcode.LSUB);
                     case "*" -> code.add(Opcode.LMUL);
                     case "/" -> code.add(Opcode.LDIV);
                     case "==", "!=", "<=", "<", ">=", ">" -> {
                         code.add(Opcode.LCMP);
-                        compileBoolOp(calc);
+                        compileBoolOp(ast);
                     }
                 }
             }
         }
         os.pop();
-        if(CompilerUtil.BOOL_OPERATORS.contains(calc.op)) {
+        if(CompilerUtil.BOOL_OPERATORS.contains(ast.op)) {
             os.pop();
             os.push(1);
         }
