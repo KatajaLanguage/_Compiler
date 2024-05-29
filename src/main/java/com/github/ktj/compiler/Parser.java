@@ -329,6 +329,7 @@ final class Parser {
 
         TokenHandler parameterList = th.getInBracket();
         ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();
+        int _line = line;
 
         while(parameterList.hasNext()){
             String pType = parameterList.assertToken(Token.Type.IDENTIFIER).s();
@@ -349,9 +350,10 @@ final class Parser {
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
+            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
         }else {
             th.assertToken("{");
+            th.assertNull();
 
             StringBuilder code = new StringBuilder();
             int i = 1;
@@ -365,15 +367,15 @@ final class Parser {
 
                     if(i > 0){
                         if (!code.isEmpty()) code.append("\n");
-                        else code.append(th.toStringNonMarked());
-                    }else {
-                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
+                        code.append(th.toStringNonMarked());
+                    }else{
+                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
                         return;
                     }
                 }else{
                     if(Set.of("if", "while").contains(th.current().s())) i++;
                     if (!code.isEmpty()) code.append("\n");
-                    else code.append(th.toStringNonMarked());
+                    code.append(th.toStringNonMarked());
                 }
             }
 

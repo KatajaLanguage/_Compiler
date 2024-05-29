@@ -1,3 +1,4 @@
 public test(){
-    float i = 5.0f
+    int i = 5
+    i = 7
 }

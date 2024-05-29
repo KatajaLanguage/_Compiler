@@ -52,13 +52,21 @@ final class SyntacticParser {
 
         ArrayList<AST> ast = new ArrayList<>();
 
-        while(hasNext()) ast.add(parseNextLine());
+        while(hasNext()){
+            try {
+                AST e = parseNextLine();
+                if(e != null) ast.add(e);
+            }catch(RuntimeException e){
+                throw new RuntimeException(STR."\{e.getMessage()} at \{method.file}:\{method.line+1}");
+            }
+        }
 
         return ast.toArray(new AST[0]);
     }
 
     private AST parseNextLine(){
         nextLine();
+        if(th.isEmpty()) return null;
 
         return parseVarAssignment();
     }
@@ -67,9 +75,17 @@ final class SyntacticParser {
         AST.VarAssignment ast = new AST.VarAssignment();
 
         ast.type = th.assertToken(Token.Type.IDENTIFIER).s();
-        ast.name = th.assertToken(Token.Type.IDENTIFIER).s();
-        th.assertToken("=");
+        ast.name = th.assertToken("=", Token.Type.IDENTIFIER).equals("=") ? null : th.current().s();
+        if(!th.current().equals("=")) th.assertToken("=");
         ast.calc = parseCalc();
+
+        if(ast.name != null){
+            if(!ast.calc.type.equals(ast.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
+            if(scope.getType(ast.name) != null) throw new RuntimeException(STR."\{ast.name} is already defined");
+        }else if(scope.getType(ast.type) == null){
+            scope.add(ast.type, ast.calc.type);
+            ast.type = ast.calc.type;
+        }
 
         return ast;
     }
