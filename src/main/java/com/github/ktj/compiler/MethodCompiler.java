@@ -31,7 +31,7 @@ final class MethodCompiler {
         os = OperandStack.forMethod(method);
         AST[] ast = parser.parseAst(clazz, clazzName, method, ktjCode);
 
-        for(int i = 0;i < ast.length;i++) compileAST(ast[i]);
+        for (AST value : ast) compileAST(value);
     }
 
     private void compileAST(AST ast){
@@ -57,8 +57,26 @@ final class MethodCompiler {
                     case "-" -> code.add(Opcode.ISUB);
                     case "*" -> code.add(Opcode.IMUL);
                     case "/" -> code.add(Opcode.IDIV);
+                    case "==", "!=", "<", "<=", ">", ">=" -> {
+                        switch(calc.op) {
+                            case "==" -> code.addOpcode(Opcode.IF_ICMPEQ);
+                            case "!=" -> code.addOpcode(Opcode.IF_ICMPNE);
+                            case "<" -> code.addOpcode(Opcode.IF_ICMPLT);
+                            case "<=" -> code.addOpcode(Opcode.IF_ICMPLE);
+                            case ">" -> code.addOpcode(Opcode.IF_ICMPGT);
+                            case ">=" -> code.addOpcode(Opcode.IF_ICMPGE);
+                        }
+                        int branchLocation = code.getSize();
+                        code.addIndex(0);
+                        code.addIconst(0);
+                        code.addOpcode(Opcode.GOTO);
+                        int endLocation = code.getSize();
+                        code.addIndex(0);
+                        code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
+                        code.addIconst(1);
+                        code.write16bit(endLocation, code.getSize() - endLocation + 1);
+                    }
                 }
-                os.pop();
             }
             case "double" -> {
                 switch (calc.op){
@@ -66,8 +84,11 @@ final class MethodCompiler {
                     case "-" -> code.add(Opcode.DSUB);
                     case "*" -> code.add(Opcode.DMUL);
                     case "/" -> code.add(Opcode.DDIV);
+                    case "==", "!=", "<=", "<", ">=", ">" -> {
+                        code.add(Opcode.DCMPG);
+                        compileBoolOp(calc);
+                    }
                 }
-                os.pop();
             }
             case "float" -> {
                 switch (calc.op){
@@ -75,8 +96,11 @@ final class MethodCompiler {
                     case "-" -> code.add(Opcode.FSUB);
                     case "*" -> code.add(Opcode.FMUL);
                     case "/" -> code.add(Opcode.FDIV);
+                    case "==", "!=", "<=", "<", ">=", ">" -> {
+                        code.add(Opcode.FCMPG);
+                        compileBoolOp(calc);
+                    }
                 }
-                os.pop();
             }
             case "long" -> {
                 switch (calc.op){
@@ -84,10 +108,52 @@ final class MethodCompiler {
                     case "-" -> code.add(Opcode.LSUB);
                     case "*" -> code.add(Opcode.LMUL);
                     case "/" -> code.add(Opcode.LDIV);
+                    case "==", "!=", "<=", "<", ">=", ">" -> {
+                        code.add(Opcode.LCMP);
+                        compileBoolOp(calc);
+                    }
                 }
-                os.pop();
             }
         }
+        os.pop();
+        if(CompilerUtil.BOOL_OPERATORS.contains(calc.op)) {
+            os.pop();
+            os.push(1);
+        }
+    }
+
+    private void compileBoolOp(AST.Calc ast){
+        switch(ast.op){
+            case "==", "!=" -> {
+                code.addIconst(0);
+                code.addOpcode(Opcode.IF_ICMPEQ);
+            }
+            case "<", ">" -> {
+                AST.Value value = new AST.Value();
+                value.type = "int";
+                value.token = new Token(ast.op.equals("<") ? "-1" : "1", Token.Type.INTEGER);
+                compileValue(value);
+                code.addOpcode(Opcode.IF_ICMPEQ);
+            }
+            case "<=", ">=" -> {
+                AST.Value value = new AST.Value();
+                value.type = "int";
+                value.token = new Token(ast.op.equals("<=") ? "1" : "-1", Token.Type.INTEGER);
+                compileValue(value);
+                code.addOpcode(Opcode.IF_ICMPNE);
+            }
+        }
+        int branchLocation = code.getSize();
+        code.addIndex(0);
+        if(ast.op.equals("!=")) code.addIconst(1);
+        else code.addIconst(0);
+        code.addOpcode(Opcode.GOTO);
+        int endLocation = code.getSize();
+        code.addIndex(0);
+        code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
+        if(ast.op.equals("!=")) code.addIconst(0);
+        else code.addIconst(1);
+        code.write16bit(endLocation, code.getSize() - endLocation + 1);
     }
 
     private void compileValue(AST.Value ast){
