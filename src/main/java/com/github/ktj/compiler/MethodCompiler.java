@@ -5,6 +5,7 @@ import com.github.ktj.lang.KtjMethod;
 import javassist.bytecode.Bytecode;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.MethodInfo;
+import javassist.bytecode.Opcode;
 
 import java.util.Set;
 
@@ -38,8 +39,55 @@ final class MethodCompiler {
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){
-        compileValue(ast.calc.value);
+        compileCalc(ast.calc);
         compileStore(ast.name, ast.type);
+    }
+
+    private void compileCalc(AST.Calc ast){
+        if(ast.right != null) compileCalc(ast.right);
+        compileValue(ast.value);
+        if(ast.op != null) compileOperator(ast);
+    }
+
+    private void compileOperator(AST.Calc calc){
+        switch(calc.type){
+            case "int", "char", "byte", "short", "boolean" -> {
+                switch (calc.op){
+                    case "+" -> code.add(Opcode.IADD);
+                    case "-" -> code.add(Opcode.ISUB);
+                    case "*" -> code.add(Opcode.IMUL);
+                    case "/" -> code.add(Opcode.IDIV);
+                }
+                os.pop();
+            }
+            case "double" -> {
+                switch (calc.op){
+                    case "+" -> code.add(Opcode.DADD);
+                    case "-" -> code.add(Opcode.DSUB);
+                    case "*" -> code.add(Opcode.DMUL);
+                    case "/" -> code.add(Opcode.DDIV);
+                }
+                os.pop();
+            }
+            case "float" -> {
+                switch (calc.op){
+                    case "+" -> code.add(Opcode.FADD);
+                    case "-" -> code.add(Opcode.FSUB);
+                    case "*" -> code.add(Opcode.FMUL);
+                    case "/" -> code.add(Opcode.FDIV);
+                }
+                os.pop();
+            }
+            case "long" -> {
+                switch (calc.op){
+                    case "+" -> code.add(Opcode.LADD);
+                    case "-" -> code.add(Opcode.LSUB);
+                    case "*" -> code.add(Opcode.LMUL);
+                    case "/" -> code.add(Opcode.LDIV);
+                }
+                os.pop();
+            }
+        }
     }
 
     private void compileValue(AST.Value ast){
