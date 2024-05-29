@@ -5,7 +5,7 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Return, AST.Va
     String type = null;
 
     static final class Calc extends AST{
-        String opp = null;
+        String op = null;
         Value value = null;
         Calc left = null, right = null;
 
@@ -13,13 +13,13 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Return, AST.Va
             Calc temp = new Calc();
             temp.left = left;
             temp.right = right;
-            temp.opp = opp;
+            temp.op = op;
             temp.value = value;
             temp.type = type;
 
             left = temp;
             right = null;
-            opp = null;
+            op = null;
             value = null;
         }
 
@@ -27,13 +27,13 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Return, AST.Va
             Calc temp = new Calc();
             temp.right = right;
             temp.left = left;
-            temp.opp = opp;
+            temp.op = op;
             temp.value = value;
             temp.type = type;
 
             right = temp;
             left = null;
-            opp = null;
+            op = null;
             value = null;
         }
     }

@@ -84,6 +84,7 @@ final class SyntacticParser {
             if(scope.getType(ast.name) != null) throw new RuntimeException(STR."\{ast.name} is already defined");
         }else if(scope.getType(ast.type) == null){
             scope.add(ast.type, ast.calc.type);
+            ast.name = ast.type;
             ast.type = ast.calc.type;
         }
 
@@ -95,6 +96,20 @@ final class SyntacticParser {
 
         ast.value = parseValue();
         ast.type = ast.value.type;
+
+        while(th.hasNext()){
+            if(!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")){
+                th.last();
+                return ast;
+            }
+
+            ast.setRight();
+            ast.op = th.current().s();
+            ast.value = parseValue();
+            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.value.type, ast.op);
+
+            if(ast.type == null) throw new RuntimeException(STR."Operator \{ast.op} is not defined for \{ast.right.type} and \{ast.value.type}");
+        }
 
         return ast;
     }

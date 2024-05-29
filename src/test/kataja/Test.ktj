@@ -1,4 +1,3 @@
 public test(){
-    int i = 5
-    i = 7
+    int i = 5 + 3
 }
