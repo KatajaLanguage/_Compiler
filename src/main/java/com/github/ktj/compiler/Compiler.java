@@ -32,6 +32,7 @@ public final class Compiler {
     private Compiler(){
         parser = new Parser();
         debug = false;
+        classes = new HashMap<>();
         setOutFolder("out");
     }
 
@@ -57,14 +58,13 @@ public final class Compiler {
 
     public void compile(String file, boolean execute, boolean clearOutFolder) throws IllegalArgumentException{
         compiledClasses = new ArrayList<>();
-        classes = new HashMap<>();
 
         File f = new File(file);
 
         if(f.exists()){
             if(f.isDirectory() || !getExtension(f.getName()).equals("ktj")) throw new IllegalArgumentException(STR."Expected kataja (.ktj) File, got \{f.isDirectory() ? "directory" : STR.".\{getExtension(f.getName())} file"}");
 
-            classes = parser.parseFile(f);
+            classes.putAll(parser.parseFile(f));
 
             for(String name:classes.keySet()) compileClass(name);
 
