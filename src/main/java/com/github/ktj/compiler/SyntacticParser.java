@@ -56,6 +56,7 @@ final class SyntacticParser {
             try {
                 AST e = parseNextLine();
                 if(e != null) ast.add(e);
+                else if(th.toStringNonMarked().startsWith("}")) throw new RuntimeException("illegal argument");
             }catch(RuntimeException e){
                 throw new RuntimeException(STR."\{e.getMessage()} at \{method.file}:\{method.line+1}");
             }
@@ -70,7 +71,11 @@ final class SyntacticParser {
 
         return switch(th.assertToken("}", Token.Type.IDENTIFIER).s()){
             case "while" -> parseWhile();
-            case "}" -> null;
+            case "if" -> parseIf();
+            case "}" -> {
+                th.assertNull();
+                yield null;
+            }
             default -> {
                 th.last();
                 yield parseVarAssignment();
@@ -83,23 +88,62 @@ final class SyntacticParser {
 
         th.assertHasNext();
         ast.condition = parseCalc();
+
+        if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
+
         th.assertToken("{");
         th.assertNull();
 
+        ast.ast = parseContent();
+        th.assertNull();
+
+        return ast;
+    }
+
+    private AST.If parseIf(){
+        AST.If ast = new AST.If();
+
+        th.assertHasNext();
+        ast.condition = parseCalc();
+        th.assertToken("{");
+        th.assertNull();
+
+        ast.ast = parseContent();
+
+        AST.If current = ast;
+        boolean end = false;
+        while(th.hasNext() && !end){
+            current = (current.elif = new AST.If());
+            th.assertToken("else");
+
+            if(th.assertToken("if", "{").equals("if")){
+                current.condition = parseCalc();
+                if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
+                th.assertToken("{");
+            }else end = true;
+
+            current.ast = parseContent();
+        }
+
+        if(!th.toStringNonMarked().equals("}")) throw new RuntimeException("illegal argument");
+
+        return ast;
+    }
+
+    private AST[] parseContent(){
         ArrayList<AST> astList = new ArrayList<>();
+
         while(hasNext() && !th.toStringNonMarked().startsWith("}")){
             AST current = parseNextLine();
             if(current != null) astList.add(current);
         }
-        ast.ast = astList.toArray(new AST[0]);
 
         if(th.toStringNonMarked().startsWith("}")){
             th.last();
             th.assertToken("}");
-            th.assertNull();
         }else throw new RuntimeException("Expected }");
 
-        return ast;
+        return astList.toArray(new AST[0]);
     }
 
     private AST.VarAssignment parseVarAssignment(){
