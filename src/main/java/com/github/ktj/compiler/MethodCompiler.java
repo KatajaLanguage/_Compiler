@@ -39,6 +39,20 @@ final class MethodCompiler {
         if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
         else if(ast instanceof AST.While) compileWhile((AST.While) ast);
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
+        else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
+    }
+
+    private void compileReturn(AST.Return ast){
+        if(ast.calc != null) compileCalc(ast.calc);
+
+        switch(ast.type){
+            case "void" -> code.add(0xb1); //return
+            case "int", "boolean", "char", "byte", "short" -> code.add(0xac); //ireturn
+            case "float" -> code.add(0xae); //freturn
+            case "double" -> code.add(0xaf); //dreturn
+            case "long" -> code.add(0xad); //lreturn
+            default -> code.add(0xb0); //areturn
+        }
     }
 
     private void compileWhile(AST.While ast){
@@ -339,8 +353,6 @@ final class MethodCompiler {
             }
 
             getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
-
-            if(method.returnType.equals("void")) code.addReturn(null);
 
             mInfo.setCodeAttribute(code.toCodeAttribute());
         }

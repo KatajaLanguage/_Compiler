@@ -97,4 +97,36 @@ public class CompilerUtil {
 
         return false;
     }
+
+    public static AST.Return getDefaultReturn(String type){
+        AST.Return ast = new AST.Return();
+        ast.type = type;
+
+        if(!type.equals("void")) {
+            ast.calc = new AST.Calc();
+            ast.calc.type = type;
+
+            AST.Value value = new AST.Value();
+
+            value.type = type;
+            value.token = new Token(switch (type) {
+                case "char" -> " ";
+                case "int", "short", "long", "byte" -> "0";
+                case "float", "double" -> "0.0";
+                case "boolean" -> "false";
+                default -> "null";
+            }, switch (type) {
+                case "float" -> Token.Type.FLOAT;
+                case "double" -> Token.Type.DOUBLE;
+                case "int", "short", "byte" -> Token.Type.INTEGER;
+                case "long" -> Token.Type.LONG;
+                case "char" -> Token.Type.CHAR;
+                default -> Token.Type.IDENTIFIER;
+            });
+
+            ast.calc.value = value;
+        }
+
+        return ast;
+    }
 }

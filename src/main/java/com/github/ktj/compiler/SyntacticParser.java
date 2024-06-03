@@ -5,7 +5,6 @@ import com.github.ktj.lang.KtjMethod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
 
 final class SyntacticParser {
 
@@ -48,7 +47,7 @@ final class SyntacticParser {
     private int index;
 
     AST[] parseAst(Compilable clazz, String clazzName, KtjMethod method, String code){
-        if(code.trim().isEmpty()) return new AST[0];
+        if(code.trim().isEmpty()) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
 
         this.clazz = clazz;
         this.method = method;
@@ -70,6 +69,8 @@ final class SyntacticParser {
             }
         }
 
+        if(!(ast.getLast() instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
+
         return ast.toArray(new AST[0]);
     }
 
@@ -80,6 +81,7 @@ final class SyntacticParser {
         return switch(th.assertToken("}", Token.Type.IDENTIFIER).s()){
             case "while" -> parseWhile();
             case "if" -> parseIf();
+            case "return" -> parseReturn();
             case "}" -> {
                 th.assertNull();
                 yield null;
@@ -89,6 +91,19 @@ final class SyntacticParser {
                 yield parseVarAssignment();
             }
         };
+    }
+
+    private AST.Return parseReturn(){
+        AST.Return ast = new AST.Return();
+
+        if(th.hasNext()){
+            ast.calc = parseCalc();
+            ast.type = ast.calc.type;
+        }else ast.type = "void";
+
+        if(!ast.type.equals(method.returnType)) throw new RuntimeException(STR."Expected type \{method.returnType} got \{ast.type}");
+
+        return ast;
     }
 
     private AST.While parseWhile(){
