@@ -161,7 +161,7 @@ final class OperandStack {
         OperandStack os = new OperandStack();
 
         for(int i = 0;i < method.parameter.length;i++)
-            os.push(method.parameter[i].name(), (method.parameter[i].name().equals("double") || method.parameter[i].name().equals("long")) ? 2 : 1);
+            os.push(method.parameter[i].name(), (method.parameter[i].type().equals("double") || method.parameter[i].type().equals("long")) ? 2 : 1);
 
         return os;
     }

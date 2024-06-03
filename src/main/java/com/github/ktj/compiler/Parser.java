@@ -370,7 +370,7 @@ final class Parser {
                             if (!code.isEmpty()) code.append("\n");
                             code.append(th.toStringNonMarked());
                         } else {
-                            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
+                            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, STR."\{path}\\\{name}", _line));
                             return;
                         }
                     }else{

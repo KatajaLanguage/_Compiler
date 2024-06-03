@@ -5,6 +5,7 @@ import com.github.ktj.lang.KtjMethod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 final class SyntacticParser {
 
@@ -16,9 +17,14 @@ final class SyntacticParser {
             last = current;
         }
 
-        Scope(String type){
+        Scope(String type, KtjMethod method){
             last = null;
             vars.put("this", type);
+            vars.put("null", "java.lang.method");
+            for(int i = 0;i < method.parameter.length;i++){
+                if(vars.containsKey(method.parameter[i].name())) throw new RuntimeException(STR."\{method.parameter[i].name()} is already defined at \{method.file}:\{method.line+1}");
+                vars.put(method.parameter[i].name(), method.parameter[i].type());
+            }
         }
 
         String getType(String name){
@@ -46,7 +52,7 @@ final class SyntacticParser {
 
         this.clazz = clazz;
         this.method = method;
-        scope = new Scope(clazzName);
+        scope = new Scope(clazzName, method);
         this.code = code.split("\n");
         index = -1;
 
@@ -200,9 +206,15 @@ final class SyntacticParser {
         AST.Value ast = new AST.Value();
 
         switch(th.next().t()){
-            case CHAR, SHORT, INTEGER, LONG, DOUBLE, FLOAT, STRING -> {
+            case CHAR, SHORT, INTEGER, LONG, DOUBLE, FLOAT -> {
                 ast.token = th.current();
                 ast.type = th.current().t().toString();
+            }
+            case IDENTIFIER -> {
+                if(scope.getType(th.current().s()) == null) throw new RuntimeException(STR."\{th.current()} is not defined");
+                ast.load = new AST.Load();
+                ast.load.name = th.current().s();
+                ast.type = (ast.load.type = scope.getType(th.current().s()));
             }
             default -> throw new RuntimeException("illegal argument");
         }

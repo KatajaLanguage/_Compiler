@@ -210,6 +210,11 @@ final class MethodCompiler {
     }
 
     private void compileValue(AST.Value ast){
+        if(ast.load != null){
+            compileLoad(ast.load);
+            return;
+        }
+
         switch (ast.token.t().toString()){
             case "int", "short", "byte", "char" -> {
                 int intValue;
@@ -271,6 +276,27 @@ final class MethodCompiler {
         }
     }
 
+    private void compileLoad(AST.Load ast){
+        switch (ast.type) {
+            case "int", "boolean", "char", "byte", "short" -> {
+                code.addIload(os.get(ast.name));
+                os.push(1);
+            }
+            case "float" -> {
+                code.addFload(os.get(ast.name));
+                os.push(1);
+            }
+            case "double" -> {
+                code.addDload(os.get(ast.name));
+                os.push(2);
+            }
+            case "long" -> {
+                code.addLload(os.get(ast.name));
+                os.push(2);
+            }
+        }
+    }
+
     private void compileStore(String name, String type){
         int where = os.get(name);
 
@@ -296,6 +322,8 @@ final class MethodCompiler {
     static MethodInfo compileMethod(KtjInterface clazz, String clazzName, ConstPool cp, KtjMethod method, String desc){
         String name = desc.split("%", 2)[0];
         StringBuilder descBuilder = new StringBuilder("(");
+
+        for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(p.type()));
 
         descBuilder.append(")").append(CompilerUtil.toDesc(method.returnType));
 
