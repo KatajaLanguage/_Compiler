@@ -163,7 +163,7 @@ final class SyntacticParser {
         if(ast.name != null){
             if(!ast.calc.type.equals(ast.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
             if(scope.getType(ast.name) != null) throw new RuntimeException(STR."\{ast.name} is already defined");
-            else scope.add(ast.type, ast.type);
+            else scope.add(ast.name, ast.type);
         }else if(scope.getType(ast.type) == null){
             scope.add(ast.type, ast.calc.type);
             ast.name = ast.type;
