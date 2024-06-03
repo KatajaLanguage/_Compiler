@@ -373,6 +373,9 @@ final class Parser {
                             addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
                             return;
                         }
+                    }else{
+                        if (!code.isEmpty()) code.append("\n");
+                        code.append(th.toStringNonMarked());
                     }
                 }else{
                     if(Set.of("if", "while").contains(th.current().s())) i++;

@@ -69,7 +69,7 @@ final class SyntacticParser {
 
     private AST parseNextLine(){
         nextLine();
-        if(th.isEmpty()) return null;
+        if(th.isEmpty() || th.toStringNonMarked().startsWith("}")) return null;
 
         return switch(th.assertToken("}", Token.Type.IDENTIFIER).s()){
             case "while" -> parseWhile();
@@ -107,6 +107,7 @@ final class SyntacticParser {
 
         th.assertHasNext();
         ast.condition = parseCalc();
+        if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
         th.assertToken("{");
         th.assertNull();
 
@@ -120,7 +121,7 @@ final class SyntacticParser {
 
             if(th.assertToken("if", "{").equals("if")){
                 current.condition = parseCalc();
-                if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
+                if(!current.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{current.condition.type}");
                 th.assertToken("{");
             }else end = true;
 
@@ -135,13 +136,16 @@ final class SyntacticParser {
     private AST[] parseContent(){
         ArrayList<AST> astList = new ArrayList<>();
 
+        AST current = parseNextLine();
+        if(current != null) astList.add(current);
+
         while(!th.toStringNonMarked().startsWith("}")){
-            AST current = parseNextLine();
+            current = parseNextLine();
             if(current != null) astList.add(current);
         }
 
         if(th.toStringNonMarked().startsWith("}")){
-            th.last();
+            th.toFirst();
             th.assertToken("}");
         }else throw new RuntimeException("Expected }");
 
@@ -159,6 +163,7 @@ final class SyntacticParser {
         if(ast.name != null){
             if(!ast.calc.type.equals(ast.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
             if(scope.getType(ast.name) != null) throw new RuntimeException(STR."\{ast.name} is already defined");
+            else scope.add(ast.type, ast.type);
         }else if(scope.getType(ast.type) == null){
             scope.add(ast.type, ast.calc.type);
             ast.name = ast.type;
