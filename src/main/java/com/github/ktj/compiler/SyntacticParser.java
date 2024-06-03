@@ -58,7 +58,9 @@ final class SyntacticParser {
                 if(e != null) ast.add(e);
                 else if(th.toStringNonMarked().startsWith("}")) throw new RuntimeException("illegal argument");
             }catch(RuntimeException e){
-                throw new RuntimeException(STR."\{e.getMessage()} at \{method.file}:\{method.line+1}");
+                RuntimeException exception = new RuntimeException(STR."\{e.getMessage()} at \{method.file}:\{method.line+1}");
+                exception.setStackTrace(e.getStackTrace());
+                throw exception;
             }
         }
 
@@ -125,7 +127,7 @@ final class SyntacticParser {
             current.ast = parseContent();
         }
 
-        if(!th.toStringNonMarked().equals("}")) throw new RuntimeException("illegal argument");
+        if(!th.toStringNonMarked().equals("} ")) throw new RuntimeException("illegal argument");
 
         return ast;
     }
@@ -133,7 +135,7 @@ final class SyntacticParser {
     private AST[] parseContent(){
         ArrayList<AST> astList = new ArrayList<>();
 
-        while(hasNext() && !th.toStringNonMarked().startsWith("}")){
+        while(!th.toStringNonMarked().startsWith("}")){
             AST current = parseNextLine();
             if(current != null) astList.add(current);
         }

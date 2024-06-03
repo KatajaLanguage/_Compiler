@@ -7,6 +7,7 @@ import javassist.bytecode.ConstPool;
 import javassist.bytecode.MethodInfo;
 import javassist.bytecode.Opcode;
 
+import java.util.ArrayList;
 import java.util.Set;
 
 final class MethodCompiler {
@@ -37,6 +38,7 @@ final class MethodCompiler {
     private void compileAST(AST ast){
         if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
         else if(ast instanceof AST.While) compileWhile((AST.While) ast);
+        else if(ast instanceof AST.If) compileIf((AST.If) ast);
     }
 
     private void compileWhile(AST.While ast){
@@ -54,6 +56,39 @@ final class MethodCompiler {
         code.addIndex(-(code.getSize() - start) + 1);
         code.write16bit(branch, code.getSize() - branch + 1);
         os.clearScope(code);
+    }
+
+    private void compileIf(AST.If ast){
+        ArrayList<Integer> gotos = new ArrayList<>();
+        int branch = 0;
+
+        while (ast != null){
+            os.newScope();
+            if(ast.condition != null) {
+                compileCalc(ast.condition);
+                code.addOpcode(Opcode.IFEQ);
+                branch = code.getSize();
+                code.addIndex(0);
+            }
+
+            for(AST statement:ast.ast)
+                compileAST(statement);
+
+            if(ast.elif != null){
+                code.addOpcode(Opcode.GOTO);
+                gotos.add(code.getSize());
+                code.addIndex(0);
+            }
+
+            if(ast.condition != null)
+                code.write16bit(branch, code.getSize() - branch + 1);
+
+            ast = ast.elif;
+            os.clearScope(code);
+        }
+
+        for(int i:gotos)
+            code.write16bit(i, code.getSize() - i + 1);
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){

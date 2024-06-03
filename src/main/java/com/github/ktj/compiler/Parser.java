@@ -363,14 +363,16 @@ final class Parser {
 
                 if (th.isEmpty()) code.append("\n");
                 else if (th.next().s().equals("}")) {
-                    i--;
+                    if(!th.hasNext() || !th.next().equals("else")) {
+                        i--;
 
-                    if(i > 0){
-                        if (!code.isEmpty()) code.append("\n");
-                        code.append(th.toStringNonMarked());
-                    }else{
-                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
-                        return;
+                        if (i > 0) {
+                            if (!code.isEmpty()) code.append("\n");
+                            code.append(th.toStringNonMarked());
+                        } else {
+                            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
+                            return;
+                        }
                     }
                 }else{
                     if(Set.of("if", "while").contains(th.current().s())) i++;
