@@ -1,11 +1,9 @@
 package com.github.ktj.compiler;
 
+import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
-import javassist.bytecode.Bytecode;
-import javassist.bytecode.ConstPool;
-import javassist.bytecode.MethodInfo;
-import javassist.bytecode.Opcode;
+import javassist.bytecode.*;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -356,6 +354,19 @@ final class MethodCompiler {
 
             mInfo.setCodeAttribute(code.toCodeAttribute());
         }
+
+        return mInfo;
+    }
+
+    static MethodInfo compileClinit(KtjInterface clazz, String clazzName, ConstPool cp, String code){
+        MethodInfo mInfo = new MethodInfo(cp, "<clinit>", "()V");
+        mInfo.setAccessFlags(AccessFlag.STATIC);
+
+        Bytecode bytecode = new Bytecode(cp);
+
+        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(null, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.file, Integer.MIN_VALUE), cp);
+
+        mInfo.setCodeAttribute(bytecode.toCodeAttribute());
 
         return mInfo;
     }

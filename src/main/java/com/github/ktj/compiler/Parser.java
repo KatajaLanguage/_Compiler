@@ -303,24 +303,38 @@ final class Parser {
             if(type.equals(clazzName)) type = "<init>";
             parseMethod(mod, "void", type);
         }else{
-            if(th.hasNext()){
-                th.assertToken("(");
-                parseMethod(mod, type, name);
-            }else parseField(mod, type, name);
+            if(th.hasNext() && th.assertToken("=", "(").equals("(")) parseMethod(mod, type, name);
+            else parseField(mod, type, name);
         }
     }
 
     private void parseField(Modifier mod, String type, String name){
         if(!mod.isValidForField()) err("illegal modifier");
 
+        String initValue = null;
+
+        if(th.current().equals("=")){
+            if(!mod.statik) throw new RuntimeException("illegal init value for non static field");
+
+            StringBuilder sb = new StringBuilder();
+            th.assertHasNext();
+
+            while(th.hasNext()){
+                sb.append(th.next().s()).append(" ");
+                if(th.current().equals(";")) throw new RuntimeException("illegal argument");
+            }
+
+            initValue = sb.toString();
+        }
+
         if(current == null){
             mod.statik = true;
-            if(statik.addField(name, new KtjField(mod, type, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
+            if(statik.addField(name, new KtjField(mod, type, initValue, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
             return;
         }
 
         if(current instanceof KtjClass){
-            if(((KtjClass) current).addField(name, new KtjField(mod, type, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
+            if(((KtjClass) current).addField(name, new KtjField(mod, type, initValue, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
         }
     }
 

@@ -22,7 +22,7 @@ public class KtjDataClass extends Compilable{
     public boolean addField(String type, String name, int line){
         if(fields.containsKey(name)) return true;
 
-        fields.put(name, new KtjField(new Modifier(AccessFlag.ACC_PUBLIC), type, uses, file, line));
+        fields.put(name, new KtjField(new Modifier(AccessFlag.ACC_PUBLIC), type, null, uses, file, line));
         return false;
     }
 }

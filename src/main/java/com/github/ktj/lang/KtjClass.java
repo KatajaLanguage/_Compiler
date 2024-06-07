@@ -24,6 +24,14 @@ public class KtjClass extends KtjInterface{
         return fields.isEmpty() && methods.isEmpty();
     }
 
+    public String createClinit(){
+        StringBuilder sb = new StringBuilder();
+
+        for(String field: fields.keySet()) if(fields.get(field).initValue != null) sb.append(field).append(" = ").append(fields.get(field).initValue).append("\n");
+
+        return sb.isEmpty() ? null : sb.toString();
+    }
+
     @Override
     public void validateTypes() {
         super.validateTypes();

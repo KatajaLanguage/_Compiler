@@ -1,2 +1,4 @@
-public test(){
+public class Test{
+
+    static int i = 5
 }
