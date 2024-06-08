@@ -1,7 +1,7 @@
 public class Test{
 
-    public int[] test(int[] i){
-        return i
+    public int test(int i){
+        return i + 1
     }
 
 }

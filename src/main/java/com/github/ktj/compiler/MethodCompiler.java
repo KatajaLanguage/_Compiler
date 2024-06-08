@@ -319,6 +319,10 @@ final class MethodCompiler {
                 code.addLload(os.get(ast.name));
                 os.push(2);
             }
+            default -> {
+                code.addAload(os.get(ast.name));
+                os.push(2);
+            }
         }
     }
 
