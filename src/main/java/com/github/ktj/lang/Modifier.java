@@ -23,6 +23,10 @@ public final class Modifier {
         return !(finaly || constant) && !(accessFlag == AccessFlag.ACC_PRIVATE && abstrakt);
     }
 
+    public boolean isValidForInit(){
+        return !(finaly || constant || abstrakt || synchronised || statik);
+    }
+
     public boolean isValidForType(){
         return !(abstrakt || synchronised || statik);
     }

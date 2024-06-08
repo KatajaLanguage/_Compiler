@@ -1,6 +1,7 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.bytecode.AccessFlag;
+import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
 import javassist.bytecode.*;
@@ -362,7 +363,7 @@ final class MethodCompiler {
                 code.addInvokespecial("java/lang/Object", "<init>", "()V");
             }
 
-            getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
+            getInstance().compileCode(code, STR."\{name.equals("<init>") ? ((KtjClass) clazz).initValues() : ""} \n \{method.code}", clazz, clazzName, method, cp);
 
             mInfo.setCodeAttribute(code.toCodeAttribute());
         }

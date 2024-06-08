@@ -314,8 +314,6 @@ final class Parser {
         String initValue = null;
 
         if(th.current().equals("=")){
-            if(!mod.statik && current != null) throw new RuntimeException("illegal init value for non static field");
-
             StringBuilder sb = new StringBuilder();
             th.assertHasNext();
 
@@ -339,7 +337,9 @@ final class Parser {
     }
 
     private void parseMethod(Modifier mod, String type, String name){
-        if(!mod.isValidForMethod()) err("illegal modifier");
+        if(name.equals("<init>")){
+            if(!mod.isValidForInit()) err("illegal modifier");
+        }else if(!mod.isValidForMethod()) err("illegal modifier");
 
         TokenHandler parameterList = th.getInBracket();
         ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();

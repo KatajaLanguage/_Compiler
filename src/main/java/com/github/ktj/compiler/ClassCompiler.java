@@ -160,23 +160,12 @@ final class ClassCompiler {
         }
 
         //Methods
+        clazz.validateInit();
         for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, STR."\{path}.\{name}", cf.getConstPool(), clazz.methods.get(desc), desc));
 
         //<clinit>
         String clinit = clazz.createClinit();
         if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, STR."\{path}.\{name}", cf.getConstPool(), clinit));
-
-        //init
-        if(cf.getMethod("init") == null){
-            MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", "()V");
-            mInfo.setAccessFlags(AccessFlag.PUBLIC);
-            Bytecode code = new Bytecode(cf.getConstPool());
-            code.addAload(0);
-            code.addInvokespecial("java/lang/Object", "<init>", "()V");
-            code.add(Opcode.RETURN);
-            mInfo.setCodeAttribute(code.toCodeAttribute());
-            cf.addMethod2(mInfo);
-        }
 
         Compiler.Instance().compiledClasses.add(cf);
     }
