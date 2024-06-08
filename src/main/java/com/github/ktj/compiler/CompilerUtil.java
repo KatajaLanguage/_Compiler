@@ -60,7 +60,10 @@ public class CompilerUtil {
                 case "char"    -> desc.append("C");
                 case "byte"    -> desc.append("B");
                 case "void"    -> desc.append("V");
-                default        -> desc.append("L").append(type).append(";");
+                default        -> {
+                    if(type.startsWith("[")) desc.append(STR."[\{toDesc(type.substring(1))}");
+                    else desc.append("L").append(type).append(";");
+                }
             }
         }
 

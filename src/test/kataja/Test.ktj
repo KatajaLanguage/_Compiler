@@ -1,8 +1,7 @@
 public class Test{
-    public int i = 5
-    public static int j = 10
 
-    #Test(){
+    public int[] test(int[] i){
+        return i
+    }
 
-    #}
 }

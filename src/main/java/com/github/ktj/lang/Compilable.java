@@ -27,6 +27,8 @@ public abstract class Compilable {
     public abstract void validateTypes();
 
     protected String validateType(String type) throws RuntimeException{
+        if(type.startsWith("[")) return STR."[\{validateType(type.substring(1))}";
+
         if(CompilerUtil.isPrimitive(type)) return type;
 
         if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException(STR."Unknown Type \{type} at \{file}:\{line}");

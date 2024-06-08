@@ -363,7 +363,12 @@ final class MethodCompiler {
                 code.addInvokespecial("java/lang/Object", "<init>", "()V");
             }
 
-            getInstance().compileCode(code, STR."\{name.equals("<init>") ? ((KtjClass) clazz).initValues() : ""} \n \{method.code}", clazz, clazzName, method, cp);
+            if(name.equals("<init>")) {
+                assert clazz instanceof KtjClass;
+
+                String initValues = ((KtjClass) clazz).initValues();
+                getInstance().compileCode(code, STR."\{initValues != null ? initValues : ""} \n \{method.code}", clazz, clazzName, method, cp);
+            }else getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
 
             mInfo.setCodeAttribute(code.toCodeAttribute());
         }

@@ -80,14 +80,10 @@ final class SyntacticParser {
         nextLine();
         if(th.isEmpty() || th.toStringNonMarked().startsWith("}")) return null;
 
-        return switch(th.assertToken("}", Token.Type.IDENTIFIER).s()){
+        return switch(th.assertToken(Token.Type.IDENTIFIER).s()){
             case "while" -> parseWhile();
             case "if" -> parseIf();
             case "return" -> parseReturn();
-            case "}" -> {
-                th.assertNull();
-                yield null;
-            }
             default -> {
                 th.last();
                 yield parseVarAssignment();

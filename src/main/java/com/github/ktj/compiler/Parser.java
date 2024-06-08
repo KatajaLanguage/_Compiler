@@ -295,11 +295,15 @@ final class Parser {
 
     private void parseMethodAndField(Modifier mod, String clazzName){
         String type = th.assertToken(Token.Type.IDENTIFIER).s();
-        String name = th.hasNext() ? th.next().s() : null;
+        String name = th.assertToken(Token.Type.IDENTIFIER, "[", "(").s();
 
-        if(name == null)
-            err("illegal argument");
-        else if(name.equals("(")) {
+        while(name.equals("[")){
+            th.assertToken("]");
+            type = STR."[\{type}";
+            name = th.assertToken(Token.Type.IDENTIFIER, "[").s();
+        }
+
+        if(name.equals("(")){
             if(type.equals(clazzName)) type = "<init>";
             parseMethod(mod, "void", type);
         }else{
@@ -319,7 +323,7 @@ final class Parser {
 
             while(th.hasNext()){
                 sb.append(th.next().s()).append(" ");
-                if(th.current().equals(";")) throw new RuntimeException("illegal argument");
+                if(th.current().equals(";") && th.hasNext()) throw new RuntimeException("illegal argument");
             }
 
             initValue = sb.toString();
@@ -347,7 +351,13 @@ final class Parser {
 
         while(parameterList.hasNext()){
             String pType = parameterList.assertToken(Token.Type.IDENTIFIER).s();
-            String pName = parameterList.assertToken(Token.Type.IDENTIFIER).s();
+            String pName = parameterList.assertToken(Token.Type.IDENTIFIER, "[").s();
+
+            while(pName.equals("[")){
+                parameterList.assertToken("]");
+                pType = STR."[\{pType}";
+                pName = parameterList.assertToken(Token.Type.IDENTIFIER, "[").s();
+            }
 
             for(KtjMethod.Parameter p:parameter) if(pName.equals(p.name())) err(STR."Method \{pName} is already defined");
 
