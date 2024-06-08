@@ -1,4 +1,1 @@
-public class Test{
-
-    static int i = 5
-}
+int i = 5

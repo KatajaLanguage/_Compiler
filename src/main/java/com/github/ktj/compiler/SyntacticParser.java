@@ -1,8 +1,8 @@
 package com.github.ktj.compiler;
 
-import com.github.ktj.lang.Compilable;
-import com.github.ktj.lang.KtjMethod;
+import com.github.ktj.lang.*;
 
+import java.net.IDN;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -43,6 +43,7 @@ final class SyntacticParser {
     private Compilable clazz;
     private KtjMethod method;
     private Scope scope;
+    private String clazzName;
     private String[] code;
     private int index;
 
@@ -52,6 +53,7 @@ final class SyntacticParser {
         this.clazz = clazz;
         this.method = method;
         scope = new Scope(clazzName, method);
+        this.clazzName = clazzName;
         this.code = code.split("\n");
         index = -1;
 
@@ -173,7 +175,7 @@ final class SyntacticParser {
         return astList.toArray(new AST[0]);
     }
 
-    private AST.VarAssignment parseVarAssignment(){
+    private AST.VarAssignment parseVarAssignmentOld(){
         AST.VarAssignment ast = new AST.VarAssignment();
 
         ast.type = th.assertToken(Token.Type.IDENTIFIER).s();
@@ -190,6 +192,64 @@ final class SyntacticParser {
             ast.name = ast.type;
             ast.type = ast.calc.type;
         }
+
+        return ast;
+    }
+
+    private AST.VarAssignment parseVarAssignment(){
+        AST.VarAssignment ast;
+
+        String first = th.assertToken(Token.Type.IDENTIFIER).s();
+        if(th.assertToken(Token.Type.IDENTIFIER, ".", "=").equals(".")){
+            ast = new AST.PutField();
+            throw new RuntimeException("illegal argument");
+        }else{
+            ast = new AST.VarAssignment();
+
+            ast.type = first;
+            if(!th.current().equals("=")){
+                ast.name = th.current().s();
+                th.assertToken("=");
+            }
+            ast.calc = parseCalc();
+
+            if(ast.name != null){
+                if(!ast.calc.type.equals(ast.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
+                if(scope.getType(ast.name) != null) throw new RuntimeException(STR."\{ast.name} is already defined");
+                scope.add(ast.name, ast.type);
+            }else{
+                if(scope.getType(ast.type) == null){
+                    boolean hasField = false;
+
+                    if(clazz instanceof KtjClass clazz){
+                        if(clazz.fields.get(ast.type) != null){
+                            AST.VarAssignment old = ast;
+                            ast = new AST.PutField();
+
+                            ast.name = old.type;
+                            ast.type = old.calc.type;
+                            ast.calc = old.calc;
+                            ((AST.PutField)(ast)).clazz = clazzName;
+
+                            if(clazz.fields.get(old.type).modifier.statik) ((AST.PutField)(ast)).statik = true;
+                            if(!ast.type.equals(ast.calc.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
+
+                            hasField = true;
+                        }
+                    }
+
+                    if(!hasField) {
+                        scope.add(ast.type, ast.calc.type);
+                        ast.name = ast.type;
+                        ast.type = ast.calc.type;
+                    }
+                }else{
+                    ast.name = ast.type;
+                    ast.type = ast.calc.type;
+                }
+            }
+        }
+
 
         return ast;
     }

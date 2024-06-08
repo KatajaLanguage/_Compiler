@@ -34,7 +34,8 @@ final class MethodCompiler {
     }
 
     private void compileAST(AST ast){
-        if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
+        if(ast instanceof AST.PutField) compilePutField((AST.PutField) ast);
+        else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
         else if(ast instanceof AST.While) compileWhile((AST.While) ast);
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
@@ -106,6 +107,17 @@ final class MethodCompiler {
     private void compileVarAssignment(AST.VarAssignment ast){
         compileCalc(ast.calc);
         compileStore(ast.name, ast.type);
+    }
+
+    private void compilePutField(AST.PutField ast){
+        compileCalc(ast.calc);
+
+        if(ast.call != null){
+
+        }
+
+        if(ast.statik) code.addPutstatic(ast.clazz, ast.name, CompilerUtil.toDesc(ast.type));
+        else code.addPutfield(ast.clazz, ast.name, CompilerUtil.toDesc(ast.type));
     }
 
     private void compileCalc(AST.Calc ast){

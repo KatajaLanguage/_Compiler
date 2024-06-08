@@ -314,7 +314,7 @@ final class Parser {
         String initValue = null;
 
         if(th.current().equals("=")){
-            if(!mod.statik) throw new RuntimeException("illegal init value for non static field");
+            if(!mod.statik && current != null) throw new RuntimeException("illegal init value for non static field");
 
             StringBuilder sb = new StringBuilder();
             th.assertHasNext();
