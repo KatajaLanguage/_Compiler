@@ -97,6 +97,7 @@ final class SyntacticParser {
         if(th.hasNext()){
             ast.calc = parseCalc();
             ast.type = ast.calc.type;
+            th.assertNull();
         }else ast.type = "void";
 
         if(!ast.type.equals(method.returnType)) throw new RuntimeException(STR."Expected type \{method.returnType} got \{ast.type}");

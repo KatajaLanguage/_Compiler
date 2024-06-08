@@ -18,7 +18,7 @@ public class CompilerUtil {
 
                 for(char c:operator.toCharArray()){
                     result.append(switch(c){
-                        case '=' -> "equals";
+                        case '=' -> "equal";
                         case '+' -> "add";
                         case '-' -> "subtract";
                         case '*' -> "multiply";
@@ -71,6 +71,8 @@ public class CompilerUtil {
     }
 
     public static boolean classExist(String name){
+        if(name.startsWith("[")) return classExist(name.substring(1));
+
         if(isPrimitive(name)) return true;
 
         try {

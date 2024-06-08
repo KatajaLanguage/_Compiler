@@ -72,7 +72,9 @@ public final class Compiler {
                 try {
                     classes.get(name).validateTypes();
                 }catch(RuntimeException e){
-                    throw new RuntimeException(STR."\{e} in Class \{name}");
+                    RuntimeException exception = new RuntimeException(STR."\{e} in Class \{name}");
+                    exception.setStackTrace(e.getStackTrace());
+                    throw exception;
                 }
             }
 

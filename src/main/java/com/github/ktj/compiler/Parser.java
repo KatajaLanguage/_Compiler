@@ -42,6 +42,7 @@ final class Parser {
                     switch (th.next().s()) {
                         case "#" -> {}
                         case "use" -> parseUse();
+                        case "main" -> parseMain();
                         default -> parseModifier(null);
                     }
                 }catch(RuntimeException e){
@@ -90,6 +91,7 @@ final class Parser {
         if(th.assertToken("/", "from", ",").equals("/")){
             StringBuilder path = new StringBuilder(current);
             th.assertHasNext();
+            th.last();
 
             while (th.hasNext()){
                 if(th.assertToken("/", "as").equals("as")){
@@ -102,7 +104,7 @@ final class Parser {
             }
 
             if(uses.containsKey(current)) err(STR."\{current} is already defined");
-            uses.put(current, path.toString());
+            uses.put(current, path.toString().replace("/", "."));
         }else{
             ArrayList<String> classes = new ArrayList<>();
             classes.add(current);
@@ -118,15 +120,56 @@ final class Parser {
                 if(th.assertToken("/", "as").equals("as")){
                     if(classes.size() != 1) err("illegal argument");
                     if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s())) err(STR."\{th.current()} is already defined");
-                    uses.put(th.current().s(), path + classes.getFirst());
+                    uses.put(th.current().s(), (path + classes.getFirst()).replace("/", "."));
                 }else path.append("/").append(th.assertToken(Token.Type.IDENTIFIER).s());
             }
 
             for(String clazz:classes){
                 if(uses.containsKey(clazz)) err(STR."\{clazz} is already defined");
-                uses.put(clazz, path.toString());
+                uses.put(clazz, path.toString().replace("/", "."));
             }
         }
+    }
+
+    private void parseMain(){
+        th.assertToken("{");
+        th.assertNull();
+
+        int _line = line;
+
+        StringBuilder code = new StringBuilder();
+        int i = 1;
+
+        while (sc.hasNextLine()) {
+            nextLine();
+
+            if (th.isEmpty()) code.append("\n");
+            else if (th.next().s().equals("}")) {
+                if(!th.hasNext() || !th.next().equals("else")) {
+                    i--;
+
+                    if (i > 0) {
+                        if (!code.isEmpty()) code.append("\n");
+                        code.append(th.toStringNonMarked());
+                    } else {
+                        Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
+                        mod.statik = true;
+                        addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, STR."\{path}\\\{name}", _line));
+                        uses.put("_String", "java.lang.String");
+                        return;
+                    }
+                }else{
+                    if (!code.isEmpty()) code.append("\n");
+                    code.append(th.toStringNonMarked());
+                }
+            }else{
+                if(Set.of("if", "while").contains(th.current().s())) i++;
+                if (!code.isEmpty()) code.append("\n");
+                code.append(th.toStringNonMarked());
+            }
+        }
+
+        err("Expected '}'");
     }
 
     private void parseModifier(String clazzName){
