@@ -377,15 +377,14 @@ final class Parser {
             initValue = sb.toString();
         }
 
+        if(mod.finaly && initValue == null) throw new RuntimeException(STR."Expected init value for constant field \{name}");
+
         if(current == null){
             mod.statik = true;
             if(statik.addField(name, new KtjField(mod, type, initValue, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
-            return;
-        }
-
-        if(current instanceof KtjClass){
+        }else if(current instanceof KtjClass){
             if(((KtjClass) current).addField(name, new KtjField(mod, type, initValue, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
-        }
+        }else throw new RuntimeException("illegal argument");
     }
 
     private void parseMethod(Modifier mod, String type, String name){

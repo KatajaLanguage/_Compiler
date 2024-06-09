@@ -172,27 +172,6 @@ final class SyntacticParser {
         return astList.toArray(new AST[0]);
     }
 
-    private AST.VarAssignment parseVarAssignmentOld(){
-        AST.VarAssignment ast = new AST.VarAssignment();
-
-        ast.type = th.assertToken(Token.Type.IDENTIFIER).s();
-        ast.name = th.assertToken("=", Token.Type.IDENTIFIER).equals("=") ? null : th.current().s();
-        if(!th.current().equals("=")) th.assertToken("=");
-        ast.calc = parseCalc();
-
-        if(ast.name != null){
-            if(!ast.calc.type.equals(ast.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
-            if(scope.getType(ast.name) != null) throw new RuntimeException(STR."\{ast.name} is already defined");
-            else scope.add(ast.name, ast.type);
-        }else if(scope.getType(ast.type) == null){
-            scope.add(ast.type, ast.calc.type);
-            ast.name = ast.type;
-            ast.type = ast.calc.type;
-        }
-
-        return ast;
-    }
-
     private AST.VarAssignment parseVarAssignment(){
         AST.VarAssignment ast;
 
@@ -229,6 +208,7 @@ final class SyntacticParser {
                             ((AST.PutField)(ast)).clazz = clazzName;
 
                             if(clazz.fields.get(old.type).modifier.statik) ((AST.PutField)(ast)).statik = true;
+                            if(clazz.fields.get(old.type).modifier.finaly) throw new RuntimeException(STR."Field \{old.type} is constant and canot be changed");
                             if(!ast.type.equals(ast.calc.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
 
                             hasField = true;
