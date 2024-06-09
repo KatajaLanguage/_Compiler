@@ -111,7 +111,7 @@ public final class Compiler {
                 if(main == null) throw new RuntimeException("main is not defined");
                 else{
                     try{
-                        URLClassLoader.newInstance(new URL[]{outFolder.toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
+                        URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
                     }catch(ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException ignored){
                         throw new RuntimeException("Failed to execute main Method");
                     }

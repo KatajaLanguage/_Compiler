@@ -173,6 +173,11 @@ final class Parser {
     }
 
     private void parseModifier(String clazzName){
+        if(th.current().equals("main")){
+            parseMain();
+            return;
+        }
+
         Modifier mod = switch (th.current().s()){
             case "public" -> new Modifier(AccessFlag.ACC_PUBLIC);
             case "private" -> new Modifier(AccessFlag.ACC_PRIVATE);

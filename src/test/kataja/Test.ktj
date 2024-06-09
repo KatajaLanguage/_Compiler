@@ -1,5 +1,5 @@
-use java/lang/String
+public class Test{
+    main{
 
-main{
-
+    }
 }
