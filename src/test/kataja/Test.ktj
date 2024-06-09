@@ -1,8 +1,8 @@
 public class Test{
 
-    private int i
+    private int i = 1
 
     public int +(int j){
-        return i + j
+        #return i + j
     }
 }

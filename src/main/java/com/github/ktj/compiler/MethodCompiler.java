@@ -111,6 +111,8 @@ final class MethodCompiler {
     }
 
     private void compilePutField(AST.PutField ast){
+        if(!ast.statik) code.addAload(0);
+
         compileCalc(ast.calc);
 
         if(ast.call != null){
@@ -255,10 +257,6 @@ final class MethodCompiler {
 
                 os.push(1);
             }
-            case "boolean" -> {
-                code.addIconst(ast.token.s().equals("true") ? 1 : 0);
-                os.push(1);
-            }
             case "float" -> {
                 int index = 0;
                 float floatValue = Float.parseFloat(ast.token.s());
@@ -297,6 +295,10 @@ final class MethodCompiler {
                 }
                 code.addLdc(index);
                 os.push(2);
+            }
+            default -> {
+                if(ast.type.equals("boolean")) code.addIconst(ast.token.s().equals("true") ? 1 : 0);
+                os.push(1);
             }
         }
     }

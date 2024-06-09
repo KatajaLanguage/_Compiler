@@ -263,10 +263,15 @@ final class SyntacticParser {
                 ast.type = th.current().t().toString();
             }
             case IDENTIFIER -> {
-                if(scope.getType(th.current().s()) == null) throw new RuntimeException(STR."\{th.current()} is not defined");
-                ast.load = new AST.Load();
-                ast.load.name = th.current().s();
-                ast.type = (ast.load.type = scope.getType(th.current().s()));
+                if(th.current().equals("true") || th.current().equals("false")){
+                    ast.token = th.current();
+                    ast.type = "boolean";
+                }else if(scope.getType(th.current().s()) == null) throw new RuntimeException(STR."\{th.current()} is not defined");
+                else {
+                    ast.load = new AST.Load();
+                    ast.load.name = th.current().s();
+                    ast.type = (ast.load.type = scope.getType(th.current().s()));
+                }
             }
             default -> throw new RuntimeException("illegal argument");
         }
