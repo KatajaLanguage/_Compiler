@@ -147,7 +147,7 @@ final class ClassCompiler {
     }
 
     static void compileClass(KtjClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java/lang/Object");
+        ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java.lang.Object");
         cf.setAccessFlags(clazz.getAccessFlag());
 
         //Fields

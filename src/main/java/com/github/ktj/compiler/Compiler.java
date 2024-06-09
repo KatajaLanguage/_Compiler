@@ -8,12 +8,10 @@ import javassist.bytecode.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -22,7 +20,7 @@ public final class Compiler {
     public static void main(String[] args){
         Compiler c = Compiler.Instance();
         //c.setDebug(true);
-        c.compile("src/test/kataja/Test.ktj", true, true);
+        c.compile("src/test/kataja/Test.ktj", false, true);
     }
 
     private static Compiler COMPILER = null;
@@ -98,27 +96,7 @@ public final class Compiler {
 
             printDebug("compiling finished successfully");
 
-            if(execute){
-                String main = null;
-
-                for(String clazzName:classes.keySet()){
-                    if(classes.get(clazzName) instanceof KtjClass clazz && clazz.methods.containsKey("main%[java.lang.String") && clazz.methods.get("main%[java.lang.String").modifier.statik && clazz.methods.get("main%[java.lang.String").modifier.accessFlag == AccessFlag.ACC_PUBLIC){
-                        if(main != null) throw new RuntimeException("main is defined multiple times");
-                        main = clazzName;
-                    }
-                }
-
-                if(main == null) throw new RuntimeException("main is not defined");
-                else{
-                    try{
-                        URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
-                    }catch(ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException ignored){
-                        throw new RuntimeException("Failed to execute main Method");
-                    }
-
-                    printDebug("execution finished successfully");
-                }
-            }
+            if(execute) execute();
 
             System.out.println("process finished successfully");
         }else throw new IllegalArgumentException();
@@ -142,6 +120,30 @@ public final class Compiler {
             if(!outFolder.mkdirs()) throw new RuntimeException("Failed to create out Folder");
             printDebug("out Folder created successfully");
         }else if(debug) printDebug("out Folder validated successfully");
+    }
+
+    private void execute(){
+        String main = null;
+
+        for(String clazzName:classes.keySet()){
+            if(classes.get(clazzName) instanceof KtjClass clazz && clazz.methods.containsKey("main%[java.lang.String") && clazz.methods.get("main%[java.lang.String").modifier.statik && clazz.methods.get("main%[java.lang.String").modifier.accessFlag == AccessFlag.ACC_PUBLIC){
+                if(main != null) throw new RuntimeException("main is defined multiple times");
+                main = clazzName;
+            }
+        }
+
+        if(main == null) throw new RuntimeException("main is not defined");
+        else{
+            try{
+                URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
+            }catch(ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException e){
+                RuntimeException exception = new RuntimeException("Failed to execute main Method");
+                exception.setStackTrace(e.getStackTrace());
+                throw exception;
+            }
+
+            printDebug("execution finished successfully");
+        }
     }
 
     private void printDebug(String message){
