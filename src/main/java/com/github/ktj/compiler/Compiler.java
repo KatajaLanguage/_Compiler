@@ -66,8 +66,6 @@ public final class Compiler {
 
             classes.putAll(parser.parseFile(f));
 
-            for(String name:classes.keySet()) compileClass(name);
-
             for(String name:classes.keySet()){
                 try {
                     classes.get(name).validateTypes();
@@ -77,6 +75,8 @@ public final class Compiler {
                     throw exception;
                 }
             }
+
+            for(String name:classes.keySet()) compileClass(name);
 
             printDebug("parsing finished successfully");
 
