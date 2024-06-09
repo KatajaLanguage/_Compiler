@@ -9,35 +9,30 @@ public class CompilerUtil {
     public static final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
 
     public static String operatorToIdentifier(String operator){
-        return switch (operator){
-            case "==" -> "equals";
-            case "&&" -> "and";
-            case "||" -> "or";
-            default -> {
-                StringBuilder result = new StringBuilder();
+        if(operator.equals("==")) return "equals";
 
-                for(char c:operator.toCharArray()){
-                    result.append(switch(c){
-                        case '=' -> "equal";
-                        case '+' -> "add";
-                        case '-' -> "subtract";
-                        case '*' -> "multiply";
-                        case '/' -> "divide";
-                        case '<' -> "lessThan";
-                        case '>' -> "greaterThan";
-                        case '!' -> "not";
-                        case '%' -> "mod";
-                        case '&' -> "and";
-                        case '|' -> "or";
-                        case '^' -> "exponentiation";
-                        case '~' -> "proportional";
-                        default -> throw new RuntimeException("internal Compiler error");
-                    });
-                }
+        StringBuilder result = new StringBuilder();
 
-                yield result.toString();
-            }
-        };
+        for(char c:operator.toCharArray()){
+            result.append(switch(c){
+                case '=' -> "equal";
+                case '+' -> "add";
+                case '-' -> "subtract";
+                case '*' -> "multiply";
+                case '/' -> "divide";
+                case '<' -> "lessThan";
+                case '>' -> "greaterThan";
+                case '!' -> "not";
+                case '%' -> "mod";
+                case '&' -> "and";
+                case '|' -> "or";
+                case '^' -> "exponentiation";
+                case '~' -> "proportional";
+                default -> throw new RuntimeException("internal Compiler error");
+            });
+        }
+
+        return result.toString();
     }
 
     public static String validateClassName(String name){

@@ -1,0 +1,8 @@
+public class Test{
+
+    private int i
+
+    public int +(int j){
+        return i + j
+    }
+}

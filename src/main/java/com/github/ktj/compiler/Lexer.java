@@ -125,7 +125,7 @@ final class Lexer {
         return new TokenHandler(tokens);
     }
 
-    private static boolean isOperator(char c){
+    static boolean isOperator(char c){
         return String.valueOf(c).matches("[-+*/!=<>%&|^~]");
     }
 }

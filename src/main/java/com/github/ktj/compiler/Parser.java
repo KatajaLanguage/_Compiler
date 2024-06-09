@@ -343,12 +343,12 @@ final class Parser {
 
     private void parseMethodAndField(Modifier mod, String clazzName){
         String type = th.assertToken(Token.Type.IDENTIFIER).s();
-        String name = th.assertToken(Token.Type.IDENTIFIER, "[", "(").s();
+        String name = th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "[", "(").s();
 
         while(name.equals("[")){
             th.assertToken("]");
             type = STR."[\{type}";
-            name = th.assertToken(Token.Type.IDENTIFIER, "[").s();
+            name = th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "[").s();
         }
 
         if(name.equals("(")){
@@ -362,6 +362,7 @@ final class Parser {
 
     private void parseField(Modifier mod, String type, String name){
         if(!mod.isValidForField()) err("illegal modifier");
+        if(Lexer.isOperator(name.toCharArray()[0])) throw new RuntimeException("illegal argument");
 
         String initValue = null;
 
@@ -391,6 +392,12 @@ final class Parser {
         if(name.equals("<init>")){
             if(!mod.isValidForInit()) err("illegal modifier");
         }else if(!mod.isValidForMethod()) err("illegal modifier");
+
+        if(Lexer.isOperator(name.toCharArray()[0])) {
+            name = CompilerUtil.operatorToIdentifier(name);
+            if(type.equals("void")) throw new RuntimeException("Method should not return void");
+            if(mod.statik || current == null) throw new RuntimeException("Method should not be static");
+        }
 
         TokenHandler parameterList = th.getInBracket();
         ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();
@@ -437,10 +444,12 @@ final class Parser {
                     if(!th.hasNext() || !th.next().equals("else")) {
                         i--;
 
-                        if (i > 0) {
+                        if(i > 0){
                             if (!code.isEmpty()) code.append("\n");
                             code.append(th.toStringNonMarked());
-                        } else {
+                        }else{
+                            if(Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
+
                             addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, STR."\{path}\\\{name}", _line));
                             return;
                         }
