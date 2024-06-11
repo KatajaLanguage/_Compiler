@@ -39,6 +39,7 @@ final class MethodCompiler {
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Load) compileLoad((AST.Load) ast, true);
+        else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
     }
 
     private void compileReturn(AST.Return ast){
@@ -134,7 +135,7 @@ final class MethodCompiler {
 
         if(!all && ast.name == null && ast.call.prev == null) return;
 
-        compileGetField(all ? ast.call : ast.call.prev);
+        if(ast.call != null) compileGetField(all ? ast.call : ast.call.prev);
     }
 
     private void compileGetField(AST.Call call){

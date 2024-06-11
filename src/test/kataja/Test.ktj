@@ -1,4 +1,9 @@
 public class Test{
 
+    static int i = 3
 
+    public void test(){
+        int j = 5
+        j = 3 + i
+    }
 }

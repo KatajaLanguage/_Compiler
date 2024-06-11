@@ -101,7 +101,7 @@ public class CompilerUtil {
 
         switch(compilable){
             case KtjClass clazz -> {
-                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik != statik)
+                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik == statik)
                     return clazz.fields.get(field).type;
             }
             case KtjTypeClass clazz -> {

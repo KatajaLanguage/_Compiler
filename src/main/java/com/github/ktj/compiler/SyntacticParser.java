@@ -185,6 +185,8 @@ final class SyntacticParser {
             if(!type.equals(calc.type)) throw new RuntimeException(STR."Expected type \{type} got \{calc.type}");
             if(scope.getType(name) != null) throw new RuntimeException(STR."variable \{name} is already defined");
 
+            scope.add(name, type);
+
             AST.VarAssignment ast = new AST.VarAssignment();
 
             ast.calc = calc;
@@ -252,7 +254,9 @@ final class SyntacticParser {
                     ast.token = th.current();
                     ast.type = "boolean";
                 }else{
+                    th.last();
                     ast.load = parseCall();
+                    ast.type = ast.load.type;
                 }
             }
             default -> throw new RuntimeException("illegal argument");
