@@ -1,6 +1,6 @@
 package com.github.ktj.lang;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class KtjMethod extends Compilable{
@@ -21,7 +21,10 @@ public class KtjMethod extends Compilable{
     @Override
     public void validateTypes() {
         if(!returnType.equals("void")) returnType = validateType(returnType);
-        Arrays.stream(parameter).forEach(p -> new Parameter(validateType(p.type), p.name));
+
+        ArrayList<Parameter> help = new ArrayList<>();
+        for(Parameter p:parameter) help.add(new Parameter(validateType(p.type), p.name));
+        parameter = help.toArray(new Parameter[0]);
     }
 
     public boolean isAbstract(){

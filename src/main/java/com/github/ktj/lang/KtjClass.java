@@ -24,6 +24,37 @@ public class KtjClass extends KtjInterface{
         return fields.isEmpty() && methods.isEmpty();
     }
 
+    public String createClinit(){
+        StringBuilder sb = new StringBuilder();
+
+        for(String field: fields.keySet()) if(fields.get(field).initValue != null && fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append("\n");
+
+        return sb.isEmpty() ? null : sb.toString();
+    }
+
+    public String initValues(){
+        StringBuilder sb = new StringBuilder();
+
+        for(String field: fields.keySet()) if(fields.get(field).initValue != null && !fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append("\n");
+
+        return sb.isEmpty() ? null : sb.toString();
+    }
+
+    public void validateInit(){
+        boolean initExist = false;
+
+        for(String method: methods.keySet()) {
+            if(method.startsWith("<init>")) {
+                initExist = true;
+                break;
+            }
+        }
+
+        if(!initExist){
+            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), "void", "", new KtjMethod.Parameter[0], uses, file, Integer.MIN_VALUE));
+        }
+    }
+
     @Override
     public void validateTypes() {
         super.validateTypes();

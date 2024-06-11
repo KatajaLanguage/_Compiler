@@ -1,8 +1,8 @@
 package com.github.ktj.compiler;
 
-import com.github.ktj.lang.Compilable;
-import com.github.ktj.lang.KtjMethod;
+import com.github.ktj.lang.*;
 
+import java.net.IDN;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -16,9 +16,14 @@ final class SyntacticParser {
             last = current;
         }
 
-        Scope(String type){
+        Scope(String type, KtjMethod method){
             last = null;
             vars.put("this", type);
+            vars.put("null", "java.lang.method");
+            for(int i = 0;i < method.parameter.length;i++){
+                if(vars.containsKey(method.parameter[i].name())) throw new RuntimeException(STR."\{method.parameter[i].name()} is already defined at \{method.file}:\{method.line+1}");
+                vars.put(method.parameter[i].name(), method.parameter[i].type());
+            }
         }
 
         String getType(String name){
@@ -38,241 +43,381 @@ final class SyntacticParser {
     private Compilable clazz;
     private KtjMethod method;
     private Scope scope;
+    private String clazzName;
     private String[] code;
     private int index;
 
     AST[] parseAst(Compilable clazz, String clazzName, KtjMethod method, String code){
-        if(code.trim().isEmpty()) return new AST[0];
+        if(code.trim().isEmpty()) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
 
         this.clazz = clazz;
         this.method = method;
-        scope = new Scope(clazzName);
+        scope = new Scope(clazzName, method);
+        this.clazzName = clazzName;
         this.code = code.split("\n");
         index = -1;
 
         ArrayList<AST> ast = new ArrayList<>();
 
-        while(hasNext()) {
+        while(hasNext()){
             try {
-                ast.addAll(parseNext());
-            } catch (RuntimeException e) {
-                RuntimeException err = new RuntimeException(STR."\{e.getMessage()} at \{clazz.file}:\{clazz.line}");
-                err.setStackTrace(e.getStackTrace());
-                throw err;
+                AST e = parseNextLine();
+                if(e != null) ast.add(e);
+                else if(th.toStringNonMarked().startsWith("}")) throw new RuntimeException("illegal argument");
+            }catch(RuntimeException e){
+                RuntimeException exception = new RuntimeException(STR."\{e.getMessage()} at \{method.file}:\{method.line+1}");
+                exception.setStackTrace(e.getStackTrace());
+                throw exception;
             }
-            index++;
         }
+
+        if(!(ast.getLast() instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
 
         return ast.toArray(new AST[0]);
     }
 
-    private ArrayList<AST> parseNext(){
-        ArrayList<AST> ast = new ArrayList<>();
+    private AST parseNextLine(){
         nextLine();
+        if(th.isEmpty() || th.toStringNonMarked().startsWith("}")) return null;
 
-        if(!th.isEmpty()) ast.addAll(parseNextLine());
-
-        return ast;
-    }
-
-    private AST.If parseIf(){
-        AST.If statement = new AST.If();
-
-        statement.condition = parseCalc();
-
-        if(!statement.condition.type.equals("boolean"))
-            throw new RuntimeException(STR."Expected boolean got \{statement.condition.type}");
-
-        th.assertToken("{");
-
-        ArrayList<AST> ast = new ArrayList<>();
-        scope = new Scope(scope);
-
-        nextLine();
-        while (!th.toStringNonMarked().startsWith("} ")){
-            if(!hasNext()) throw new RuntimeException("Expected Statement");
-            ast.addAll(parseNext());
-            nextLine();
-        }
-
-        scope = scope.last;
-        statement.ast = ast.toArray(new AST[0]);
-
-        if(th.toStringNonMarked().startsWith("} else ")){
-            th.assertToken("}");
-            th.assertToken("else");
-
-            if(th.assertToken("{", "if").equals("{")){
-                ast = new ArrayList<>();
-                scope = new Scope(scope);
-                nextLine();
-                while (!th.toStringNonMarked().startsWith("} ")){
-                    if(!hasNext()) throw new RuntimeException("Expected Statement");
-                    ast.addAll(parseNext());
-                    nextLine();
-                }
-
-                th.assertToken("}");
-                th.assertNull();
-
-                AST.If elseCase = new AST.If();
-                elseCase.ast = ast.toArray(new AST[0]);
-                scope = scope.last;
-
-                statement.elif = elseCase;
-            }else{
-                th.assertToken("if");
-                statement.elif = parseIf();
+        return switch(th.assertToken(Token.Type.IDENTIFIER).s()){
+            case "while" -> parseWhile();
+            case "if" -> parseIf();
+            case "return" -> parseReturn();
+            default -> {
+                th.last();
+                yield parseStatement();
             }
-        }
-
-        return statement;
-    }
-
-    private AST.While parseWhile(){
-        AST.While statement = new AST.While();
-        statement.condition = parseCalc();
-
-        if(!statement.condition.type.equals("boolean"))
-            throw new RuntimeException(STR."Expected boolean got \{statement.condition.type}");
-
-        ArrayList<AST> ast = new ArrayList<>();
-
-        nextLine();
-        while (!th.toStringNonMarked().startsWith("} ")){
-            if(!hasNext()) throw new RuntimeException("Expected Statement");
-            ast.addAll(parseNext());
-            nextLine();
-        }
-
-        th.assertToken("}");
-        th.assertNull();
-
-        statement.ast = ast.toArray(new AST[0]);
-
-        return statement;
+        };
     }
 
     private AST.Return parseReturn(){
         AST.Return ast = new AST.Return();
-        ast.calc = parseCalc();
-        ast.type = ast.calc.type;
+
+        if(th.hasNext()){
+            ast.calc = parseCalc();
+            ast.type = ast.calc.type;
+            th.assertNull();
+        }else ast.type = "void";
 
         if(!ast.type.equals(method.returnType)) throw new RuntimeException(STR."Expected type \{method.returnType} got \{ast.type}");
 
         return ast;
     }
 
-    private ArrayList<AST> parseNextLine(){
-        ArrayList<AST> ast = new ArrayList<>();
-        while (th.hasNext()){
-            ast.add(parseStatement());
-            if(th.hasNext()) th.assertToken(";");
-        }
+    private AST.While parseWhile(){
+        AST.While ast = new AST.While();
+
+        th.assertHasNext();
+        ast.condition = parseCalc();
+
+        if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
+
+        th.assertToken("{");
+        th.assertNull();
+
+        ast.ast = parseContent();
+        th.assertNull();
+
         return ast;
+    }
+
+    private AST.If parseIf(){
+        AST.If ast = new AST.If();
+
+        th.assertHasNext();
+        ast.condition = parseCalc();
+        if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
+        th.assertToken("{");
+        th.assertNull();
+
+        ast.ast = parseContent();
+
+        AST.If current = ast;
+        boolean end = false;
+        while(th.hasNext() && !end){
+            current = (current.elif = new AST.If());
+            th.assertToken("else");
+
+            if(th.assertToken("if", "{").equals("if")){
+                current.condition = parseCalc();
+                if(!current.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{current.condition.type}");
+                th.assertToken("{");
+            }else end = true;
+
+            current.ast = parseContent();
+        }
+
+        if(!th.toStringNonMarked().equals("} ")) throw new RuntimeException("illegal argument");
+
+        return ast;
+    }
+
+    private AST[] parseContent(){
+        ArrayList<AST> astList = new ArrayList<>();
+
+        AST current = parseNextLine();
+        if(current != null) astList.add(current);
+
+        while(!th.toStringNonMarked().startsWith("}")){
+            current = parseNextLine();
+            if(current != null) astList.add(current);
+        }
+
+        if(th.toStringNonMarked().startsWith("}")){
+            th.toFirst();
+            th.assertToken("}");
+        }else throw new RuntimeException("Expected }");
+
+        return astList.toArray(new AST[0]);
     }
 
     private AST parseStatement(){
-        return switch(th.assertToken(Token.Type.IDENTIFIER).s()){
-            case "if" -> parseIf();
-            case "while" -> parseWhile();
-            case "return" -> parseReturn();
-            default -> parseVarAssignment();
-        };
+        if(th.next().equals(Token.Type.IDENTIFIER) && th.next().equals(Token.Type.IDENTIFIER)){
+            th.toFirst();
+
+            String type = th.assertToken(Token.Type.IDENTIFIER).s();
+            String name = th.assertToken(Token.Type.IDENTIFIER).s();
+            th.assertToken("=");
+            AST.Calc calc = parseCalc();
+            th.assertNull();
+
+            if(!type.equals(calc.type)) throw new RuntimeException(STR."Expected type \{type} got \{calc.type}");
+            if(scope.getType(name) != null) throw new RuntimeException(STR."variable \{name} is already defined");
+
+            scope.add(name, type);
+
+            AST.VarAssignment ast = new AST.VarAssignment();
+
+            ast.calc = calc;
+            ast.type = type;
+            ast.load = new AST.Load();
+            ast.load.type = type;
+            ast.load.name = name;
+            ast.load.clazz = type;
+
+            return ast;
+        }else {
+            th.toFirst();
+            AST.Load load = parseCall();
+
+            if(load.finaly) th.assertNull();
+
+            if (th.hasNext()) {
+                th.assertToken("=");
+                AST.Calc calc = parseCalc();
+                th.assertNull();
+
+                if(!load.type.equals(calc.type)) throw new RuntimeException(STR."Expected type \{load.type} got \{calc.type}");
+
+                AST.VarAssignment ast = new AST.VarAssignment();
+                ast.calc = calc;
+                ast.load = load;
+                ast.type = ast.calc.type;
+
+                return ast;
+            } else return load;
+        }
     }
 
-    private AST.VarAssignment parseVarAssignment(){
-        AST.VarAssignment ast = new AST.VarAssignment();
+    private AST.Calc parseCalc(){
+        AST.Calc ast = new AST.Calc();
 
-        String type = th.current().s();
+        ast.value = parseValue();
+        ast.type = ast.value.type;
 
-        if(th.assertToken("=", Token.Type.IDENTIFIER).equals("=")){
-            ast.name = type;
-            ast.calc = parseCalc();
-            ast.type = ast.calc.type;
-        }else{
-            ast.name = th.current().s();
-            ast.type = type;
-            th.assertToken("=");
-            ast.calc = parseCalc();
-            if(!ast.calc.type.equals(type)) throw new RuntimeException(STR."Expected type \{type} got \{ast.calc.type}");
+        while(th.hasNext()){
+            if(!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")){
+                th.last();
+                return ast;
+            }
+
+            ast.setRight();
+            ast.op = th.current().s();
+            ast.value = parseValue();
+            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.value.type, ast.op);
+
+            if(ast.type == null) throw new RuntimeException(STR."Operator \{ast.op} is not defined for \{ast.right.type} and \{ast.value.type}");
         }
 
         return ast;
     }
 
-    private AST.Calc parseCalc(){
-        AST.Calc calc;
-
-        if(th.next().equals("(")){
-            calc = parseCalc();
-            th.assertToken(")");
-        }else{
-            th.last();
-            calc = new AST.Calc();
-            calc.value = parseValue();
-            calc.type = calc.value.type;
-        }
-
-        while(th.hasNext()){
-            if(th.next().t() != Token.Type.OPERATOR || th.current().equals("->")){
-                th.last();
-                return calc;
-            }
-
-            calc.setRight();
-            calc.opp = th.current().s();
-            th.assertHasNext();
-
-            if(th.next().equals("(")){
-                calc.left = parseCalc();
-                th.assertToken(")");
-
-                String returnType = CompilerUtil.getOperatorReturnType(calc.right.type, calc.left.type, calc.opp);
-
-                if(returnType == null)
-                    throw new RuntimeException(STR."Operator \{calc.opp} is not defined for \{calc.left.type} and \{calc.value.type}");
-
-                calc.type = returnType;
-            }else{
-                th.last();
-                calc.value = parseValue();
-
-                String returnType = CompilerUtil.getOperatorReturnType(calc.right.type, calc.value.type, calc.opp);
-
-                if(returnType == null)
-                    throw new RuntimeException(STR."Operator \{calc.opp} is not defined for \{calc.right.type} and \{calc.value.type}");
-
-                calc.type = returnType;
-            }
-        }
-
-        return calc;
-    }
-
     private AST.Value parseValue(){
-        AST.Value value = new AST.Value();
+        AST.Value ast = new AST.Value();
 
-        switch (th.next().t()){
-            case INTEGER, DOUBLE, FLOAT, LONG, SHORT, CHAR -> {
-                value.token = th.current();
-                value.type = th.current().t().toString();
+        switch(th.next().t()){
+            case CHAR, SHORT, INTEGER, LONG, DOUBLE, FLOAT -> {
+                ast.token = th.current();
+                ast.type = th.current().t().toString();
             }
             case IDENTIFIER -> {
                 if(th.current().equals("true") || th.current().equals("false")){
-                    value.token = th.current();
-                    value.type = "boolean";
-                }else throw new RuntimeException("illegal argument");
+                    ast.token = th.current();
+                    ast.type = "boolean";
+                }else{
+                    th.last();
+                    ast.load = parseCall();
+                    ast.type = ast.load.type;
+                }
             }
             default -> throw new RuntimeException("illegal argument");
         }
 
-        return value;
+        return ast;
+    }
+
+    private AST.Load parseCall(){
+        AST.Load ast = new AST.Load();
+        AST.Call current;
+
+        String call = th.assertToken(Token.Type.IDENTIFIER).s();
+        if(th.hasNext() && th.next().equals("(")){
+            StringBuilder desc = new StringBuilder(call);
+            ArrayList<AST.Calc> args = new ArrayList<>();
+
+            while(!th.next().equals(")")){
+                args.add(parseCalc());
+                th.assertToken(",");
+            }
+
+            for(AST.Calc calc:args) desc.append("%").append(calc.type);
+
+            if(CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false) == null) throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{clazzName}");
+
+            ast.call = current = new AST.Call();
+            current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false);
+            current.clazz = clazzName;
+            current.call = call;
+            current.argTypes = args.toArray(new AST.Calc[0]);
+            current.statik = false;
+            ast.finaly = true;
+            ast.type = current.type;
+        }else{
+            th.last();
+
+            if (scope.getType(call) != null) {
+                ast.name = call;
+                ast.type = scope.getType(call);
+                ast.clazz = ast.type;
+                current = null;
+            }else if(method.uses.containsKey(call)) {
+                String type = call;
+                th.assertToken(".");
+                call = th.assertToken(Token.Type.IDENTIFIER).s();
+
+                if(th.hasNext() && th.next().equals("(")){
+                    StringBuilder desc = new StringBuilder(call);
+                    ArrayList<AST.Calc> args = new ArrayList<>();
+
+                    while(!th.next().equals(")")){
+                        args.add(parseCalc());
+                        th.assertToken(",");
+                    }
+
+                    for(AST.Calc calc:args) desc.append("%").append(calc.type);
+
+                    if(CompilerUtil.getMethodReturnType(type, desc.toString(), true) == null) throw new RuntimeException(STR."static Method \{desc.toString()} is not defined for class \{type}");
+
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getMethodReturnType(type, desc.toString(), true);
+                    current.argTypes = args.toArray(new AST.Calc[0]);
+                    ast.finaly = true;
+                }else {
+                    th.last();
+
+                    if (CompilerUtil.getFieldType(type, call, true) == null)
+                        throw new RuntimeException(STR."static Field \{call} is not defined for class \{type}");
+
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getFieldType(type, call, true);
+                    ast.finaly = CompilerUtil.isFinal(type, call);
+                }
+
+                current.call = call;
+                current.clazz = type;
+                current.statik = true;
+                ast.type = current.type;
+            } else {
+                if (CompilerUtil.getFieldType(clazzName, call, true) != null) {
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getFieldType(clazzName, call, false);
+                    current.clazz = clazzName;
+                    current.call = call;
+                    current.statik = true;
+                    ast.call = current = current.toStatic();
+                    ast.type = current.type;
+                } else if (CompilerUtil.getFieldType(clazzName, call, false) != null) {
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getFieldType(clazzName, call, false);
+                    current.clazz = clazzName;
+                    current.call = call;
+                    ast.type = current.type;
+                } else throw new RuntimeException(STR."Field \{call} is not defined");
+
+                ast.finaly = CompilerUtil.isFinal(clazzName, call);
+            }
+        }
+
+        while(th.hasNext()){
+            if(!th.next().equals(".")){
+                th.last();
+                break;
+            }
+
+            String currentType;
+
+            if(current == null){
+                current = new AST.Call();
+                ast.call = current;
+                currentType = ast.type;
+            }else{
+                currentType = current.type;
+                current.setPrev();
+            }
+
+            current.call = th.assertToken(Token.Type.IDENTIFIER).s();
+
+            if(th.hasNext() && th.next().equals("(")){
+                StringBuilder desc = new StringBuilder(call);
+                ArrayList<AST.Calc> args = new ArrayList<>();
+
+                while(!th.next().equals(")")){
+                    args.add(parseCalc());
+                    th.assertToken(",");
+                }
+
+                for(AST.Calc calc:args) desc.append("%").append(calc.type);
+
+                if(CompilerUtil.getMethodReturnType(currentType, desc.toString(), false) == null) throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{currentType}");
+
+                ast.call = current = new AST.Call();
+                current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false);
+                current.clazz = currentType;
+                current.call = call;
+                current.argTypes = args.toArray(new AST.Calc[0]);
+                current.statik = false;
+                ast.finaly = true;
+            }else {
+                th.last();
+                current.type = CompilerUtil.getFieldType(currentType, current.call, false);
+
+                if (current.type == null)
+                    throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
+
+                ast.finaly = CompilerUtil.isFinal(currentType, call);
+            }
+
+            ast.type = current.type;
+        }
+
+        return ast;
     }
 
     private void nextLine(){
         clazz.line++;
-        th = Lexer.lex(code[index++]);
+        index++;
+        th = Lexer.lex(code[index]);
     }
 
     private boolean hasNext(){

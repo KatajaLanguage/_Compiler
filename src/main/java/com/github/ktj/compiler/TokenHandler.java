@@ -117,6 +117,34 @@ final class TokenHandler {
         throw new RuntimeException(STR."expected one of \{string}, \{arrayToString(types)} got \{token.t().toString()} in: \{this}");
     }
 
+    public Token assertToken(Token.Type type, String...strings){
+        if(!hasNext()) throw new RuntimeException(STR."expected one of \{arrayToString(strings)} got nothing in: \{this}");
+        Token token = next();
+
+        if(token.equals(type))
+            return token;
+
+        for(String s:strings)
+            if(token.equals(s))
+                return token;
+
+        throw new RuntimeException(STR."expected one of \{type}, \{arrayToString(strings)} got \{token.t().toString()} in: \{this}");
+    }
+
+    public Token assertToken(Token.Type type1, Token.Type type2, String...strings){
+        if(!hasNext()) throw new RuntimeException(STR."expected one of \{arrayToString(strings)} got nothing in: \{this}");
+        Token token = next();
+
+        if(token.equals(type1) || token.equals(type2))
+            return token;
+
+        for(String s:strings)
+            if(token.equals(s))
+                return token;
+
+        throw new RuntimeException(STR."expected one of \{type1}, \{type2}, \{arrayToString(strings)} got \{token.t().toString()} in: \{this}");
+    }
+
     public static Token assertToken(Token token, String string) throws RuntimeException {
         if(!token.equals(string)) throw new RuntimeException(STR."expected \{string} got \{token.s()}");
         return token;

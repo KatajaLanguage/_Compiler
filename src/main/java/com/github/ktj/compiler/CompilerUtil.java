@@ -1,5 +1,7 @@
 package com.github.ktj.compiler;
 
+import com.github.ktj.lang.*;
+
 import java.util.Set;
 
 public class CompilerUtil {
@@ -9,35 +11,30 @@ public class CompilerUtil {
     public static final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
 
     public static String operatorToIdentifier(String operator){
-        return switch (operator){
-            case "==" -> "equals";
-            case "&&" -> "and";
-            case "||" -> "or";
-            default -> {
-                StringBuilder result = new StringBuilder();
+        if(operator.equals("==")) return "equals";
 
-                for(char c:operator.toCharArray()){
-                    result.append(switch(c){
-                        case '=' -> "equals";
-                        case '+' -> "add";
-                        case '-' -> "subtract";
-                        case '*' -> "multiply";
-                        case '/' -> "divide";
-                        case '<' -> "lessThan";
-                        case '>' -> "greaterThan";
-                        case '!' -> "not";
-                        case '%' -> "mod";
-                        case '&' -> "and";
-                        case '|' -> "or";
-                        case '^' -> "exponentiation";
-                        case '~' -> "proportional";
-                        default -> throw new RuntimeException("internal Compiler error");
-                    });
-                }
+        StringBuilder result = new StringBuilder();
 
-                yield result.toString();
-            }
-        };
+        for(char c:operator.toCharArray()){
+            result.append(switch(c){
+                case '=' -> "equal";
+                case '+' -> "add";
+                case '-' -> "subtract";
+                case '*' -> "multiply";
+                case '/' -> "divide";
+                case '<' -> "lessThan";
+                case '>' -> "greaterThan";
+                case '!' -> "not";
+                case '%' -> "mod";
+                case '&' -> "and";
+                case '|' -> "or";
+                case '^' -> "exponentiation";
+                case '~' -> "proportional";
+                default -> throw new RuntimeException("internal Compiler error");
+            });
+        }
+
+        return result.toString();
     }
 
     public static String validateClassName(String name){
@@ -60,14 +57,28 @@ public class CompilerUtil {
                 case "char"    -> desc.append("C");
                 case "byte"    -> desc.append("B");
                 case "void"    -> desc.append("V");
-                default        -> desc.append("L").append(type).append(";");
+                default        -> {
+                    if(type.startsWith("[")) desc.append(STR."[\{toDesc(type.substring(1))}");
+                    else desc.append("L").append(type).append(";");
+                }
             }
         }
 
         return desc.toString();
     }
 
+    public static String toDesc(String returnType, AST.Calc[] args){
+        StringBuilder sb = new StringBuilder("(");
+
+        for(AST.Calc calc:args) sb.append(toDesc(calc.type));
+
+        sb.append(")").append(toDesc(returnType));
+        return sb.toString();
+    }
+
     public static boolean classExist(String name){
+        if(name.startsWith("[")) return classExist(name.substring(1));
+
         if(isPrimitive(name)) return true;
 
         try {
@@ -92,9 +103,89 @@ public class CompilerUtil {
         return null;
     }
 
+    public static String getMethodReturnType(String clazzName, String method, boolean statik){
+        return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik) ? clazz.methods.get(method).returnType : null;
+    }
+
+    public static String getFieldType(String clazzName, String field, boolean statik){
+        Compilable compilable = Compiler.Instance().classes.get(clazzName);
+
+        if(compilable == null) return null;
+
+        switch(compilable){
+            case KtjClass clazz -> {
+                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik == statik)
+                    return clazz.fields.get(field).type;
+            }
+            case KtjTypeClass clazz -> {
+                if (clazz.hasValue(field) && statik) return clazzName;
+            }
+            case KtjDataClass clazz -> {
+                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik != statik) return clazz.fields.get(field).type;
+            }
+            default -> {}
+        }
+
+        return null;
+    }
+
+    public static boolean isFinal(String clazzName, String field){
+        Compilable compilable = Compiler.Instance().classes.get(clazzName);
+
+        if(compilable == null) return false;
+
+        switch(compilable){
+            case KtjClass clazz -> {
+                if (clazz.fields.containsKey(field))
+                    return clazz.fields.get(field).modifier.finaly;
+            }
+            case KtjTypeClass clazz -> {
+                return true;
+            }
+            case KtjDataClass clazz -> {
+                if (clazz.fields.containsKey(field)) return clazz.fields.get(field).modifier.finaly;
+            }
+            default -> {}
+        }
+
+        return false;
+    }
+
     public static boolean isPrimitive(String type){
         for(String p:PRIMITIVES) if(p.equals(type)) return true;
 
         return false;
+    }
+
+    public static AST.Return getDefaultReturn(String type){
+        AST.Return ast = new AST.Return();
+        ast.type = type;
+
+        if(!type.equals("void")) {
+            ast.calc = new AST.Calc();
+            ast.calc.type = type;
+
+            AST.Value value = new AST.Value();
+
+            value.type = type;
+            value.token = new Token(switch (type) {
+                case "char" -> " ";
+                case "int", "short", "long", "byte" -> "0";
+                case "float", "double" -> "0.0";
+                case "boolean" -> "false";
+                default -> "null";
+            }, switch (type) {
+                case "float" -> Token.Type.FLOAT;
+                case "double" -> Token.Type.DOUBLE;
+                case "int", "short", "byte" -> Token.Type.INTEGER;
+                case "long" -> Token.Type.LONG;
+                case "char" -> Token.Type.CHAR;
+                default -> Token.Type.IDENTIFIER;
+            });
+
+            ast.calc.value = value;
+        }
+
+        return ast;
     }
 }

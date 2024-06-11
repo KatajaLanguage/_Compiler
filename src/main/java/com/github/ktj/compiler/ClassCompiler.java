@@ -147,7 +147,7 @@ final class ClassCompiler {
     }
 
     static void compileClass(KtjClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java/lang/Object");
+        ClassFile cf = new ClassFile(false, STR."\{path}.\{name}", "java.lang.Object");
         cf.setAccessFlags(clazz.getAccessFlag());
 
         //Fields
@@ -160,18 +160,13 @@ final class ClassCompiler {
         }
 
         //Methods
+        clazz.validateInit();
         for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, STR."\{path}.\{name}", cf.getConstPool(), clazz.methods.get(desc), desc));
-/*
-        //<init>
-        MethodInfo mInfo = new MethodInfo(cf.getConstPool(), "<init>", "()V");
-        mInfo.setAccessFlags(AccessFlag.PUBLIC);
-        Bytecode code = new Bytecode(cf.getConstPool());
-        code.addAload(0);
-        code.addInvokespecial("java/lang/Object", "<init>", "()V");
-        code.add(Opcode.RETURN);
-        mInfo.setCodeAttribute(code.toCodeAttribute());
-        cf.addMethod2(mInfo);
-*/
+
+        //<clinit>
+        String clinit = clazz.createClinit();
+        if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, STR."\{path}.\{name}", cf.getConstPool(), clinit));
+
         Compiler.Instance().compiledClasses.add(cf);
     }
 }

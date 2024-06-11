@@ -42,6 +42,7 @@ final class Parser {
                     switch (th.next().s()) {
                         case "#" -> {}
                         case "use" -> parseUse();
+                        case "main" -> parseMain();
                         default -> parseModifier(null);
                     }
                 }catch(RuntimeException e){
@@ -90,6 +91,7 @@ final class Parser {
         if(th.assertToken("/", "from", ",").equals("/")){
             StringBuilder path = new StringBuilder(current);
             th.assertHasNext();
+            th.last();
 
             while (th.hasNext()){
                 if(th.assertToken("/", "as").equals("as")){
@@ -102,7 +104,7 @@ final class Parser {
             }
 
             if(uses.containsKey(current)) err(STR."\{current} is already defined");
-            uses.put(current, path.toString());
+            uses.put(current, path.toString().replace("/", "."));
         }else{
             ArrayList<String> classes = new ArrayList<>();
             classes.add(current);
@@ -118,18 +120,64 @@ final class Parser {
                 if(th.assertToken("/", "as").equals("as")){
                     if(classes.size() != 1) err("illegal argument");
                     if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s())) err(STR."\{th.current()} is already defined");
-                    uses.put(th.current().s(), path + classes.getFirst());
+                    uses.put(th.current().s(), (path + classes.getFirst()).replace("/", "."));
                 }else path.append("/").append(th.assertToken(Token.Type.IDENTIFIER).s());
             }
 
             for(String clazz:classes){
                 if(uses.containsKey(clazz)) err(STR."\{clazz} is already defined");
-                uses.put(clazz, path.toString());
+                uses.put(clazz, path.toString().replace("/", "."));
             }
         }
     }
 
+    private void parseMain(){
+        th.assertToken("{");
+        th.assertNull();
+
+        int _line = line;
+
+        StringBuilder code = new StringBuilder();
+        int i = 1;
+
+        while (sc.hasNextLine()) {
+            nextLine();
+
+            if (th.isEmpty()) code.append("\n");
+            else if (th.next().s().equals("}")) {
+                if(!th.hasNext() || !th.next().equals("else")) {
+                    i--;
+
+                    if (i > 0) {
+                        if (!code.isEmpty()) code.append("\n");
+                        code.append(th.toStringNonMarked());
+                    } else {
+                        Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
+                        mod.statik = true;
+                        addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, STR."\{path}\\\{name}", _line));
+                        uses.put("_String", "java.lang.String");
+                        return;
+                    }
+                }else{
+                    if (!code.isEmpty()) code.append("\n");
+                    code.append(th.toStringNonMarked());
+                }
+            }else{
+                if(Set.of("if", "while").contains(th.current().s())) i++;
+                if (!code.isEmpty()) code.append("\n");
+                code.append(th.toStringNonMarked());
+            }
+        }
+
+        err("Expected '}'");
+    }
+
     private void parseModifier(String clazzName){
+        if(th.current().equals("main")){
+            parseMain();
+            return;
+        }
+
         Modifier mod = switch (th.current().s()){
             case "public" -> new Modifier(AccessFlag.ACC_PUBLIC);
             case "private" -> new Modifier(AccessFlag.ACC_PRIVATE);
@@ -295,44 +343,75 @@ final class Parser {
 
     private void parseMethodAndField(Modifier mod, String clazzName){
         String type = th.assertToken(Token.Type.IDENTIFIER).s();
-        String name = th.hasNext() ? th.next().s() : null;
+        String name = th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "[", "(").s();
 
-        if(name == null)
-            err("illegal argument");
-        else if(name.equals("(")) {
+        while(name.equals("[")){
+            th.assertToken("]");
+            type = STR."[\{type}";
+            name = th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "[").s();
+        }
+
+        if(name.equals("(")){
             if(type.equals(clazzName)) type = "<init>";
             parseMethod(mod, "void", type);
         }else{
-            if(th.hasNext()){
-                th.assertToken("(");
-                parseMethod(mod, type, name);
-            }else parseField(mod, type, name);
+            if(th.hasNext() && th.assertToken("=", "(").equals("(")) parseMethod(mod, type, name);
+            else parseField(mod, type, name);
         }
     }
 
     private void parseField(Modifier mod, String type, String name){
         if(!mod.isValidForField()) err("illegal modifier");
+        if(Lexer.isOperator(name.toCharArray()[0])) throw new RuntimeException("illegal argument");
+
+        String initValue = null;
+
+        if(th.current().equals("=")){
+            StringBuilder sb = new StringBuilder();
+            th.assertHasNext();
+
+            while(th.hasNext()){
+                sb.append(th.next().s()).append(" ");
+                if(th.current().equals(";") && th.hasNext()) throw new RuntimeException("illegal argument");
+            }
+
+            initValue = sb.toString();
+        }
+
+        if(mod.finaly && initValue == null) throw new RuntimeException(STR."Expected init value for constant field \{name}");
 
         if(current == null){
             mod.statik = true;
-            if(statik.addField(name, new KtjField(mod, type, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
-            return;
-        }
-
-        if(current instanceof KtjClass){
-            if(((KtjClass) current).addField(name, new KtjField(mod, type, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
-        }
+            if(statik.addField(name, new KtjField(mod, type, initValue, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
+        }else if(current instanceof KtjClass){
+            if(((KtjClass) current).addField(name, new KtjField(mod, type, initValue, uses, STR."\{path}\\\{name}", line))) err("field is already defined");
+        }else throw new RuntimeException("illegal argument");
     }
 
     private void parseMethod(Modifier mod, String type, String name){
-        if(!mod.isValidForMethod()) err("illegal modifier");
+        if(name.equals("<init>")){
+            if(!mod.isValidForInit()) err("illegal modifier");
+        }else if(!mod.isValidForMethod()) err("illegal modifier");
+
+        if(Lexer.isOperator(name.toCharArray()[0])) {
+            name = CompilerUtil.operatorToIdentifier(name);
+            if(type.equals("void")) throw new RuntimeException("Method should not return void");
+            if(mod.statik || current == null) throw new RuntimeException("Method should not be static");
+        }
 
         TokenHandler parameterList = th.getInBracket();
         ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();
+        int _line = line;
 
         while(parameterList.hasNext()){
             String pType = parameterList.assertToken(Token.Type.IDENTIFIER).s();
-            String pName = parameterList.assertToken(Token.Type.IDENTIFIER).s();
+            String pName = parameterList.assertToken(Token.Type.IDENTIFIER, "[").s();
+
+            while(pName.equals("[")){
+                parameterList.assertToken("]");
+                pType = STR."[\{pType}";
+                pName = parameterList.assertToken(Token.Type.IDENTIFIER, "[").s();
+            }
 
             for(KtjMethod.Parameter p:parameter) if(pName.equals(p.name())) err(STR."Method \{pName} is already defined");
 
@@ -349,9 +428,10 @@ final class Parser {
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
+            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
         }else {
             th.assertToken("{");
+            th.assertNull();
 
             StringBuilder code = new StringBuilder();
             int i = 1;
@@ -361,19 +441,26 @@ final class Parser {
 
                 if (th.isEmpty()) code.append("\n");
                 else if (th.next().s().equals("}")) {
-                    i--;
+                    if(!th.hasNext() || !th.next().equals("else")) {
+                        i--;
 
-                    if(i > 0){
+                        if(i > 0){
+                            if (!code.isEmpty()) code.append("\n");
+                            code.append(th.toStringNonMarked());
+                        }else{
+                            if(Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
+
+                            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, STR."\{path}\\\{name}", _line));
+                            return;
+                        }
+                    }else{
                         if (!code.isEmpty()) code.append("\n");
-                        else code.append(th.toStringNonMarked());
-                    }else {
-                        addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", line));
-                        return;
+                        code.append(th.toStringNonMarked());
                     }
                 }else{
                     if(Set.of("if", "while").contains(th.current().s())) i++;
                     if (!code.isEmpty()) code.append("\n");
-                    else code.append(th.toStringNonMarked());
+                    code.append(th.toStringNonMarked());
                 }
             }
 

@@ -18,7 +18,7 @@ final class Lexer {
 
                 while (i < chars.length && chars[i] != '#')
                     i++;
-            }else if(Character.isDigit(chars[i]) || (chars[i] == '-' && chars.length >= i + 1 && Character.isDigit(chars[i+1]))){
+            }else if(Character.isDigit(chars[i])){
 
                 value = new StringBuilder();
                 value.append(chars[i]);
@@ -100,7 +100,7 @@ final class Lexer {
 
                 i++;
 
-                tokens.add(new Token(value.append("\"").toString(), Token.Type.STRING));
+                tokens.add(new Token(value.toString(), Token.Type.STRING));
 
             }else if(chars[i] == '\''){
 
@@ -125,7 +125,7 @@ final class Lexer {
         return new TokenHandler(tokens);
     }
 
-    private static boolean isOperator(char c){
+    static boolean isOperator(char c){
         return String.valueOf(c).matches("[-+*/!=<>%&|^~]");
     }
 }
