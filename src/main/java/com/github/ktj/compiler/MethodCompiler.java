@@ -108,8 +108,10 @@ final class MethodCompiler {
     private void compileLoad(AST.Load ast, boolean all){
         if(ast.name != null && ast.call == null && !all) return;
 
+        boolean first = true;
+
         if(ast.name != null){
-            switch (ast.clazz) {
+            switch (ast.clazz){
                 case "int", "boolean", "char", "byte", "short" -> {
                     code.addIload(os.get(ast.name));
                     os.push(1);
@@ -131,18 +133,22 @@ final class MethodCompiler {
                     os.push(1);
                 }
             }
+            first = false;
         }
 
         if(!all && ast.name == null && ast.call.prev == null) return;
 
-        if(ast.call != null) compileGetField(all ? ast.call : ast.call.prev);
+        if(ast.call != null) compileGetField(all ? ast.call : ast.call.prev, first);
     }
 
-    private void compileGetField(AST.Call call){
-        if(call.prev != null) compileGetField(call.prev);
+    private void compileGetField(AST.Call call, boolean first){
+        if(call.prev != null) compileGetField(call.prev, false);
 
         if(call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
-        else code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+        else{
+            if(first && call.clazz.equals(clazzName)) code.addAload(0);
+            code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+        }
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){

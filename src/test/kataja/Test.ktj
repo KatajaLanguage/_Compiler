@@ -3,6 +3,6 @@ public class Test{
     int i
 
     public void test(){
-        i = 3
+        i = i + 3
     }
 }
