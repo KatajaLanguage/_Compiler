@@ -142,13 +142,11 @@ final class MethodCompiler {
         if(call.prev != null) compileGetField(call.prev);
 
         if(call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
-        else{
-            if(call.type.equals(clazzName)) code.addAload(0);
-            code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
-        }
+        else code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){
+        if(ast.load.name == null && ast.load.call != null && !ast.load.call.statik && ast.load.call.clazz.equals(clazzName)) code.addAload(0);
         compileLoad(ast.load, false);
         compileCalc(ast.calc);
 

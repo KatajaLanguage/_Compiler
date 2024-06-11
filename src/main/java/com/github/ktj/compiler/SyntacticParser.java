@@ -296,13 +296,13 @@ final class SyntacticParser {
                 current.clazz = clazzName;
                 current.call = call;
                 current.statik = true;
+                ast.call = current = current.toStatic();
                 ast.type = current.type;
             }else if(CompilerUtil.getFieldType(clazzName, call, false) != null){
                 ast.call = current = new AST.Call();
                 current.type = CompilerUtil.getFieldType(clazzName, call, false);
                 current.clazz = clazzName;
                 current.call = call;
-                ast.call = current = current.toStatic();
                 ast.type = current.type;
             }else throw new RuntimeException(STR."Field \{call} is not defined");
 

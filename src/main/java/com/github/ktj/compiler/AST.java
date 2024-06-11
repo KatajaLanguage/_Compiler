@@ -78,6 +78,7 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Retu
 
             help.statik = statik;
             help.clazz = clazz;
+            help.type = type;
             help.call = call;
             help.prev = prev;
             help.argTypes = argTypes;
