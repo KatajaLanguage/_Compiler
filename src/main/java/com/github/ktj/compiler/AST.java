@@ -64,6 +64,8 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Retu
             prev = this instanceof StaticCall ? new StaticCall() : new Call();
             prev.prev = help;
             prev.call = call;
+            prev.type = type;
+            prev.clazz = clazz;
             prev.statik = statik;
             prev.argTypes = argTypes;
 
@@ -71,6 +73,7 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Retu
             clazz = null;
             call = null;
             argTypes = null;
+            type = null;
         }
 
         StaticCall toStatic(){

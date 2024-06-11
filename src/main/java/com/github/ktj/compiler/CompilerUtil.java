@@ -1,7 +1,10 @@
 package com.github.ktj.compiler;
 
+import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Set;
 
 public class CompilerUtil {
@@ -104,26 +107,52 @@ public class CompilerUtil {
     }
 
     public static String getMethodReturnType(String clazzName, String method, boolean statik){
-        return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik) ? clazz.methods.get(method).returnType : null;
+        if(Compiler.Instance().classes.containsKey(clazzName)){
+            return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik) ? clazz.methods.get(method).returnType : null;
+        }else{
+            try{
+                for(Method m:Class.forName(clazzName).getMethods()){
+                    if(m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length){
+                        boolean matches = true;
+                        for(int i = 0;i < m.getParameterTypes().length;i++){
+                            if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[i])) {
+                                matches = false;
+                                break;
+                            }
+                        }
+                        if(matches) return m.getReturnType().toString().contains(" ") ? m.getReturnType().toString().split(" ")[1] :  m.getReturnType().toString();
+                    }
+                }
+            }catch(ClassNotFoundException ignored){}
+        }
+        return null;
     }
 
     public static String getFieldType(String clazzName, String field, boolean statik){
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
-        if(compilable == null) return null;
-
-        switch(compilable){
-            case KtjClass clazz -> {
-                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik == statik)
-                    return clazz.fields.get(field).type;
+        if(compilable != null) {
+            switch (compilable) {
+                case KtjClass clazz -> {
+                    if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik == statik)
+                        return clazz.fields.get(field).type;
+                }
+                case KtjTypeClass clazz -> {
+                    if (clazz.hasValue(field) && statik) return clazzName;
+                }
+                case KtjDataClass clazz -> {
+                    if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik != statik)
+                        return clazz.fields.get(field).type;
+                }
+                default -> {
+                }
             }
-            case KtjTypeClass clazz -> {
-                if (clazz.hasValue(field) && statik) return clazzName;
-            }
-            case KtjDataClass clazz -> {
-                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik != statik) return clazz.fields.get(field).type;
-            }
-            default -> {}
+        }else{
+            try{
+                Field f = Class.forName(clazzName).getField(field);
+                if(((f.getModifiers() & AccessFlag.STATIC) != 0 && !statik) || ((f.getModifiers() & AccessFlag.STATIC) == 0 && statik)) return null;
+                return f.getType().toString().split(" ")[1];
+            }catch(Exception ignored){}
         }
 
         return null;
@@ -132,20 +161,26 @@ public class CompilerUtil {
     public static boolean isFinal(String clazzName, String field){
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
-        if(compilable == null) return false;
-
-        switch(compilable){
-            case KtjClass clazz -> {
-                if (clazz.fields.containsKey(field))
-                    return clazz.fields.get(field).modifier.finaly;
+        if(compilable != null) {
+            switch (compilable) {
+                case KtjClass clazz -> {
+                    if (clazz.fields.containsKey(field))
+                        return clazz.fields.get(field).modifier.finaly;
+                }
+                case KtjTypeClass clazz -> {
+                    return true;
+                }
+                case KtjDataClass clazz -> {
+                    if (clazz.fields.containsKey(field)) return clazz.fields.get(field).modifier.finaly;
+                }
+                default -> {
+                }
             }
-            case KtjTypeClass clazz -> {
-                return true;
-            }
-            case KtjDataClass clazz -> {
-                if (clazz.fields.containsKey(field)) return clazz.fields.get(field).modifier.finaly;
-            }
-            default -> {}
+        }else{
+            try{
+                Field f = Class.forName(clazzName).getField(field);
+                return (f.getModifiers() & AccessFlag.FINAL) != 0;
+            }catch(Exception ignored){}
         }
 
         return false;

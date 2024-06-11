@@ -1,6 +1,8 @@
+use java/lang/System
+
 public class Test{
 
     public void test(){
-
+        System.out.println(0)
     }
 }

@@ -308,7 +308,9 @@ final class SyntacticParser {
                 ast.clazz = ast.type;
                 current = null;
             }else if(method.uses.containsKey(call)) {
-                String type = call;
+                if(!CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException(STR."Class \{method.uses.get(call)} is not defined");
+
+                String type = method.uses.get(call);
                 th.assertToken(".");
                 call = th.assertToken(Token.Type.IDENTIFIER).s();
 
@@ -386,7 +388,7 @@ final class SyntacticParser {
             current.call = th.assertToken(Token.Type.IDENTIFIER).s();
 
             if(th.hasNext() && th.next().equals("(")){
-                StringBuilder desc = new StringBuilder(call);
+                StringBuilder desc = new StringBuilder(current.call);
                 ArrayList<AST.Calc> args = new ArrayList<>();
 
                 while(th.hasNext() && !th.next().equals(")")){
@@ -399,10 +401,8 @@ final class SyntacticParser {
 
                 if(CompilerUtil.getMethodReturnType(currentType, desc.toString(), false) == null) throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{currentType}");
 
-                ast.call = current = new AST.Call();
                 current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false);
                 current.clazz = currentType;
-                current.call = call;
                 current.argTypes = args.toArray(new AST.Calc[0]);
                 current.statik = false;
                 ast.finaly = true;
