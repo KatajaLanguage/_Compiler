@@ -1,8 +1,11 @@
 public class Test{
 
-    int i
+    int i = 5
 
     public void test(){
-        i = i + 3
+        a(3 + i)
+    }
+
+    public void a(int i){
     }
 }

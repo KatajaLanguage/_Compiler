@@ -270,43 +270,91 @@ final class SyntacticParser {
         AST.Call current;
 
         String call = th.assertToken(Token.Type.IDENTIFIER).s();
-        if(scope.getType(call) != null){
-            ast.name = call;
-            ast.type = scope.getType(call);
-            ast.clazz = ast.type;
-            current = null;
-        }else if(method.uses.containsKey(call)){
-            String type = call;
-            th.assertToken(".");
-            call = th.assertToken(Token.Type.IDENTIFIER).s();
+        if(th.hasNext() && th.next().equals("(")){
+            StringBuilder desc = new StringBuilder(call);
+            ArrayList<AST.Calc> args = new ArrayList<>();
 
-            if(CompilerUtil.getFieldType(type, call, true) == null) throw new RuntimeException(STR."static Field \{call} is not defined for class \{type}");
+            while(!th.assertToken(Token.Type.IDENTIFIER, ")").equals(")")){
+                args.add(parseCalc());
+                th.assertToken(",");
+            }
+
+            for(AST.Calc calc:args) desc.append("%").append(calc.type);
+
+            if(CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false) == null) throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{clazzName}");
 
             ast.call = current = new AST.Call();
-            current.type = CompilerUtil.getFieldType(type, call, true);
-            current.clazz = type;
+            current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false);
+            current.clazz = clazzName;
             current.call = call;
-            current.statik = true;
-            ast.finaly = CompilerUtil.isFinal(type, call);
+            current.argTypes = args.toArray(new AST.Calc[0]);
+            current.statik = false;
+            ast.finaly = true;
             ast.type = current.type;
         }else{
-            if(CompilerUtil.getFieldType(clazzName, call, true) != null){
-                ast.call = current = new AST.Call();
-                current.type = CompilerUtil.getFieldType(clazzName, call, true);
-                current.clazz = clazzName;
-                current.call = call;
-                current.statik = true;
-                ast.call = current = current.toStatic();
-                ast.type = current.type;
-            }else if(CompilerUtil.getFieldType(clazzName, call, false) != null){
-                ast.call = current = new AST.Call();
-                current.type = CompilerUtil.getFieldType(clazzName, call, false);
-                current.clazz = clazzName;
-                current.call = call;
-                ast.type = current.type;
-            }else throw new RuntimeException(STR."Field \{call} is not defined");
+            th.last();
 
-            ast.finaly = CompilerUtil.isFinal(clazzName, call);
+            if (scope.getType(call) != null) {
+                ast.name = call;
+                ast.type = scope.getType(call);
+                ast.clazz = ast.type;
+                current = null;
+            }else if(method.uses.containsKey(call)) {
+                String type = call;
+                th.assertToken(".");
+                call = th.assertToken(Token.Type.IDENTIFIER).s();
+
+                if(th.hasNext() && th.next().equals("(")){
+                    StringBuilder desc = new StringBuilder(call);
+                    ArrayList<AST.Calc> args = new ArrayList<>();
+
+                    while(!th.assertToken(Token.Type.IDENTIFIER, ")").equals(")")){
+                        args.add(parseCalc());
+                        th.assertToken(",");
+                    }
+
+                    for(AST.Calc calc:args) desc.append("%").append(calc.type);
+
+                    if(CompilerUtil.getMethodReturnType(type, desc.toString(), true) == null) throw new RuntimeException(STR."static Method \{desc.toString()} is not defined for class \{type}");
+
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getMethodReturnType(type, desc.toString(), true);
+                    current.argTypes = args.toArray(new AST.Calc[0]);
+                    ast.finaly = true;
+                }else {
+                    th.last();
+
+                    if (CompilerUtil.getFieldType(type, call, true) == null)
+                        throw new RuntimeException(STR."static Field \{call} is not defined for class \{type}");
+
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getFieldType(type, call, true);
+                    ast.finaly = CompilerUtil.isFinal(type, call);
+                }
+
+                current.call = call;
+                current.clazz = type;
+                current.statik = true;
+                ast.type = current.type;
+            } else {
+                if (CompilerUtil.getFieldType(clazzName, call, true) != null) {
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getFieldType(clazzName, call, false);
+                    current.clazz = clazzName;
+                    current.call = call;
+                    current.statik = true;
+                    ast.call = current = current.toStatic();
+                    ast.type = current.type;
+                } else if (CompilerUtil.getFieldType(clazzName, call, false) != null) {
+                    ast.call = current = new AST.Call();
+                    current.type = CompilerUtil.getFieldType(clazzName, call, false);
+                    current.clazz = clazzName;
+                    current.call = call;
+                    ast.type = current.type;
+                } else throw new RuntimeException(STR."Field \{call} is not defined");
+
+                ast.finaly = CompilerUtil.isFinal(clazzName, call);
+            }
         }
 
         while(th.hasNext()){
@@ -327,11 +375,37 @@ final class SyntacticParser {
             }
 
             current.call = th.assertToken(Token.Type.IDENTIFIER).s();
-            current.type = CompilerUtil.getFieldType(currentType, current.call, false);
 
-            if(current.type == null) throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
+            if(th.hasNext() && th.next().equals("(")){
+                StringBuilder desc = new StringBuilder(call);
+                ArrayList<AST.Calc> args = new ArrayList<>();
 
-            ast.finaly = CompilerUtil.isFinal(currentType, call);
+                while(!th.assertToken(Token.Type.IDENTIFIER, ")").equals(")")){
+                    args.add(parseCalc());
+                    th.assertToken(",");
+                }
+
+                for(AST.Calc calc:args) desc.append("%").append(calc.type);
+
+                if(CompilerUtil.getMethodReturnType(currentType, desc.toString(), false) == null) throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{currentType}");
+
+                ast.call = current = new AST.Call();
+                current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false);
+                current.clazz = currentType;
+                current.call = call;
+                current.argTypes = args.toArray(new AST.Calc[0]);
+                current.statik = false;
+                ast.finaly = true;
+            }else {
+                th.last();
+                current.type = CompilerUtil.getFieldType(currentType, current.call, false);
+
+                if (current.type == null)
+                    throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
+
+                ast.finaly = CompilerUtil.isFinal(currentType, call);
+            }
+
             ast.type = current.type;
         }
 

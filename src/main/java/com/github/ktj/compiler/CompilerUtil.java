@@ -94,6 +94,10 @@ public class CompilerUtil {
         return null;
     }
 
+    public static String getMethodReturnType(String clazzName, String method, boolean statik){
+        return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik) ? clazz.methods.get(method).returnType : null;
+    }
+
     public static String getFieldType(String clazzName, String field, boolean statik){
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
