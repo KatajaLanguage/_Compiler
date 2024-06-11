@@ -47,17 +47,42 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Retu
 
     static final class Load extends AST{
         String name = null;
+        String clazz = null;
+        Call call = null;
+        boolean finaly = false;
     }
 
     static sealed class Call extends AST permits StaticCall {
+        boolean statik = false;
         String clazz = null;
         String call = null;
-        Call next = null;
-        Calc[] argTypes;
+        Call prev = null;
+        Calc[] argTypes = null;
 
-        void addNext(Call c){
-            if(next == null) next = c;
-            else next.addNext(c);
+        void setPrev(){
+            Call help = prev;
+            prev = this instanceof StaticCall ? new StaticCall() : new Call();
+            prev.prev = help;
+            prev.call = call;
+            prev.statik = statik;
+            prev.argTypes = argTypes;
+
+            statik = false;
+            clazz = null;
+            call = null;
+            argTypes = null;
+        }
+
+        StaticCall toStatic(){
+            StaticCall help = new StaticCall();
+
+            help.statik = statik;
+            help.clazz = clazz;
+            help.call = call;
+            help.prev = prev;
+            help.argTypes = argTypes;
+
+            return help;
         }
     }
 
@@ -79,14 +104,8 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Retu
         AST[] ast = null;
     }
 
-    static sealed class VarAssignment extends AST permits PutField{
+    static final class VarAssignment extends AST{
         Calc calc = null;
-        String name = null;
-    }
-
-    static final class PutField extends VarAssignment{
-        Call call = null;
-        String clazz = null;
-        boolean statik = false;
+        Load load = null;
     }
 }

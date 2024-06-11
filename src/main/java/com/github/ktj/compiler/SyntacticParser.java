@@ -86,7 +86,7 @@ final class SyntacticParser {
             case "return" -> parseReturn();
             default -> {
                 th.last();
-                yield parseVarAssignment();
+                yield parseStatement();
             }
         };
     }
@@ -172,63 +172,48 @@ final class SyntacticParser {
         return astList.toArray(new AST[0]);
     }
 
-    private AST.VarAssignment parseVarAssignment(){
-        AST.VarAssignment ast;
+    private AST parseStatement(){
+        if(th.next().equals(Token.Type.IDENTIFIER) && th.next().equals(Token.Type.IDENTIFIER)){
+            th.toFirst();
 
-        String first = th.assertToken(Token.Type.IDENTIFIER).s();
-        if(th.assertToken(Token.Type.IDENTIFIER, ".", "=").equals(".")){
-            ast = new AST.PutField();
-            throw new RuntimeException("illegal argument");
-        }else{
-            ast = new AST.VarAssignment();
+            String type = th.assertToken(Token.Type.IDENTIFIER).s();
+            String name = th.assertToken(Token.Type.IDENTIFIER).s();
+            th.assertToken("=");
+            AST.Calc calc = parseCalc();
+            th.assertNull();
 
-            ast.type = first;
-            if(!th.current().equals("=")){
-                ast.name = th.current().s();
+            if(!type.equals(calc.type)) throw new RuntimeException(STR."Expected type \{type} got \{calc.type}");
+            if(scope.getType(name) != null) throw new RuntimeException(STR."variable \{name} is already defined");
+
+            AST.VarAssignment ast = new AST.VarAssignment();
+
+            ast.calc = calc;
+            ast.type = type;
+            ast.load = new AST.Load();
+            ast.load.type = type;
+            ast.load.name = name;
+            ast.load.clazz = type;
+
+            return ast;
+        }else {
+            th.toFirst();
+            AST.Load load = parseCall();
+
+            if (th.hasNext()) {
                 th.assertToken("=");
-            }
-            ast.calc = parseCalc();
+                AST.Calc calc = parseCalc();
+                th.assertNull();
 
-            if(ast.name != null){
-                if(!ast.calc.type.equals(ast.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
-                if(scope.getType(ast.name) != null) throw new RuntimeException(STR."\{ast.name} is already defined");
-                scope.add(ast.name, ast.type);
-            }else{
-                if(scope.getType(ast.type) == null){
-                    boolean hasField = false;
+                if(!load.type.equals(calc.type)) throw new RuntimeException(STR."Expected type \{load.type} got \{calc.type}");
 
-                    if(clazz instanceof KtjClass clazz){
-                        if(clazz.fields.get(ast.type) != null){
-                            AST.VarAssignment old = ast;
-                            ast = new AST.PutField();
+                AST.VarAssignment ast = new AST.VarAssignment();
+                ast.calc = calc;
+                ast.load = load;
+                ast.type = ast.calc.type;
 
-                            ast.name = old.type;
-                            ast.type = old.calc.type;
-                            ast.calc = old.calc;
-                            ((AST.PutField)(ast)).clazz = clazzName;
-
-                            if(clazz.fields.get(old.type).modifier.statik) ((AST.PutField)(ast)).statik = true;
-                            if(clazz.fields.get(old.type).modifier.finaly) throw new RuntimeException(STR."Field \{old.type} is constant and canot be changed");
-                            if(!ast.type.equals(ast.calc.type)) throw new RuntimeException(STR."Expected type \{ast.type} got \{ast.calc.type}");
-
-                            hasField = true;
-                        }
-                    }
-
-                    if(!hasField) {
-                        scope.add(ast.type, ast.calc.type);
-                        ast.name = ast.type;
-                        ast.type = ast.calc.type;
-                    }
-                }else{
-                    ast.name = ast.type;
-                    ast.type = ast.calc.type;
-                }
-            }
+                return ast;
+            } else return load;
         }
-
-
-        return ast;
     }
 
     private AST.Calc parseCalc(){
@@ -266,14 +251,84 @@ final class SyntacticParser {
                 if(th.current().equals("true") || th.current().equals("false")){
                     ast.token = th.current();
                     ast.type = "boolean";
-                }else if(scope.getType(th.current().s()) == null) throw new RuntimeException(STR."\{th.current()} is not defined");
-                else {
-                    ast.load = new AST.Load();
-                    ast.load.name = th.current().s();
-                    ast.type = (ast.load.type = scope.getType(th.current().s()));
+                }else{
+                    ast.load = parseCall();
                 }
             }
             default -> throw new RuntimeException("illegal argument");
+        }
+
+        return ast;
+    }
+
+    private AST.Load parseCall(){
+        AST.Load ast = new AST.Load();
+        AST.Call current;
+
+        String call = th.assertToken(Token.Type.IDENTIFIER).s();
+        if(scope.getType(call) != null){
+            ast.name = call;
+            ast.type = scope.getType(call);
+            ast.clazz = ast.type;
+            current = null;
+        }else if(method.uses.containsKey(call)){
+            String type = call;
+            th.assertToken(".");
+            call = th.assertToken(Token.Type.IDENTIFIER).s();
+
+            if(CompilerUtil.getFieldType(type, call, true) == null) throw new RuntimeException(STR."static Field \{call} is not defined for class \{type}");
+
+            ast.call = current = new AST.Call();
+            current.type = CompilerUtil.getFieldType(type, call, true);
+            current.clazz = type;
+            current.call = call;
+            current.statik = true;
+            ast.finaly = CompilerUtil.isFinal(type, call);
+            ast.type = current.type;
+        }else{
+            if(CompilerUtil.getFieldType(clazzName, call, true) != null){
+                ast.call = current = new AST.Call();
+                current.type = CompilerUtil.getFieldType(clazzName, call, true);
+                current.clazz = clazzName;
+                current.call = call;
+                current.statik = true;
+                ast.type = current.type;
+            }else if(CompilerUtil.getFieldType(clazzName, call, false) != null){
+                ast.call = current = new AST.Call();
+                current.type = CompilerUtil.getFieldType(clazzName, call, false);
+                current.clazz = clazzName;
+                current.call = call;
+                ast.call = current = current.toStatic();
+                ast.type = current.type;
+            }else throw new RuntimeException(STR."Field \{call} is not defined");
+
+            ast.finaly = CompilerUtil.isFinal(clazzName, call);
+        }
+
+        while(th.hasNext()){
+            if(!th.next().equals(".")){
+                th.last();
+                break;
+            }
+
+            String currentType;
+
+            if(current == null){
+                current = new AST.Call();
+                ast.call = current;
+                currentType = ast.type;
+            }else{
+                currentType = current.type;
+                current.setPrev();
+            }
+
+            current.call = th.assertToken(Token.Type.IDENTIFIER).s();
+            current.type = CompilerUtil.getFieldType(currentType, current.call, false);
+
+            if(current.type == null) throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
+
+            ast.finaly = CompilerUtil.isFinal(currentType, call);
+            ast.type = current.type;
         }
 
         return ast;

@@ -35,11 +35,10 @@ final class MethodCompiler {
     }
 
     private void compileAST(AST ast){
-        if(ast instanceof AST.PutField) compilePutField((AST.PutField) ast);
-        else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
-        else if(ast instanceof AST.While) compileWhile((AST.While) ast);
+        if(ast instanceof AST.While) compileWhile((AST.While) ast);
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
+        else if(ast instanceof AST.Load) compileLoad((AST.Load) ast, true);
     }
 
     private void compileReturn(AST.Return ast){
@@ -105,22 +104,71 @@ final class MethodCompiler {
             code.write16bit(i, code.getSize() - i + 1);
     }
 
-    private void compileVarAssignment(AST.VarAssignment ast){
-        compileCalc(ast.calc);
-        compileStore(ast.name, ast.type);
-    }
+    private void compileLoad(AST.Load ast, boolean all){
+        if(ast.name != null && ast.call == null && !all) return;
 
-    private void compilePutField(AST.PutField ast){
-        if(!ast.statik) code.addAload(0);
-
-        compileCalc(ast.calc);
-
-        if(ast.call != null){
-
+        if(ast.name != null){
+            switch (ast.clazz) {
+                case "int", "boolean", "char", "byte", "short" -> {
+                    code.addIload(os.get(ast.name));
+                    os.push(1);
+                }
+                case "float" -> {
+                    code.addFload(os.get(ast.name));
+                    os.push(1);
+                }
+                case "double" -> {
+                    code.addDload(os.get(ast.name));
+                    os.push(2);
+                }
+                case "long" -> {
+                    code.addLload(os.get(ast.name));
+                    os.push(2);
+                }
+                default -> {
+                    code.addAload(os.get(ast.name));
+                    os.push(1);
+                }
+            }
         }
 
-        if(ast.statik) code.addPutstatic(ast.clazz, ast.name, CompilerUtil.toDesc(ast.type));
-        else code.addPutfield(ast.clazz, ast.name, CompilerUtil.toDesc(ast.type));
+        if(!all && ast.name == null && ast.call.prev == null) return;
+
+        compileGetField(all ? ast.call : ast.call.prev);
+    }
+
+    private void compileGetField(AST.Call call){
+        if(call.prev != null) compileGetField(call.prev);
+
+        if(call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+        else{
+            if(call.type.equals(clazzName)) code.addAload(0);
+            code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+        }
+    }
+
+    private void compileVarAssignment(AST.VarAssignment ast){
+        compileLoad(ast.load, false);
+        compileCalc(ast.calc);
+
+        if(ast.load.call == null){
+            int where = os.get(ast.load.name);
+
+            if(where == -1) {
+                os.pop();
+                where = os.push(ast.load.name, Set.of("double", "long").contains(ast.load.type) ? 2 : 1);
+            }
+
+            switch (ast.load.type) {
+                case "int", "boolean", "char", "byte", "short" -> code.addIstore(where);
+                case "float" -> code.addFstore(where);
+                case "double" -> code.addDstore(where);
+                case "long" -> code.addLstore(where);
+            }
+        }else{
+            if(ast.load.call.statik) code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+            else code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+        }
     }
 
     private void compileCalc(AST.Calc ast){
@@ -238,7 +286,7 @@ final class MethodCompiler {
 
     private void compileValue(AST.Value ast){
         if(ast.load != null){
-            compileLoad(ast.load);
+            compileLoad(ast.load, true);
             return;
         }
 
@@ -300,47 +348,6 @@ final class MethodCompiler {
                 if(ast.type.equals("boolean")) code.addIconst(ast.token.s().equals("true") ? 1 : 0);
                 os.push(1);
             }
-        }
-    }
-
-    private void compileLoad(AST.Load ast){
-        switch (ast.type) {
-            case "int", "boolean", "char", "byte", "short" -> {
-                code.addIload(os.get(ast.name));
-                os.push(1);
-            }
-            case "float" -> {
-                code.addFload(os.get(ast.name));
-                os.push(1);
-            }
-            case "double" -> {
-                code.addDload(os.get(ast.name));
-                os.push(2);
-            }
-            case "long" -> {
-                code.addLload(os.get(ast.name));
-                os.push(2);
-            }
-            default -> {
-                code.addAload(os.get(ast.name));
-                os.push(2);
-            }
-        }
-    }
-
-    private void compileStore(String name, String type){
-        int where = os.get(name);
-
-        if(where == -1) {
-            os.pop();
-            where = os.push(name, Set.of("double", "long").contains(type) ? 2 : 1);
-        }
-
-        switch (type) {
-            case "int", "boolean", "char", "byte", "short" -> code.addIstore(where);
-            case "float" -> code.addFstore(where);
-            case "double" -> code.addDstore(where);
-            case "long" -> code.addLstore(where);
         }
     }
 

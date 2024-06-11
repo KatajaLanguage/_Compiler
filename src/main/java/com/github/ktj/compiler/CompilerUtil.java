@@ -1,5 +1,7 @@
 package com.github.ktj.compiler;
 
+import com.github.ktj.lang.*;
+
 import java.util.Set;
 
 public class CompilerUtil {
@@ -90,6 +92,50 @@ public class CompilerUtil {
                 return type1.equals("boolean") ? null : type1;
         }
         return null;
+    }
+
+    public static String getFieldType(String clazzName, String field, boolean statik){
+        Compilable compilable = Compiler.Instance().classes.get(clazzName);
+
+        if(compilable == null) return null;
+
+        switch(compilable){
+            case KtjClass clazz -> {
+                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik != statik)
+                    return clazz.fields.get(field).type;
+            }
+            case KtjTypeClass clazz -> {
+                if (clazz.hasValue(field) && statik) return clazzName;
+            }
+            case KtjDataClass clazz -> {
+                if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik != statik) return clazz.fields.get(field).type;
+            }
+            default -> {}
+        }
+
+        return null;
+    }
+
+    public static boolean isFinal(String clazzName, String field){
+        Compilable compilable = Compiler.Instance().classes.get(clazzName);
+
+        if(compilable == null) return false;
+
+        switch(compilable){
+            case KtjClass clazz -> {
+                if (clazz.fields.containsKey(field))
+                    return clazz.fields.get(field).modifier.finaly;
+            }
+            case KtjTypeClass clazz -> {
+                return true;
+            }
+            case KtjDataClass clazz -> {
+                if (clazz.fields.containsKey(field)) return clazz.fields.get(field).modifier.finaly;
+            }
+            default -> {}
+        }
+
+        return false;
     }
 
     public static boolean isPrimitive(String type){
