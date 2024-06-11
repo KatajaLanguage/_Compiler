@@ -1,11 +1,8 @@
+use java/lang/System
+
 public class Test{
 
-    int i = 5
-
     public void test(){
-        a(3)
-    }
-
-    public void a(int i){
+        System.out.println(0)
     }
 }
