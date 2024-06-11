@@ -67,6 +67,15 @@ public class CompilerUtil {
         return desc.toString();
     }
 
+    public static String toDesc(String returnType, AST.Calc[] args){
+        StringBuilder sb = new StringBuilder("(");
+
+        for(AST.Calc calc:args) sb.append(toDesc(calc.type));
+
+        sb.append(")").append(toDesc(returnType));
+        return sb.toString();
+    }
+
     public static boolean classExist(String name){
         if(name.startsWith("[")) return classExist(name.substring(1));
 

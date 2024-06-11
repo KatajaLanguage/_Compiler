@@ -201,6 +201,8 @@ final class SyntacticParser {
             th.toFirst();
             AST.Load load = parseCall();
 
+            if(load.finaly) th.assertNull();
+
             if (th.hasNext()) {
                 th.assertToken("=");
                 AST.Calc calc = parseCalc();
@@ -274,7 +276,7 @@ final class SyntacticParser {
             StringBuilder desc = new StringBuilder(call);
             ArrayList<AST.Calc> args = new ArrayList<>();
 
-            while(!th.assertToken(Token.Type.IDENTIFIER, ")").equals(")")){
+            while(!th.next().equals(")")){
                 args.add(parseCalc());
                 th.assertToken(",");
             }
@@ -308,7 +310,7 @@ final class SyntacticParser {
                     StringBuilder desc = new StringBuilder(call);
                     ArrayList<AST.Calc> args = new ArrayList<>();
 
-                    while(!th.assertToken(Token.Type.IDENTIFIER, ")").equals(")")){
+                    while(!th.next().equals(")")){
                         args.add(parseCalc());
                         th.assertToken(",");
                     }
@@ -380,7 +382,7 @@ final class SyntacticParser {
                 StringBuilder desc = new StringBuilder(call);
                 ArrayList<AST.Calc> args = new ArrayList<>();
 
-                while(!th.assertToken(Token.Type.IDENTIFIER, ")").equals(")")){
+                while(!th.next().equals(")")){
                     args.add(parseCalc());
                     th.assertToken(",");
                 }

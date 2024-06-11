@@ -38,7 +38,7 @@ final class MethodCompiler {
         if(ast instanceof AST.While) compileWhile((AST.While) ast);
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
-        else if(ast instanceof AST.Load) compileLoad((AST.Load) ast, true);
+        else if(ast instanceof AST.Load) compileCall((AST.Load) ast, true);
         else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
     }
 
@@ -105,7 +105,7 @@ final class MethodCompiler {
             code.write16bit(i, code.getSize() - i + 1);
     }
 
-    private void compileLoad(AST.Load ast, boolean all){
+    private void compileCall(AST.Load ast, boolean all){
         if(ast.name != null && ast.call == null && !all) return;
 
         boolean first = true;
@@ -138,22 +138,31 @@ final class MethodCompiler {
 
         if(!all && ast.name == null && ast.call.prev == null) return;
 
-        if(ast.call != null) compileGetField(all ? ast.call : ast.call.prev, first);
+        if(ast.call != null) compileCall(all ? ast.call : ast.call.prev, first);
     }
 
-    private void compileGetField(AST.Call call, boolean first){
-        if(call.prev != null) compileGetField(call.prev, false);
+    private void compileCall(AST.Call call, boolean first){
+        if(call.prev != null) compileCall(call.prev, false);
 
-        if(call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
-        else{
-            if(first && call.clazz.equals(clazzName)) code.addAload(0);
-            code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+        if(call.argTypes == null) {
+            if (call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+            else {
+                if (first && call.clazz.equals(clazzName)) code.addAload(0);
+                code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+            }
+        }else{
+            if(!call.statik && first && call.clazz.equals(clazzName)) code.addAload(0);
+
+            for(AST.Calc calc:call.argTypes) compileCalc(calc);
+
+            if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
+            else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
         }
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){
         if(ast.load.name == null && ast.load.call != null && !ast.load.call.statik && ast.load.call.clazz.equals(clazzName)) code.addAload(0);
-        compileLoad(ast.load, false);
+        compileCall(ast.load, false);
         compileCalc(ast.calc);
 
         if(ast.load.call == null){
@@ -291,7 +300,7 @@ final class MethodCompiler {
 
     private void compileValue(AST.Value ast){
         if(ast.load != null){
-            compileLoad(ast.load, true);
+            compileCall(ast.load, true);
             return;
         }
 
