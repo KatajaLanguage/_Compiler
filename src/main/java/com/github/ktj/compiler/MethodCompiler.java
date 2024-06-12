@@ -151,7 +151,8 @@ final class MethodCompiler {
                 code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
             }
         }else{
-            if(!call.statik && first && call.clazz.equals(clazzName)) code.addAload(0);
+            if(!call.statik && first && call.clazz.equals(clazzName) && !call.call.equals("<init>")) code.addAload(0);
+            else if(!call.call.equals("<init>")) os.pop();
 
             for(AST.Calc calc:call.argTypes) compileCalc(calc);
 
@@ -159,10 +160,11 @@ final class MethodCompiler {
                 code.addNew(call.clazz);
                 code.add(0x59); //dup
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));
-                os.push(1);
             }else if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
         }
+
+        os.push(Set.of("double", "long").contains(call.type) ? 2 : 1);
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){

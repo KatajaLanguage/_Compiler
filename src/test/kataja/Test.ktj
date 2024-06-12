@@ -4,5 +4,6 @@ public class Test{
 
     public void test(){
         String s = String()
+        s.length()
     }
 }
