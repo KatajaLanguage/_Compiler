@@ -154,6 +154,7 @@ final class SyntacticParser {
     }
 
     private AST[] parseContent(){
+        scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();
 
         AST current = parseNextLine();
@@ -169,6 +170,7 @@ final class SyntacticParser {
             th.assertToken("}");
         }else throw new RuntimeException("Expected }");
 
+        scope = scope.last;
         return astList.toArray(new AST[0]);
     }
 
