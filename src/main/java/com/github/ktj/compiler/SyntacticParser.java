@@ -404,57 +404,69 @@ final class SyntacticParser {
             }
         }
 
-        while(th.hasNext()){
-            if(!th.next().equals(".")){
+        while(th.hasNext()) {
+            if (!th.next().equals(".") && !th.current().equals("[")) {
                 th.last();
                 break;
             }
 
             String currentType;
 
-            if(current == null){
+            if (current == null) {
                 current = new AST.Call();
                 ast.call = current;
                 currentType = ast.type;
-            }else{
+            } else {
                 currentType = current.type;
                 current.setPrev();
             }
 
-            current.call = th.assertToken(Token.Type.IDENTIFIER).s();
+            if(th.current().equals("[")){
+                current.statik = false;
+                current.type = currentType.substring(1);
+                current.clazz = currentType;
+                current.argTypes = new AST.Calc[]{parseCalc()};
 
-            if(th.isNext("(")){
-                StringBuilder desc = new StringBuilder(current.call);
-                ArrayList<AST.Calc> args = new ArrayList<>();
+                th.assertToken("]");
 
-                while(th.hasNext() && !th.next().equals(")")){
-                    th.last();
-                    args.add(parseCalc());
-                    th.assertToken(",", ")");
+                if(!current.argTypes[0].type.equals("int")) throw new RuntimeException(STR."Expected type int got \{current.argTypes[0].type}");
+            }else{
+                current.call = th.assertToken(Token.Type.IDENTIFIER).s();
+
+                if (th.isNext("(")) {
+                    StringBuilder desc = new StringBuilder(current.call);
+                    ArrayList<AST.Calc> args = new ArrayList<>();
+
+                    while (th.hasNext() && !th.next().equals(")")) {
+                        th.last();
+                        args.add(parseCalc());
+                        th.assertToken(",", ")");
+                    }
+
+                    for (AST.Calc calc : args) desc.append("%").append(calc.type);
+
+                    if (CompilerUtil.getMethodReturnType(currentType, desc.toString(), false) == null)
+                        throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{currentType}");
+
+                    current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false);
+                    current.clazz = currentType;
+                    current.argTypes = args.toArray(new AST.Calc[0]);
+                    current.statik = false;
+                    ast.finaly = true;
+                } else {
+                    current.type = CompilerUtil.getFieldType(currentType, current.call, false);
+
+                    if (current.type == null)
+                        throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
+
+                    current.clazz = currentType;
+                    current.argTypes = null;
+                    current.statik = false;
+                    ast.finaly = CompilerUtil.isFinal(currentType, call);
                 }
 
-                for(AST.Calc calc:args) desc.append("%").append(calc.type);
-
-                if(CompilerUtil.getMethodReturnType(currentType, desc.toString(), false) == null) throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{currentType}");
-
-                current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false);
-                current.clazz = currentType;
-                current.argTypes = args.toArray(new AST.Calc[0]);
-                current.statik = false;
-                ast.finaly = true;
-            }else {
-                current.type = CompilerUtil.getFieldType(currentType, current.call, false);
-
-                if (current.type == null)
-                    throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
-
-                current.clazz = currentType;
-                current.argTypes = null;
-                current.statik = false;
-                ast.finaly = CompilerUtil.isFinal(currentType, call);
+                ast.type = current.type;
             }
-
-            ast.type = current.type;
         }
 
         return ast;

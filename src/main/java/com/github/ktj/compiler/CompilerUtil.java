@@ -186,6 +186,10 @@ public class CompilerUtil {
     }
 
     public static boolean isFinal(String clazzName, String field){
+        if(clazzName.startsWith("[")){
+            return true;
+        }
+
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
         if(compilable != null) {

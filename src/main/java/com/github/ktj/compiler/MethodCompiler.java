@@ -153,11 +153,13 @@ final class MethodCompiler {
             }
         }else{
             if(!call.statik && first && call.clazz.equals(clazzName) && !call.call.equals("<init>")) code.addAload(0);
-            else if(!call.call.equals("<init>")) os.pop();
+            else if(call.call == null || !call.call.equals("<init>")) os.pop();
 
             for(AST.Calc calc:call.argTypes) compileCalc(calc);
 
-            if(call.call.equals("<init>")){
+            if(call.clazz.startsWith("[")){
+                code.add(Opcode.AALOAD);
+            }else if(call.call.equals("<init>")){
                 code.addNew(call.clazz);
                 code.add(Opcode.DUP);
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));

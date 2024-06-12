@@ -3,6 +3,6 @@ use java/lang/String
 public class Test{
 
     main{
-        args.length
+        args[0]
     }
 }
