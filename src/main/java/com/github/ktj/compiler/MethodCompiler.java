@@ -155,7 +155,12 @@ final class MethodCompiler {
 
             for(AST.Calc calc:call.argTypes) compileCalc(calc);
 
-            if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
+            if(call.call.equals("<init>")){
+                code.addNew(call.clazz);
+                code.add(0x59); //dup
+                code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));
+                os.push(1);
+            }else if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
         }
     }
@@ -178,6 +183,7 @@ final class MethodCompiler {
                 case "float" -> code.addFstore(where);
                 case "double" -> code.addDstore(where);
                 case "long" -> code.addLstore(where);
+                default -> code.addAstore(where);
             }
         }else{
             if(ast.load.call.statik) code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
@@ -301,6 +307,7 @@ final class MethodCompiler {
     private void compileValue(AST.Value ast){
         if(ast.load != null){
             compileCall(ast.load, true);
+            os.push(ast.load.type.equals("double") || ast.load.type.equals("long") ? 2 : 1);
             return;
         }
 

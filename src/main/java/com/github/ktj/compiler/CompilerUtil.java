@@ -3,6 +3,7 @@ package com.github.ktj.compiler;
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -111,16 +112,32 @@ public class CompilerUtil {
             return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik) ? clazz.methods.get(method).returnType : null;
         }else{
             try{
-                for(Method m:Class.forName(clazzName).getMethods()){
-                    if(m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length){
-                        boolean matches = true;
-                        for(int i = 0;i < m.getParameterTypes().length;i++){
-                            if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[i])) {
-                                matches = false;
-                                break;
+                if(method.startsWith("<init>")){
+                    for (Constructor<?> m : Class.forName(clazzName).getConstructors()) {
+                        if(method.split("%").length - 1 == m.getParameterTypes().length){
+                            boolean matches = true;
+                            for (int i = 0; i < m.getParameterTypes().length; i++) {
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[i])) {
+                                    matches = false;
+                                    break;
+                                }
                             }
+                            if(matches) return clazzName;
                         }
-                        if(matches) return m.getReturnType().toString().contains(" ") ? m.getReturnType().toString().split(" ")[1] :  m.getReturnType().toString();
+                    }
+                }else {
+                    for (Method m : Class.forName(clazzName).getMethods()) {
+                        if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
+                            boolean matches = true;
+                            for (int i = 0; i < m.getParameterTypes().length; i++) {
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[i])) {
+                                    matches = false;
+                                    break;
+                                }
+                            }
+                            if (matches)
+                                return m.getReturnType().toString().contains(" ") ? m.getReturnType().toString().split(" ")[1] : m.getReturnType().toString();
+                        }
                     }
                 }
             }catch(ClassNotFoundException ignored){}

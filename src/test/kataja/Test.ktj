@@ -1,8 +1,8 @@
-use java/lang/System
+use java/lang/String
 
 public class Test{
 
     public void test(){
-        System.out.println(0)
+        String s = String()
     }
 }
