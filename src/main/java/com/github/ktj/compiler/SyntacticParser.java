@@ -100,7 +100,7 @@ final class SyntacticParser {
             th.assertNull();
         }else ast.type = "void";
 
-        if(!ast.type.equals(method.returnType)) throw new RuntimeException(STR."Expected type \{method.returnType} got \{ast.type}");
+        if(!ast.type.equals(method.returnType)  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException(STR."Expected type \{method.returnType} got \{ast.type}");
 
         return ast;
     }
@@ -189,7 +189,7 @@ final class SyntacticParser {
                 type = method.uses.get(type);
             }
 
-            if(!type.equals(calc.type)) throw new RuntimeException(STR."Expected type \{type} got \{calc.type}");
+            if(!type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(type))) throw new RuntimeException(STR."Expected type \{type} got \{calc.type}");
             if(scope.getType(name) != null) throw new RuntimeException(STR."variable \{name} is already defined");
 
             scope.add(name, type);
@@ -215,7 +215,7 @@ final class SyntacticParser {
                 AST.Calc calc = parseCalc();
                 th.assertNull();
 
-                if(!load.type.equals(calc.type)) throw new RuntimeException(STR."Expected type \{load.type} got \{calc.type}");
+                if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException(STR."Expected type \{load.type} got \{calc.type}");
 
                 AST.VarAssignment ast = new AST.VarAssignment();
                 ast.calc = calc;
@@ -262,6 +262,9 @@ final class SyntacticParser {
                 if(th.current().equals("true") || th.current().equals("false")){
                     ast.token = th.current();
                     ast.type = "boolean";
+                }else if(th.current().equals("null")){
+                    ast.token = th.current();
+                    ast.type = "null";
                 }else{
                     th.last();
                     ast.load = parseCall();

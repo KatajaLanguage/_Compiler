@@ -11,7 +11,8 @@ import java.util.Set;
 public class CompilerUtil {
 
     public static final String[] PRIMITIVES = new String[]{"int", "double", "float", "short", "long", "boolean", "char", "byte"};
-    public static final Set<String> BOOL_OPERATORS = Set.of("==", "!=", "||", "&&", ">", "<", ">=", "<=");
+    public static final Set<String> BOOL_OPERATORS = Set.of("==", "!=");
+    public static final Set<String> NUM_BOOL_OPERATORS = Set.of("||", "&&", ">", "<", ">=", "<=");
     public static final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
 
     public static String operatorToIdentifier(String operator){
@@ -101,9 +102,13 @@ public class CompilerUtil {
             if(BOOL_OPERATORS.contains(operator))
                 return "boolean";
 
+            if(NUM_BOOL_OPERATORS.contains(operator))
+                return type1.equals("boolean") ? null : "boolean";
+
             if(NUMBER_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : type1;
-        }
+        }else return (Set.of("==", "!=").contains(operator) && !isPrimitive(type1) && !isPrimitive(type2)) ? "boolean" : null;
+
         return null;
     }
 

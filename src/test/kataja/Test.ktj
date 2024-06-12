@@ -2,8 +2,18 @@ use java/lang/String
 
 public class Test{
 
-    public void test(){
-        String s = String()
-        s.length()
+    public String test(){
+        String s = null
+
+        int j = 3
+
+        if s == null{
+            int i = j
+        }
+        if s != null{
+            int i = j + 12
+        }
+
+        return null
     }
 }

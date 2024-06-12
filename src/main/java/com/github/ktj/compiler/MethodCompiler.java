@@ -46,12 +46,12 @@ final class MethodCompiler {
         if(ast.calc != null) compileCalc(ast.calc);
 
         switch(ast.type){
-            case "void" -> code.add(0xb1); //return
-            case "int", "boolean", "char", "byte", "short" -> code.add(0xac); //ireturn
-            case "float" -> code.add(0xae); //freturn
-            case "double" -> code.add(0xaf); //dreturn
-            case "long" -> code.add(0xad); //lreturn
-            default -> code.add(0xb0); //areturn
+            case "void" -> code.add(Opcode.RETURN);
+            case "int", "boolean", "char", "byte", "short" -> code.add(Opcode.IRETURN);
+            case "float" -> code.add(Opcode.FRETURN);
+            case "double" -> code.add(Opcode.DRETURN);
+            case "long" -> code.add(Opcode.LRETURN);
+            default -> code.add(Opcode.ARETURN);
         }
     }
 
@@ -158,7 +158,7 @@ final class MethodCompiler {
 
             if(call.call.equals("<init>")){
                 code.addNew(call.clazz);
-                code.add(0x59); //dup
+                code.add(Opcode.DUP);
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));
             }else if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
@@ -200,6 +200,21 @@ final class MethodCompiler {
     }
 
     private void compileOperator(AST.Calc ast){
+        if(ast.value.type.equals("null")){
+            if(ast.op.equals("==")) code.add(Opcode.IFNULL);
+            else code.add(Opcode.IFNONNULL);
+            int branchLocation = code.getSize();
+            code.addIndex(0);
+            code.addIconst(0);
+            code.addOpcode(Opcode.GOTO);
+            int endLocation = code.getSize();
+            code.addIndex(0);
+            code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
+            code.addIconst(1);
+            code.write16bit(endLocation, code.getSize() - endLocation + 1);
+            return;
+        }
+
         switch(ast.type){
             case "int", "char", "byte", "short", "boolean" -> {
                 switch (ast.op){
@@ -324,7 +339,7 @@ final class MethodCompiler {
                 if(intValue < 6 && intValue >= 0)
                     code.addIconst(intValue);
                 else
-                    code.add(0x10 ,intValue); //Bipush
+                    code.add(Opcode.BIPUSH ,intValue);
 
                 os.push(1);
             }
@@ -366,6 +381,10 @@ final class MethodCompiler {
                 }
                 code.addLdc(index);
                 os.push(2);
+            }
+            case "null" -> {
+                code.add(Opcode.ACONST_NULL);
+                os.push(1);
             }
             default -> {
                 if(ast.type.equals("boolean")) code.addIconst(ast.token.s().equals("true") ? 1 : 0);
