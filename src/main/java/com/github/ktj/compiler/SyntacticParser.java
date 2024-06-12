@@ -448,6 +448,9 @@ final class SyntacticParser {
                 if (current.type == null)
                     throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
 
+                current.clazz = currentType;
+                current.argTypes = null;
+                current.statik = false;
                 ast.finaly = CompilerUtil.isFinal(currentType, call);
             }
 

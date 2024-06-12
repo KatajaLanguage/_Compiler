@@ -151,6 +151,11 @@ public class CompilerUtil {
     }
 
     public static String getFieldType(String clazzName, String field, boolean statik){
+        if(clazzName.startsWith("[")){
+            if(!field.equals("length")) return null;
+            return "int";
+        }
+
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
         if(compilable != null) {

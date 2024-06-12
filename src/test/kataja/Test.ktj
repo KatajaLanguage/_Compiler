@@ -2,13 +2,7 @@ use java/lang/String
 
 public class Test{
 
-    public String test(){
-        String s = null
-
-        if s == null{
-            s = String()
-        }
-
-        return s
+    main{
+        args.length
     }
 }

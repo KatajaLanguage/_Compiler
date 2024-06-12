@@ -145,7 +145,8 @@ final class MethodCompiler {
         if(call.prev != null) compileCall(call.prev, false);
 
         if(call.argTypes == null) {
-            if (call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+            if(call.clazz.startsWith("[")) code.add(Opcode.ARRAYLENGTH);
+            else if (call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
             else {
                 if (first && call.clazz.equals(clazzName)) code.addAload(0);
                 code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
