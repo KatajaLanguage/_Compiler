@@ -282,7 +282,20 @@ final class SyntacticParser {
         AST.Call current;
 
         String call = th.assertToken(Token.Type.IDENTIFIER).s();
-        if(th.isNext("(")){
+        if(th.isNext("[")){
+            if(!method.uses.containsKey(call) || !CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException(STR."Class \{method.uses.get(call)} is not defined");
+
+            ast.call = current = new AST.Call();
+            current.call = "<init>";
+            current.clazz = STR."[\{method.uses.get(call)}";
+            current.type = current.clazz;
+            current.argTypes = new AST.Calc[]{parseCalc()};
+            ast.finaly = false;
+            ast.type = current.type;
+
+            th.assertToken("]");
+            if(!current.argTypes[0].type.equals("int")) throw new RuntimeException(STR."Expected type int got \{current.argTypes[0].type}");
+        }else if(th.isNext("(")){
             if(!method.uses.containsKey(call)){
                 StringBuilder desc = new StringBuilder(call);
                 ArrayList<AST.Calc> args = new ArrayList<>();

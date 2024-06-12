@@ -160,7 +160,8 @@ final class MethodCompiler {
             for(AST.Calc calc:call.argTypes) compileCalc(calc);
 
             if(call.clazz.startsWith("[")){
-                code.add(Opcode.AALOAD);
+                if(call.call.equals("<init>")) code.addAnewarray(call.clazz.substring(1));
+                else code.add(Opcode.AALOAD);
             }else if(call.call.equals("<init>")){
                 code.addNew(call.clazz);
                 code.add(Opcode.DUP);

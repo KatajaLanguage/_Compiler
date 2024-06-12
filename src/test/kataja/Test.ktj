@@ -3,6 +3,6 @@ use java/lang/String
 public class Test{
 
     main{
-        args[0] = String()
+        args = String[3]
     }
 }
