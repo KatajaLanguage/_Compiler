@@ -200,21 +200,6 @@ final class MethodCompiler {
     }
 
     private void compileOperator(AST.Calc ast){
-        if(ast.value.type.equals("null")){
-            if(ast.op.equals("==")) code.add(Opcode.IFNULL);
-            else code.add(Opcode.IFNONNULL);
-            int branchLocation = code.getSize();
-            code.addIndex(0);
-            code.addIconst(0);
-            code.addOpcode(Opcode.GOTO);
-            int endLocation = code.getSize();
-            code.addIndex(0);
-            code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
-            code.addIconst(1);
-            code.write16bit(endLocation, code.getSize() - endLocation + 1);
-            return;
-        }
-
         switch(ast.type){
             case "int", "char", "byte", "short", "boolean" -> {
                 switch (ast.op){
@@ -382,12 +367,9 @@ final class MethodCompiler {
                 code.addLdc(index);
                 os.push(2);
             }
-            case "null" -> {
-                code.add(Opcode.ACONST_NULL);
-                os.push(1);
-            }
             default -> {
                 if(ast.type.equals("boolean")) code.addIconst(ast.token.s().equals("true") ? 1 : 0);
+                if(ast.token.s().equals("null")) code.add(Opcode.ACONST_NULL);
                 os.push(1);
             }
         }

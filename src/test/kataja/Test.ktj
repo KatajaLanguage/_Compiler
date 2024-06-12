@@ -5,15 +5,10 @@ public class Test{
     public String test(){
         String s = null
 
-        int j = 3
-
         if s == null{
-            int i = j
-        }
-        if s != null{
-            int i = j + 12
+            s = String()
         }
 
-        return null
+        return s
     }
 }
