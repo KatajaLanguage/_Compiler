@@ -464,9 +464,9 @@ final class SyntacticParser {
                     current.statik = false;
                     ast.finaly = CompilerUtil.isFinal(currentType, call);
                 }
-
-                ast.type = current.type;
             }
+
+            ast.type = current.type;
         }
 
         return ast;

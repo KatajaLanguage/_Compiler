@@ -142,6 +142,8 @@ final class MethodCompiler {
     }
 
     private void compileCall(AST.Call call, boolean first){
+        if(call == null) return;
+
         if(call.prev != null) compileCall(call.prev, false);
 
         if(call.argTypes == null) {
@@ -173,9 +175,12 @@ final class MethodCompiler {
     private void compileVarAssignment(AST.VarAssignment ast){
         if(ast.load.name == null && ast.load.call != null && !ast.load.call.statik && ast.load.call.clazz.equals(clazzName)) code.addAload(0);
         compileCall(ast.load, false);
+
+        if(ast.load.call != null && ast.load.call.call == null) compileCalc(ast.load.call.argTypes[0]);
+
         compileCalc(ast.calc);
 
-        if(ast.load.call == null){
+        if(ast.load.call == null || ast.load.call.call == null){
             int where = os.get(ast.load.name);
 
             if(where == -1) {
@@ -183,12 +188,16 @@ final class MethodCompiler {
                 where = os.push(ast.load.name, Set.of("double", "long").contains(ast.load.type) ? 2 : 1);
             }
 
-            switch (ast.load.type) {
-                case "int", "boolean", "char", "byte", "short" -> code.addIstore(where);
-                case "float" -> code.addFstore(where);
-                case "double" -> code.addDstore(where);
-                case "long" -> code.addLstore(where);
-                default -> code.addAstore(where);
+            if(ast.load.call != null && ast.load.call.call == null){
+                code.add(Opcode.AASTORE);
+            }else{
+                switch (ast.load.type) {
+                    case "int", "boolean", "char", "byte", "short" -> code.addIstore(where);
+                    case "float" -> code.addFstore(where);
+                    case "double" -> code.addDstore(where);
+                    case "long" -> code.addLstore(where);
+                    default -> code.addAstore(where);
+                }
             }
         }else{
             if(ast.load.call.statik) code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
