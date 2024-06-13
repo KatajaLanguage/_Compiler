@@ -271,6 +271,10 @@ final class SyntacticParser {
                     ast.type = ast.load.type;
                 }
             }
+            case STRING -> {
+                ast.token = th.current();
+                ast.type = "java.lang.String";
+            }
             default -> throw new RuntimeException("illegal argument");
         }
 

@@ -380,6 +380,10 @@ final class MethodCompiler {
                 code.addLdc(index);
                 os.push(2);
             }
+            case "java.lang.String" -> {
+                code.addLdc(ast.token.s().substring(1, ast.token.s().length() - 1));
+                os.push(1);
+            }
             default -> {
                 if(ast.type.equals("boolean")) code.addIconst(ast.token.s().equals("true") ? 1 : 0);
                 if(ast.token.s().equals("null")) code.add(Opcode.ACONST_NULL);

@@ -91,13 +91,14 @@ final class Lexer {
             }else if(chars[i] == '"'){
 
                 value = new StringBuilder();
-                value.append(chars[i]);
+                value.append("\"");
 
                 while(chars[i+1] != '"'){
                     i++;
                     value.append(chars[i]);
                 }
 
+                value.append("\"");
                 i++;
 
                 tokens.add(new Token(value.toString(), Token.Type.STRING));
