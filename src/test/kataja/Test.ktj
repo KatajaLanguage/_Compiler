@@ -1,8 +1,5 @@
 use java/lang/System
 
-public class Test{
-
-    main{
-        int i = int 2.0
-    }
+main{
+    System.out.println("Hello World!")
 }
