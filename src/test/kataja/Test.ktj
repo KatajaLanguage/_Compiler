@@ -1,8 +1,8 @@
-use java/lang/String
+use java/lang/System
 
 public class Test{
 
     main{
-        String s = "abc"
+        int i = int 2.0
     }
 }

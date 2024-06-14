@@ -2,7 +2,6 @@ package com.github.ktj.compiler;
 
 import com.github.ktj.lang.*;
 
-import java.net.IDN;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -230,8 +229,8 @@ final class SyntacticParser {
     private AST.Calc parseCalc(){
         AST.Calc ast = new AST.Calc();
 
-        ast.value = parseValue();
-        ast.type = ast.value.type;
+        ast.arg = parseValue();
+        ast.type = ast.arg.type;
 
         while(th.hasNext()){
             if(!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")){
@@ -241,16 +240,30 @@ final class SyntacticParser {
 
             ast.setRight();
             ast.op = th.current().s();
-            ast.value = parseValue();
-            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.value.type, ast.op);
+            ast.arg = parseValue();
+            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
 
-            if(ast.type == null) throw new RuntimeException(STR."Operator \{ast.op} is not defined for \{ast.right.type} and \{ast.value.type}");
+            if(ast.type == null) throw new RuntimeException(STR."Operator \{ast.op} is not defined for \{ast.right.type} and \{ast.arg.type}");
         }
 
         return ast;
     }
 
-    private AST.Value parseValue(){
+    private AST.CalcArg parseValue(){
+        if(th.isNext(Token.Type.IDENTIFIER)){
+            AST.Cast ast = new AST.Cast();
+
+            ast.cast = th.current().s();
+            ast.calc = parseCalc();
+            ast.type = ast.cast;
+
+            if(!(CompilerUtil.isPrimitive(ast.cast) || (method.uses.containsKey(ast.cast) && CompilerUtil.classExist(method.uses.get(ast.cast))))) throw new RuntimeException(STR."Type \{ast.cast} is not defined");
+
+            if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) throw new RuntimeException(STR."Unable to cast \{ast.calc.type} to \{ast.cast}");
+
+            return ast;
+        }
+
         AST.Value ast = new AST.Value();
 
         switch(th.next().t()){

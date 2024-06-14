@@ -217,6 +217,12 @@ public class CompilerUtil {
         return false;
     }
 
+    public static boolean canCast(String type, String to){
+        if(isPrimitive(type) && isPrimitive(to)) return true;
+
+        return true;
+    }
+
     public static boolean isPrimitive(String type){
         for(String p:PRIMITIVES) if(p.equals(type)) return true;
 
@@ -249,7 +255,7 @@ public class CompilerUtil {
                 default -> Token.Type.IDENTIFIER;
             });
 
-            ast.calc.value = value;
+            ast.calc.arg = value;
         }
 
         return ast;

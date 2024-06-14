@@ -153,6 +153,14 @@ final class TokenHandler {
         return false;
     }
 
+    public boolean isNext(Token.Type type){
+        if(hasNext()){
+            if(next().equals(type)) return true;
+            last();
+        }
+        return false;
+    }
+
     public static Token assertToken(Token token, String string) throws RuntimeException {
         if(!token.equals(string)) throw new RuntimeException(STR."expected \{string} got \{token.s()}");
         return token;

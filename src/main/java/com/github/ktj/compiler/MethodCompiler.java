@@ -208,8 +208,79 @@ final class MethodCompiler {
 
     private void compileCalc(AST.Calc ast){
         if(ast.right != null) compileCalc(ast.right);
-        compileValue(ast.value);
+        if(ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+        else compileValue((AST.Value) ast.arg);
         if(ast.op != null) compileOperator(ast);
+    }
+
+    private void compileCast(AST.Cast ast){
+        compileCalc(ast.calc);
+
+        switch(ast.calc.type){
+            case "int", "short", "byte" -> {
+                switch(ast.type){
+                    case "double" -> {
+                        code.add(Opcode.I2D);
+                        String temp = os.pop();
+                        os.push(temp, 2);
+                    }
+                    case "long" -> {
+                        code.add(Opcode.I2L);
+                        String temp = os.pop();
+                        os.push(temp, 2);
+                    }
+                    case "float" -> code.add(Opcode.I2F);
+                    case "byte" -> code.add(Opcode.I2B);
+                    case "char" -> code.add(Opcode.I2C);
+                    case "short" -> code.add(Opcode.I2S);
+                }
+            }
+            case "double" -> {
+                switch(ast.type){
+                    case "int" -> {
+                        code.add(Opcode.D2I);
+                        String temp = os.pop();
+                        os.push(temp, 1);
+                    }
+                    case "long" -> code.add(Opcode.D2L);
+                    case "float" -> {
+                        code.add(Opcode.D2F);
+                        String temp = os.pop();
+                        os.push(temp, 1);
+                    }
+                }
+            }
+            case "long" -> {
+                switch(ast.type){
+                    case "double" -> code.add(Opcode.L2D);
+                    case "int" -> {
+                        code.add(Opcode.L2I);
+                        String temp = os.pop();
+                        os.push(temp, 1);
+                    }
+                    case "float" -> {
+                        code.add(Opcode.L2F);
+                        String temp = os.pop();
+                        os.push(temp, 1);
+                    }
+                }
+            }
+            case "float" -> {
+                switch(ast.type){
+                    case "double" -> {
+                        code.add(Opcode.F2D);
+                        String temp = os.pop();
+                        os.push(temp, 2);
+                    }
+                    case "long" -> {
+                        code.add(Opcode.F2L);
+                        String temp = os.pop();
+                        os.push(temp, 2);
+                    }
+                    case "int" -> code.add(Opcode.F2I);
+                }
+            }
+        }
     }
 
     private void compileOperator(AST.Calc ast){
