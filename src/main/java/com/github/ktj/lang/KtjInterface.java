@@ -40,6 +40,6 @@ public class KtjInterface extends Compilable{
     }
 
     public int getAccessFlag(){
-        return super.getAccessFlag() + AccessFlag.INTERFACE;
+        return super.getAccessFlag() + AccessFlag.INTERFACE + AccessFlag.ABSTRACT;
     }
 }

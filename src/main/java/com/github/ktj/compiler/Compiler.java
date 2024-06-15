@@ -4,6 +4,8 @@ import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
+import javassist.Loader;
+import javassist.NotFoundException;
 import javassist.bytecode.*;
 
 import java.io.File;
@@ -17,10 +19,12 @@ import java.util.HashMap;
 
 public final class Compiler {
 
-    public static void main(String[] args){
+    public static void main(String[] args) throws ClassNotFoundException, NotFoundException {
         Compiler c = Compiler.Instance();
         //c.setDebug(true);
         c.compile("src/test/kataja/Test.ktj", false, true);
+        ClassPool.getDefault().appendClassPath("out");
+        System.out.println(new Loader(ClassPool.getDefault()).loadClass("src.test.kataja.Test"));
     }
 
     private static Compiler COMPILER = null;
@@ -135,8 +139,9 @@ public final class Compiler {
         if(main == null) throw new RuntimeException("main is not defined");
         else{
             try{
-                URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
-            }catch(ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException e){
+                new Loader(ClassPool.getDefault()).loadClass(main);
+                //URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
+            }catch(ClassNotFoundException | SecurityException e){//| NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException e){
                 RuntimeException exception = new RuntimeException("Failed to execute main Method");
                 exception.setStackTrace(e.getStackTrace());
                 throw exception;

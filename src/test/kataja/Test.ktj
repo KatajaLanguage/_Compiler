@@ -1,5 +1,3 @@
-use java/lang/System
+public class Test{
 
-main{
-    System.out.println("Hello World!")
 }
