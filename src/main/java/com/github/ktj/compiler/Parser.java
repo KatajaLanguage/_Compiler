@@ -393,7 +393,7 @@ final class Parser {
             if(!mod.isValidForInit()) err("illegal modifier");
         }else if(!mod.isValidForMethod()) err("illegal modifier");
 
-        if(Lexer.isOperator(name.toCharArray()[0])) {
+        if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) {
             name = CompilerUtil.operatorToIdentifier(name);
             if(type.equals("void")) throw new RuntimeException("Method should not return void");
             if(mod.statik || current == null) throw new RuntimeException("Method should not be static");
