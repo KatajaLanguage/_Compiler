@@ -1,12 +1,12 @@
 package com.github.ktj.compiler;
 
-abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Return, AST.Value, AST.VarAssignment, AST.While {
+abstract sealed class AST permits AST.Calc, AST.CalcArg, AST.Call, AST.If, AST.Load, AST.Return, AST.VarAssignment, AST.While {
 
     String type = null;
 
     static final class Calc extends AST{
         String op = null;
-        Value value = null;
+        CalcArg arg = null;
         Calc left = null, right = null;
 
         public void setLeft(){
@@ -14,13 +14,13 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Retu
             temp.left = left;
             temp.right = right;
             temp.op = op;
-            temp.value = value;
+            temp.arg = arg;
             temp.type = type;
 
             left = temp;
             right = null;
             op = null;
-            value = null;
+            arg = null;
         }
 
         public void setRight(){
@@ -28,21 +28,26 @@ abstract sealed class AST permits AST.Calc, AST.Call, AST.If, AST.Load, AST.Retu
             temp.right = right;
             temp.left = left;
             temp.op = op;
-            temp.value = value;
+            temp.arg = arg;
             temp.type = type;
 
             right = temp;
             left = null;
             op = null;
-            value = null;
+            arg = null;
         }
     }
 
-    static final class Value extends AST{
-        Call call = null;
+    static sealed class CalcArg extends AST{}
+
+    static final class Value extends CalcArg{
         Load load = null;
-        String cast = null;
         Token token = null;
+    }
+
+    static final class Cast extends CalcArg{
+        Calc calc = null;
+        String cast = null;
     }
 
     static final class Load extends AST{

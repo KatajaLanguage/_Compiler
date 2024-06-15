@@ -3,6 +3,7 @@ package com.github.ktj.compiler;
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -10,7 +11,8 @@ import java.util.Set;
 public class CompilerUtil {
 
     public static final String[] PRIMITIVES = new String[]{"int", "double", "float", "short", "long", "boolean", "char", "byte"};
-    public static final Set<String> BOOL_OPERATORS = Set.of("==", "!=", "||", "&&", ">", "<", ">=", "<=");
+    public static final Set<String> BOOL_OPERATORS = Set.of("==", "!=");
+    public static final Set<String> NUM_BOOL_OPERATORS = Set.of("||", "&&", ">", "<", ">=", "<=");
     public static final Set<String> NUMBER_OPERATORS = Set.of("+", "-", "*", "/");
 
     public static String operatorToIdentifier(String operator){
@@ -62,7 +64,7 @@ public class CompilerUtil {
                 case "void"    -> desc.append("V");
                 default        -> {
                     if(type.startsWith("[")) desc.append(STR."[\{toDesc(type.substring(1))}");
-                    else desc.append("L").append(type).append(";");
+                    else desc.append("L").append(type.replace(".", "/")).append(";");
                 }
             }
         }
@@ -100,9 +102,13 @@ public class CompilerUtil {
             if(BOOL_OPERATORS.contains(operator))
                 return "boolean";
 
+            if(NUM_BOOL_OPERATORS.contains(operator))
+                return type1.equals("boolean") ? null : "boolean";
+
             if(NUMBER_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : type1;
-        }
+        }else return (Set.of("==", "!=").contains(operator) && !isPrimitive(type1) && !isPrimitive(type2)) ? "boolean" : null;
+
         return null;
     }
 
@@ -111,16 +117,32 @@ public class CompilerUtil {
             return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik) ? clazz.methods.get(method).returnType : null;
         }else{
             try{
-                for(Method m:Class.forName(clazzName).getMethods()){
-                    if(m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length){
-                        boolean matches = true;
-                        for(int i = 0;i < m.getParameterTypes().length;i++){
-                            if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[i])) {
-                                matches = false;
-                                break;
+                if(method.startsWith("<init>")){
+                    for (Constructor<?> m : Class.forName(clazzName).getConstructors()) {
+                        if(method.split("%").length - 1 == m.getParameterTypes().length){
+                            boolean matches = true;
+                            for (int i = 0; i < m.getParameterTypes().length; i++) {
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[1])) {
+                                    matches = false;
+                                    break;
+                                }
                             }
+                            if(matches) return clazzName;
                         }
-                        if(matches) return m.getReturnType().toString().contains(" ") ? m.getReturnType().toString().split(" ")[1] :  m.getReturnType().toString();
+                    }
+                }else {
+                    for (Method m : Class.forName(clazzName).getMethods()) {
+                        if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
+                            boolean matches = true;
+                            for (int i = 0; i < m.getParameterTypes().length; i++) {
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getName())){
+                                    matches = false;
+                                    break;
+                                }
+                            }
+                            if (matches)
+                                return m.getReturnType().toString().contains(" ") ? m.getReturnType().toString().split(" ")[1] : m.getReturnType().toString();
+                        }
                     }
                 }
             }catch(ClassNotFoundException ignored){}
@@ -129,6 +151,11 @@ public class CompilerUtil {
     }
 
     public static String getFieldType(String clazzName, String field, boolean statik){
+        if(clazzName.startsWith("[")){
+            if(!field.equals("length")) return null;
+            return "int";
+        }
+
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
         if(compilable != null) {
@@ -159,6 +186,10 @@ public class CompilerUtil {
     }
 
     public static boolean isFinal(String clazzName, String field){
+        if(clazzName.startsWith("[")){
+            return true;
+        }
+
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
         if(compilable != null) {
@@ -184,6 +215,12 @@ public class CompilerUtil {
         }
 
         return false;
+    }
+
+    public static boolean canCast(String type, String to){
+        if(isPrimitive(type) && isPrimitive(to)) return true;
+
+        return true;
     }
 
     public static boolean isPrimitive(String type){
@@ -218,7 +255,7 @@ public class CompilerUtil {
                 default -> Token.Type.IDENTIFIER;
             });
 
-            ast.calc.value = value;
+            ast.calc.arg = value;
         }
 
         return ast;

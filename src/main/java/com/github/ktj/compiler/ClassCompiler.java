@@ -1,8 +1,12 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.lang.*;
+import javassist.CannotCompileException;
+import javassist.ClassPool;
+import javassist.CtClass;
 import javassist.bytecode.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 final class ClassCompiler {
@@ -158,6 +162,8 @@ final class ClassCompiler {
             fInfo.setAccessFlags(field.getAccessFlag());
             cf.addField2(fInfo);
         }
+
+        //cf.addAttribute(new AttributeInfo());
 
         //Methods
         clazz.validateInit();

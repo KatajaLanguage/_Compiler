@@ -63,6 +63,6 @@ public class KtjClass extends KtjInterface{
     }
 
     public int getAccessFlag(){
-        return super.getAccessFlag() - AccessFlag.INTERFACE;
+        return super.getAccessFlag() - AccessFlag.INTERFACE - AccessFlag.ABSTRACT;
     }
 }

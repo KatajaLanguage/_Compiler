@@ -4,6 +4,8 @@ import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
+import javassist.Loader;
+import javassist.NotFoundException;
 import javassist.bytecode.*;
 
 import java.io.File;
@@ -20,7 +22,7 @@ public final class Compiler {
     public static void main(String[] args){
         Compiler c = Compiler.Instance();
         //c.setDebug(true);
-        c.compile("src/test/kataja/Test.ktj", false, true);
+        c.compile("src/test/kataja/Test.ktj", true, true);
     }
 
     private static Compiler COMPILER = null;
@@ -136,7 +138,7 @@ public final class Compiler {
         else{
             try{
                 URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
-            }catch(ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException e){
+            }catch(ClassNotFoundException |  NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException e){
                 RuntimeException exception = new RuntimeException("Failed to execute main Method");
                 exception.setStackTrace(e.getStackTrace());
                 throw exception;
