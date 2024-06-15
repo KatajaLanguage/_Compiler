@@ -132,6 +132,18 @@ final class Parser {
     }
 
     private void parseMain(){
+        if(th.isNext("->")){
+            StringBuilder code = new StringBuilder();
+
+            while(th.hasNext()) code.append(" ").append(th.next());
+
+            Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
+            mod.statik = true;
+            addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, STR."\{path}\\\{name}", line));
+            uses.put("_String", "java.lang.String");
+            return;
+        }
+
         th.assertToken("{");
         th.assertNull();
 
@@ -429,7 +441,7 @@ final class Parser {
         if(mod.abstrakt){
             th.assertNull();
             addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, STR."\{path}\\\{name}", _line));
-        }else {
+        }else if(th.isNext("{")){
             th.assertToken("{");
             th.assertNull();
 
@@ -465,6 +477,14 @@ final class Parser {
             }
 
             err("Expected '}'");
+        }else{
+            StringBuilder code = new StringBuilder();
+
+            if(th.assertToken("=", "->").equals("=")) code.append("return");
+
+            while(th.hasNext()) code.append(" ").append(th.next());
+
+            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, STR."\{path}\\\{name}", _line));
         }
     }
 
