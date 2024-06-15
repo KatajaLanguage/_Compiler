@@ -4,8 +4,6 @@ import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
-import javassist.Loader;
-import javassist.NotFoundException;
 import javassist.bytecode.*;
 
 import java.io.File;
@@ -18,12 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public final class Compiler {
-
-    public static void main(String[] args){
-        Compiler c = Compiler.Instance();
-        //c.setDebug(true);
-        c.compile("src/test/kataja/Test.ktj", true, true);
-    }
 
     private static Compiler COMPILER = null;
 
@@ -100,7 +92,7 @@ public final class Compiler {
 
             if(execute) execute();
 
-            System.out.println("process finished successfully");
+            System.out.println("\nprocess finished successfully");
         }else throw new IllegalArgumentException();
     }
 
