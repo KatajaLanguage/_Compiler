@@ -85,7 +85,11 @@ final class SyntacticParser {
             case "return" -> parseReturn();
             default -> {
                 th.last();
-                yield parseStatement();
+                AST ast = parseStatement();
+
+                if(ast instanceof AST.Load load && (load.call == null || load.call.argTypes == null)) throw new RuntimeException("not a statement");
+
+                yield ast;
             }
         };
     }
@@ -329,12 +333,12 @@ final class SyntacticParser {
 
                 ast.call = current = new AST.Call();
 
-                if (CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false) != null) {
+                if (CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, true) != null) {
                     current.statik = false;
-                    current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false);
-                } else if (CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true) != null) {
+                    current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, true);
+                } else if (CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, true) != null) {
                     current.statik = true;
-                    current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true);
+                    current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, true);
                 } else
                     throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{clazzName}");
 
@@ -359,7 +363,7 @@ final class SyntacticParser {
 
                 for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                if (CompilerUtil.getMethodReturnType(type, desc.toString(), false) == null)
+                if (CompilerUtil.getMethodReturnType(type, desc.toString(), false, type.equals(clazzName)) == null)
                     throw new RuntimeException(STR."static Method \{desc.toString()} is not defined for class \{type}");
 
                 ast.call = current = new AST.Call();
@@ -396,18 +400,18 @@ final class SyntacticParser {
 
                     for(AST.Calc calc:args) desc.append("%").append(calc.type);
 
-                    if(CompilerUtil.getMethodReturnType(type, desc.toString(), true) == null) throw new RuntimeException(STR."static Method \{desc.toString()} is not defined for class \{type}");
+                    if(CompilerUtil.getMethodReturnType(type, desc.toString(), true, type.equals(clazzName)) == null) throw new RuntimeException(STR."static Method \{desc.toString()} is not defined for class \{type}");
 
                     ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getMethodReturnType(type, desc.toString(), true);
+                    current.type = CompilerUtil.getMethodReturnType(type, desc.toString(), true, type.equals(clazzName));
                     current.argTypes = args.toArray(new AST.Calc[0]);
                     ast.finaly = true;
                 }else{
-                    if (CompilerUtil.getFieldType(type, call, true) == null)
+                    if (CompilerUtil.getFieldType(type, call, true, type.equals(clazzName)) == null)
                         throw new RuntimeException(STR."static Field \{call} is not defined for class \{type}");
 
                     ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getFieldType(type, call, true);
+                    current.type = CompilerUtil.getFieldType(type, call, true, type.equals(clazzName));
                     ast.finaly = CompilerUtil.isFinal(type, call);
                 }
 
@@ -416,17 +420,17 @@ final class SyntacticParser {
                 current.statik = true;
                 ast.type = current.type;
             }else{
-                if(CompilerUtil.getFieldType(clazzName, call, true) != null){
+                if(CompilerUtil.getFieldType(clazzName, call, true, true) != null){
                     ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getFieldType(clazzName, call, false);
+                    current.type = CompilerUtil.getFieldType(clazzName, call, false, true);
                     current.clazz = clazzName;
                     current.call = call;
                     current.statik = true;
                     ast.call = current = current.toStatic();
                     ast.type = current.type;
-                }else if(CompilerUtil.getFieldType(clazzName, call, false) != null){
+                }else if(CompilerUtil.getFieldType(clazzName, call, false, true) != null){
                     ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getFieldType(clazzName, call, false);
+                    current.type = CompilerUtil.getFieldType(clazzName, call, false, true);
                     current.clazz = clazzName;
                     current.call = call;
                     ast.type = current.type;
@@ -477,16 +481,16 @@ final class SyntacticParser {
 
                     for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                    if (CompilerUtil.getMethodReturnType(currentType, desc.toString(), false) == null)
+                    if (CompilerUtil.getMethodReturnType(currentType, desc.toString(), false, currentType.equals(clazzName)) == null)
                         throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{currentType}");
 
-                    current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false);
+                    current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false, currentType.equals(clazzName));
                     current.clazz = currentType;
                     current.argTypes = args.toArray(new AST.Calc[0]);
                     current.statik = false;
                     ast.finaly = true;
                 } else {
-                    current.type = CompilerUtil.getFieldType(currentType, current.call, false);
+                    current.type = CompilerUtil.getFieldType(currentType, current.call, false, currentType.equals(clazzName));
 
                     if (current.type == null)
                         throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
