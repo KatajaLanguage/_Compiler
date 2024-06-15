@@ -64,7 +64,7 @@ public class CompilerUtil {
                 case "void"    -> desc.append("V");
                 default        -> {
                     if(type.startsWith("[")) desc.append(STR."[\{toDesc(type.substring(1))}");
-                    else desc.append("L").append(type).append(";");
+                    else desc.append("L").append(type.replace(".", "/")).append(";");
                 }
             }
         }

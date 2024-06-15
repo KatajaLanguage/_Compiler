@@ -1,13 +1,5 @@
 use java/lang/System
-use java/lang/String
 
-public class Test{
-
-    public Test(){
-        #System.out.println()
-        #test("")
-    }
-
-    public void test(int s){
-    }
+main{
+    System.out.println("Hello World!")
 }
