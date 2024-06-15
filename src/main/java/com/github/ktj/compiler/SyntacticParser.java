@@ -250,6 +250,8 @@ final class SyntacticParser {
     }
 
     private AST.CalcArg parseValue(){
+        th.next();
+
         if(th.isNext(Token.Type.IDENTIFIER)){
             AST.Cast ast = new AST.Cast();
 
@@ -266,7 +268,7 @@ final class SyntacticParser {
 
         AST.Value ast = new AST.Value();
 
-        switch(th.next().t()){
+        switch(th.current().t()){
             case CHAR, SHORT, INTEGER, LONG, DOUBLE, FLOAT -> {
                 ast.token = th.current();
                 ast.type = th.current().t().toString();

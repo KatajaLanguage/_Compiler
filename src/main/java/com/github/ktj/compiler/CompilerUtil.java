@@ -135,7 +135,7 @@ public class CompilerUtil {
                         if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[1])) {
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getName())){
                                     matches = false;
                                     break;
                                 }

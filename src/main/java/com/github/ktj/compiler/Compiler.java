@@ -22,9 +22,9 @@ public final class Compiler {
     public static void main(String[] args) throws ClassNotFoundException, NotFoundException {
         Compiler c = Compiler.Instance();
         //c.setDebug(true);
-        c.compile("src/test/kataja/Test.ktj", true, true);
+        c.compile("src/test/kataja/Test.ktj", false, true);
         ClassPool.getDefault().appendClassPath("out");
-        //System.out.println(new Loader(ClassPool.getDefault()).loadClass("src.test.kataja.Test"));
+        System.out.println(new Loader(ClassPool.getDefault()).loadClass("src.test.kataja.Test"));
     }
 
     private static Compiler COMPILER = null;

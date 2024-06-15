@@ -495,7 +495,7 @@ final class MethodCompiler {
                 getInstance().compileCode(code, STR."\{initValues != null ? initValues : ""} \n \{method.code}", clazz, clazzName, method, cp);
             }else getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
 
-            if(code.getMaxLocals() == 0) code.setMaxLocals(1);
+            if(code.getMaxLocals() == 0) code.setMaxLocals(code.getMaxLocals() + method.getLocals());
 
             mInfo.setCodeAttribute(code.toCodeAttribute());
         }

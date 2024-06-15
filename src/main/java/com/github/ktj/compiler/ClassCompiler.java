@@ -163,6 +163,8 @@ final class ClassCompiler {
             cf.addField2(fInfo);
         }
 
+        //cf.addAttribute(new AttributeInfo());
+
         //Methods
         clazz.validateInit();
         for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, STR."\{path}.\{name}", cf.getConstPool(), clazz.methods.get(desc), desc));

@@ -30,4 +30,8 @@ public class KtjMethod extends Compilable{
     public boolean isAbstract(){
         return modifier.abstrakt;
     }
+
+    public int getLocals(){
+        return parameter.length + 1;
+    }
 }
