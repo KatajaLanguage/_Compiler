@@ -112,9 +112,9 @@ public class CompilerUtil {
         return null;
     }
 
-    public static String getMethodReturnType(String clazzName, String method, boolean statik){
+    public static String getMethodReturnType(String clazzName, String method, boolean statik, boolean allowPrivate){
         if(Compiler.Instance().classes.containsKey(clazzName)){
-            return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik) ? clazz.methods.get(method).returnType : null;
+            return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface clazz && clazz.methods.containsKey(method) && clazz.methods.get(method).modifier.statik == statik && (allowPrivate || clazz.methods.get(method).modifier.accessFlag != AccessFlag.ACC_PRIVATE)) ? clazz.methods.get(method).returnType : null;
         }else{
             try{
                 if(method.startsWith("<init>")){
@@ -132,6 +132,7 @@ public class CompilerUtil {
                     }
                 }else {
                     for (Method m : Class.forName(clazzName).getMethods()) {
+                        if(((m.getModifiers() & AccessFlag.STATIC) != 0 && !statik) || ((m.getModifiers() & AccessFlag.STATIC) == 0 && statik)) return null;
                         if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
@@ -150,7 +151,7 @@ public class CompilerUtil {
         return null;
     }
 
-    public static String getFieldType(String clazzName, String field, boolean statik){
+    public static String getFieldType(String clazzName, String field, boolean statik, boolean allowPrivate){
         if(clazzName.startsWith("[")){
             if(!field.equals("length")) return null;
             return "int";
@@ -161,7 +162,7 @@ public class CompilerUtil {
         if(compilable != null) {
             switch (compilable) {
                 case KtjClass clazz -> {
-                    if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik == statik)
+                    if (clazz.fields.containsKey(field) && clazz.fields.get(field).modifier.statik == statik && (allowPrivate || clazz.fields.get(field).modifier.accessFlag != AccessFlag.ACC_PRIVATE))
                         return clazz.fields.get(field).type;
                 }
                 case KtjTypeClass clazz -> {
@@ -177,7 +178,7 @@ public class CompilerUtil {
         }else{
             try{
                 Field f = Class.forName(clazzName).getField(field);
-                if(((f.getModifiers() & AccessFlag.STATIC) != 0 && !statik) || ((f.getModifiers() & AccessFlag.STATIC) == 0 && statik)) return null;
+                if(((f.getModifiers() & AccessFlag.STATIC) != 0 && !statik) || ((f.getModifiers() & AccessFlag.STATIC) == 0 && statik) || ((f.getModifiers() & AccessFlag.PRIVATE) != 0 && !allowPrivate)) return null;
                 return f.getType().toString().split(" ")[1];
             }catch(Exception ignored){}
         }
