@@ -12,7 +12,7 @@ import java.util.Arrays;
 final class ClassCompiler {
 
     static void compileTypeClass(KtjTypeClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, path+"."+name, "java.lang.Enum");
+        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java.lang.Enum");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
@@ -101,7 +101,7 @@ final class ClassCompiler {
     }
 
     static void compileDataClass(KtjDataClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, path+"."+name, "java/lang/Object");
+        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java/lang/Object");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
@@ -157,18 +157,18 @@ final class ClassCompiler {
     }
 
     static void compileInterface(KtjInterface clazz, String name, String path){
-        ClassFile cf = new ClassFile(true, path+"."+name, "java/lang/Object");
+        ClassFile cf = new ClassFile(true, path.isEmpty() ? name : path+"."+name, "java/lang/Object");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
         //Methods
-        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc));
+        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc));
 
         Compiler.Instance().compiledClasses.add(cf);
     }
 
     static void compileClass(KtjClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, path+"."+name, "java.lang.Object");
+        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java.lang.Object");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
@@ -185,11 +185,11 @@ final class ClassCompiler {
 
         //Methods
         clazz.validateInit();
-        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc));
+        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc));
 
         //<clinit>
         String clinit = clazz.createClinit();
-        if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, path+"."+name, cf.getConstPool(), clinit));
+        if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clinit));
 
         Compiler.Instance().compiledClasses.add(cf);
     }

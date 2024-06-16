@@ -93,7 +93,7 @@ public final class Compiler {
             if(execute) execute();
 
             System.out.println("\nprocess finished successfully");
-        }else throw new IllegalArgumentException();
+        }else throw new IllegalArgumentException("Unable not find " + f.getAbsolutePath());
     }
 
     String getExtension(String filename) {
@@ -157,7 +157,7 @@ public final class Compiler {
 
         String path = name;
         name = path.substring(path.lastIndexOf(".") + 1);
-        path = path.substring(0, path.length() - name.length() - 1);
+        path = path.length() - name.length() - 1 > 0 ? path.substring(0, path.length() - name.length() - 1) : "";
 
         if(clazz instanceof KtjTypeClass) ClassCompiler.compileTypeClass((KtjTypeClass) clazz, name, path);
         else if(clazz instanceof KtjDataClass) ClassCompiler.compileDataClass((KtjDataClass) clazz, name, path);
