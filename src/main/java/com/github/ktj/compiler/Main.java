@@ -19,11 +19,20 @@ public final class Main {
 
         for(int i = 0;i < args.length - 1;i += 2){
             switch(args[i]){
-                case "-o" -> out = args[i + 1];
-                case "-e" -> execute = parseBoolean(args[i + 1]);
-                case "-d" -> debug = parseBoolean(args[i + 1]);
-                case "-c" -> clear = parseBoolean(args[i + 1]);
-                default -> throw new RuntimeException(STR."illegal argument \{args[i]}");
+                case "-o":
+                    out = args[i + 1];
+                    break;
+                case "-e":
+                    execute = parseBoolean(args[i + 1]);
+                    break;
+                case "-d":
+                    debug = parseBoolean(args[i + 1]);
+                    break;
+                case "-c":
+                    clear = parseBoolean(args[i + 1]);
+                    break;
+                default:
+                    throw new RuntimeException("illegal argument "+args[i]);
             }
         }
 
@@ -47,26 +56,31 @@ public final class Main {
             String[] args = sc.nextLine().split(" ");
 
             for(int i = 0;i < args.length;i += 2){
-                switch(args[i]){
-                    case "-o" -> c.setOutFolder(args[i + 1]);
-                    case "-d" -> c.setDebug(parseBoolean(args[i + 1]));
-                    case "-e" -> execute = parseBoolean(args[i + 1]);
-                    case "-q" -> {
+                switch (args[i]){
+                    case "-o":
+                        c.setOutFolder(args[i + 1]);
+                        break;
+                    case "-d":
+                        c.setDebug(parseBoolean(args[i + 1]));
+                        break;
+                    case "-e":
+                        execute = parseBoolean(args[i + 1]);
+                        break;
+                    case "-q":
                         quit = true;
                         i--;
-                    }
-                    case "-n" -> {
+                        break;
+                    case "-n":
                         c = Compiler.NewInstance();
                         toClear = clear;
-                    }
-                    case "-c" -> {
+                        break;
+                    case "-c":
                         clear = parseBoolean(args[i + 1]);
                         toClear = clear;
-                    }
-                    default -> {
+                        break;
+                    default:
                         if(i == args.length - 1 && !args[i].startsWith("-")) break;
-                        throw new RuntimeException(STR."illegal argument \{args[i]} \{args[i + 1]}");
-                    }
+                        throw new RuntimeException("illegal argument "+args[i]);
                 }
             }
 
@@ -78,10 +92,15 @@ public final class Main {
     }
 
     private static boolean parseBoolean(String s){
-        return switch(s){
-            case "f", "false" -> false;
-            case "t", "true" -> true;
-            default -> throw new RuntimeException(STR."illegal argument \{s}");
-        };
+        switch (s){
+            case "f":
+            case "false":
+                return false;
+            case "t":
+            case "true":
+                return true;
+            default:
+                throw new RuntimeException("illegal argument "+s);
+        }
     }
 }

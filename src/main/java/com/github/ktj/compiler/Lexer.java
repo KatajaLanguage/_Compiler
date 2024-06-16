@@ -115,7 +115,7 @@ final class Lexer {
                     i++;
                 }
 
-            }else if(!Set.of('\n', '\r', '\t', ' ').contains(chars[i])){
+            }else if(!(chars[i] == '\n' || chars[i] == '\r' || chars[i] == '\t' || chars[i] == ' ')){
 
                 tokens.add(new Token(String.valueOf(chars[i]), Token.Type.SIMPLE));
 

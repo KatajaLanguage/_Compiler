@@ -29,7 +29,7 @@ public class KtjClass extends KtjInterface{
 
         for(String field: fields.keySet()) if(fields.get(field).initValue != null && fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append("\n");
 
-        return sb.isEmpty() ? null : sb.toString();
+        return sb.length() == 0 ? null : sb.toString();
     }
 
     public String initValues(){
@@ -37,7 +37,7 @@ public class KtjClass extends KtjInterface{
 
         for(String field: fields.keySet()) if(fields.get(field).initValue != null && !fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append("\n");
 
-        return sb.isEmpty() ? null : sb.toString();
+        return sb.length() == 0 ? null : sb.toString();
     }
 
     public void validateInit(){

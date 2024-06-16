@@ -27,21 +27,27 @@ public abstract class Compilable {
     public abstract void validateTypes();
 
     protected String validateType(String type) throws RuntimeException{
-        if(type.startsWith("[")) return STR."[\{validateType(type.substring(1))}";
+        if(type.startsWith("[")) return "["+validateType(type.substring(1));
 
         if(CompilerUtil.isPrimitive(type)) return type;
 
-        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException(STR."Unknown Type \{type} at \{file}:\{line}");
+        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException("Unknown Type "+type+" at "+file+":"+line);
 
         return uses.get(type);
     }
 
     public int getAccessFlag(){
-        int accessFlag = switch (modifier.accessFlag){
-            case ACC_PACKAGE_PRIVATE -> 0;
-            case ACC_PUBLIC -> AccessFlag.PUBLIC;
-            case ACC_PRIVATE -> AccessFlag.PRIVATE;
-            case ACC_PROTECTED -> AccessFlag.PROTECTED;
+        int accessFlag = 0;
+        switch (modifier.accessFlag){
+            case ACC_PUBLIC:
+                accessFlag = AccessFlag.PUBLIC;
+                break;
+            case ACC_PRIVATE:
+                accessFlag = AccessFlag.PRIVATE;
+                break;
+            case ACC_PROTECTED:
+                accessFlag = AccessFlag.PROTECTED;
+                break;
         };
 
         if(modifier.finaly || modifier.constant) accessFlag += AccessFlag.FINAL;

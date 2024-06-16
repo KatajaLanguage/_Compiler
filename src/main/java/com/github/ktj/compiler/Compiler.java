@@ -39,7 +39,7 @@ public final class Compiler {
         File out = new File(folder);
 
         if(out.exists()) {
-            if (!out.isDirectory()) throw new IllegalArgumentException(STR."Expected folder, got \{getExtension(out.getName())} file");
+            if (!out.isDirectory()) throw new IllegalArgumentException("Expected folder, got "+getExtension(out.getName())+" file");
         }else{
             if(!out.mkdirs()) throw new RuntimeException("Failed to create out Folder");
         }
@@ -61,7 +61,7 @@ public final class Compiler {
         File f = new File(file);
 
         if(f.exists()){
-            if(f.isDirectory() || !getExtension(f.getName()).equals("ktj")) throw new IllegalArgumentException(STR."Expected kataja (.ktj) File, got \{f.isDirectory() ? "directory" : STR.".\{getExtension(f.getName())} file"}");
+            if(f.isDirectory() || !getExtension(f.getName()).equals("ktj")) throw new IllegalArgumentException("Expected kataja (.ktj) File, got "+(f.isDirectory() ? "directory" : "."+getExtension(f.getName())+" file"));
 
             classes.putAll(parser.parseFile(f));
 
@@ -69,7 +69,7 @@ public final class Compiler {
                 try {
                     classes.get(name).validateTypes();
                 }catch(RuntimeException e){
-                    RuntimeException exception = new RuntimeException(STR."\{e} in Class \{name}");
+                    RuntimeException exception = new RuntimeException(e+" in Class "+name);
                     exception.setStackTrace(e.getStackTrace());
                     throw exception;
                 }
@@ -104,7 +104,7 @@ public final class Compiler {
         if(folder.exists() && folder.isDirectory() && folder.listFiles() != null){
             for(File file:folder.listFiles()){
                 if(file.isDirectory()) clearFolder(file);
-                if(!file.delete()) throw new RuntimeException(STR."Failed to delete \{file.getPath()}");
+                if(!file.delete()) throw new RuntimeException("Failed to delete "+file.getPath());
             }
         }
     }
@@ -120,7 +120,7 @@ public final class Compiler {
         String main = null;
 
         for(String clazzName:classes.keySet()){
-            if(classes.get(clazzName) instanceof KtjClass clazz && clazz.methods.containsKey("main%[java.lang.String") && clazz.methods.get("main%[java.lang.String").modifier.statik && clazz.methods.get("main%[java.lang.String").modifier.accessFlag == AccessFlag.ACC_PUBLIC){
+            if(classes.get(clazzName) instanceof KtjClass && ((KtjClass)(classes.get(clazzName))).methods.containsKey("main%[java.lang.String") && ((KtjClass)(classes.get(clazzName))).methods.get("main%[java.lang.String").modifier.statik && ((KtjClass)(classes.get(clazzName))).methods.get("main%[java.lang.String").modifier.accessFlag == AccessFlag.ACC_PUBLIC){
                 if(main != null) throw new RuntimeException("main is defined multiple times");
                 main = clazzName;
             }
@@ -148,7 +148,7 @@ public final class Compiler {
         try{
             ClassPool.getDefault().makeClass(cf).writeFile(outFolder.getPath());
         }catch (IOException | CannotCompileException e) {
-            throw new RuntimeException(STR."failed to write ClassFile for \{cf.getName()}");
+            throw new RuntimeException("failed to write ClassFile for "+cf.getName());
         }
     }
 

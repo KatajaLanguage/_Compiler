@@ -20,8 +20,8 @@ final class SyntacticParser {
             vars.put("this", type);
             vars.put("null", "java.lang.method");
             for(int i = 0;i < method.parameter.length;i++){
-                if(vars.containsKey(method.parameter[i].name())) throw new RuntimeException(STR."\{method.parameter[i].name()} is already defined at \{method.file}:\{method.line+1}");
-                vars.put(method.parameter[i].name(), method.parameter[i].type());
+                if(vars.containsKey(method.parameter[i].name)) throw new RuntimeException(method.parameter[i].name+" is already defined at "+method.file+":"+method.line+1);
+                vars.put(method.parameter[i].name, method.parameter[i].type);
             }
         }
 
@@ -64,13 +64,13 @@ final class SyntacticParser {
                 if(e != null) ast.add(e);
                 else if(th.toStringNonMarked().startsWith("}")) throw new RuntimeException("illegal argument");
             }catch(RuntimeException e){
-                RuntimeException exception = new RuntimeException(STR."\{e.getMessage()} at \{method.file}:\{method.line+1}");
+                RuntimeException exception = new RuntimeException(e.getMessage()+" at "+method.file+":"+method.line+1);
                 exception.setStackTrace(e.getStackTrace());
                 throw exception;
             }
         }
 
-        if(!(ast.getLast() instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
+        if(!(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
 
         return ast.toArray(new AST[0]);
     }
@@ -79,19 +79,26 @@ final class SyntacticParser {
         nextLine();
         if(th.isEmpty() || th.toStringNonMarked().startsWith("}")) return null;
 
-        return switch(th.assertToken(Token.Type.IDENTIFIER).s()){
-            case "while" -> parseWhile();
-            case "if" -> parseIf();
-            case "return" -> parseReturn();
-            default -> {
+        switch(th.assertToken(Token.Type.IDENTIFIER).s){
+            case "while":
+                parseWhile();
+                break;
+            case "if":
+                parseIf();
+                break;
+            case "return":
+                parseReturn();
+                break;
+            default:
                 th.last();
                 AST ast = parseStatement();
 
-                if(ast instanceof AST.Load load && (load.call == null || load.call.argTypes == null)) throw new RuntimeException("not a statement");
+                if(ast instanceof AST.Load && (((AST.Load)(ast)).call == null || ((AST.Load)(ast)).call.argTypes == null)) throw new RuntimeException("not a statement");
 
-                yield ast;
-            }
-        };
+                return ast;
+        }
+
+        return null;
     }
 
     private AST.Return parseReturn(){
@@ -103,7 +110,7 @@ final class SyntacticParser {
             th.assertNull();
         }else ast.type = "void";
 
-        if(!ast.type.equals(method.returnType)  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException(STR."Expected type \{method.returnType} got \{ast.type}");
+        if(!ast.type.equals(method.returnType)  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
 
         return ast;
     }
@@ -114,7 +121,7 @@ final class SyntacticParser {
         th.assertHasNext();
         ast.condition = parseCalc();
 
-        if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
+        if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
         th.assertToken("{");
         th.assertNull();
@@ -130,7 +137,7 @@ final class SyntacticParser {
 
         th.assertHasNext();
         ast.condition = parseCalc();
-        if(!ast.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{ast.condition.type}");
+        if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
         th.assertToken("{");
         th.assertNull();
 
@@ -144,7 +151,7 @@ final class SyntacticParser {
 
             if(th.assertToken("if", "{").equals("if")){
                 current.condition = parseCalc();
-                if(!current.condition.type.equals("boolean")) throw new RuntimeException(STR."Expected type boolean got \{current.condition.type}");
+                if(!current.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+current.condition.type);
                 th.assertToken("{");
             }else end = true;
 
@@ -181,19 +188,19 @@ final class SyntacticParser {
         if(th.next().equals(Token.Type.IDENTIFIER) && th.next().equals(Token.Type.IDENTIFIER)){
             th.toFirst();
 
-            String type = th.assertToken(Token.Type.IDENTIFIER).s();
-            String name = th.assertToken(Token.Type.IDENTIFIER).s();
+            String type = th.assertToken(Token.Type.IDENTIFIER).s;
+            String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");
             AST.Calc calc = parseCalc();
             th.assertNull();
 
             if(method.uses.containsKey(type)){
-                if(!CompilerUtil.classExist(method.uses.get(type))) throw new RuntimeException(STR."Class \{method.uses.get(type)} is not defined");
+                if(!CompilerUtil.classExist(method.uses.get(type))) throw new RuntimeException("Class "+method.uses.get(type)+" is not defined");
                 type = method.uses.get(type);
             }
 
-            if(!type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(type))) throw new RuntimeException(STR."Expected type \{type} got \{calc.type}");
-            if(scope.getType(name) != null) throw new RuntimeException(STR."variable \{name} is already defined");
+            if(!type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(type))) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+            if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
 
             scope.add(name, type);
 
@@ -218,7 +225,7 @@ final class SyntacticParser {
                 AST.Calc calc = parseCalc();
                 th.assertNull();
 
-                if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException(STR."Expected type \{load.type} got \{calc.type}");
+                if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
 
                 AST.VarAssignment ast = new AST.VarAssignment();
                 ast.calc = calc;
@@ -243,11 +250,11 @@ final class SyntacticParser {
             }
 
             ast.setRight();
-            ast.op = th.current().s();
+            ast.op = th.current().s;
             ast.arg = parseValue();
             ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
 
-            if(ast.type == null) throw new RuntimeException(STR."Operator \{ast.op} is not defined for \{ast.right.type} and \{ast.arg.type}");
+            if(ast.type == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);
         }
 
         return ast;
@@ -259,25 +266,30 @@ final class SyntacticParser {
         if(th.isNext(Token.Type.IDENTIFIER)){
             AST.Cast ast = new AST.Cast();
 
-            ast.cast = th.current().s();
+            ast.cast = th.current().s;
             ast.calc = parseCalc();
             ast.type = ast.cast;
 
-            if(!(CompilerUtil.isPrimitive(ast.cast) || (method.uses.containsKey(ast.cast) && CompilerUtil.classExist(method.uses.get(ast.cast))))) throw new RuntimeException(STR."Type \{ast.cast} is not defined");
+            if(!(CompilerUtil.isPrimitive(ast.cast) || (method.uses.containsKey(ast.cast) && CompilerUtil.classExist(method.uses.get(ast.cast))))) throw new RuntimeException("Type "+ast.cast+" is not defined");
 
-            if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) throw new RuntimeException(STR."Unable to cast \{ast.calc.type} to \{ast.cast}");
+            if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) throw new RuntimeException("Unable to cast "+ast.calc.type+" to "+ast.cast);
 
             return ast;
         }
 
         AST.Value ast = new AST.Value();
 
-        switch(th.current().t()){
-            case CHAR, SHORT, INTEGER, LONG, DOUBLE, FLOAT -> {
+        switch(th.current().t){
+            case CHAR:
+            case SHORT:
+            case INTEGER:
+            case LONG:
+            case DOUBLE:
+            case FLOAT:
                 ast.token = th.current();
-                ast.type = th.current().t().toString();
-            }
-            case IDENTIFIER -> {
+                ast.type = th.current().t.toString();
+                break;
+            case IDENTIFIER:
                 if(th.current().equals("true") || th.current().equals("false")){
                     ast.token = th.current();
                     ast.type = "boolean";
@@ -289,12 +301,13 @@ final class SyntacticParser {
                     ast.load = parseCall();
                     ast.type = ast.load.type;
                 }
-            }
-            case STRING -> {
+                break;
+            case STRING:
                 ast.token = th.current();
                 ast.type = "java.lang.String";
-            }
-            default -> throw new RuntimeException("illegal argument");
+                break;
+            default:
+                throw new RuntimeException("illegal argument");
         }
 
         return ast;
@@ -304,20 +317,20 @@ final class SyntacticParser {
         AST.Load ast = new AST.Load();
         AST.Call current;
 
-        String call = th.assertToken(Token.Type.IDENTIFIER).s();
+        String call = th.assertToken(Token.Type.IDENTIFIER).s;
         if(th.isNext("[")){
-            if(!method.uses.containsKey(call) || !CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException(STR."Class \{method.uses.get(call)} is not defined");
+            if(!method.uses.containsKey(call) || !CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
 
             ast.call = current = new AST.Call();
             current.call = "<init>";
-            current.clazz = STR."[\{method.uses.get(call)}";
+            current.clazz = "["+method.uses.get(call);
             current.type = current.clazz;
             current.argTypes = new AST.Calc[]{parseCalc()};
             ast.finaly = false;
             ast.type = current.type;
 
             th.assertToken("]");
-            if(!current.argTypes[0].type.equals("int")) throw new RuntimeException(STR."Expected type int got \{current.argTypes[0].type}");
+            if(!current.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+current.argTypes[0].type);
         }else if(th.isNext("(")){
             if(!method.uses.containsKey(call)){
                 StringBuilder desc = new StringBuilder(call);
@@ -340,7 +353,7 @@ final class SyntacticParser {
                     current.statik = true;
                     current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, true);
                 } else
-                    throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{clazzName}");
+                    throw new RuntimeException("Method "+desc+" is not defined for class "+clazzName);
 
                 current.clazz = clazzName;
                 current.call = call;
@@ -348,7 +361,7 @@ final class SyntacticParser {
                 ast.finaly = true;
                 ast.type = current.type;
             }else{
-                if(!CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException(STR."Class \{method.uses.get(call)} is not defined");
+                if(!CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
 
                 String type = method.uses.get(call);
                 call = "<init>";
@@ -364,7 +377,7 @@ final class SyntacticParser {
                 for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
                 if (CompilerUtil.getMethodReturnType(type, desc.toString(), false, type.equals(clazzName)) == null)
-                    throw new RuntimeException(STR."static Method \{desc.toString()} is not defined for class \{type}");
+                    throw new RuntimeException("static Method "+desc+" is not defined for class "+type);
 
                 ast.call = current = new AST.Call();
                 current.type = type;
@@ -382,11 +395,11 @@ final class SyntacticParser {
                 ast.clazz = ast.type;
                 current = null;
             }else if(method.uses.containsKey(call)) {
-                if(!CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException(STR."Class \{method.uses.get(call)} is not defined");
+                if(!CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
 
                 String type = method.uses.get(call);
                 th.assertToken(".");
-                call = th.assertToken(Token.Type.IDENTIFIER).s();
+                call = th.assertToken(Token.Type.IDENTIFIER).s;
 
                 if (th.isNext("(")) {
                     StringBuilder desc = new StringBuilder(call);
@@ -400,7 +413,7 @@ final class SyntacticParser {
 
                     for(AST.Calc calc:args) desc.append("%").append(calc.type);
 
-                    if(CompilerUtil.getMethodReturnType(type, desc.toString(), true, type.equals(clazzName)) == null) throw new RuntimeException(STR."static Method \{desc.toString()} is not defined for class \{type}");
+                    if(CompilerUtil.getMethodReturnType(type, desc.toString(), true, type.equals(clazzName)) == null) throw new RuntimeException("static Method "+ desc +" is not defined for class "+type);
 
                     ast.call = current = new AST.Call();
                     current.type = CompilerUtil.getMethodReturnType(type, desc.toString(), true, type.equals(clazzName));
@@ -408,7 +421,7 @@ final class SyntacticParser {
                     ast.finaly = true;
                 }else{
                     if (CompilerUtil.getFieldType(type, call, true, type.equals(clazzName)) == null)
-                        throw new RuntimeException(STR."static Field \{call} is not defined for class \{type}");
+                        throw new RuntimeException("static Field "+call+" is not defined for class "+type);
 
                     ast.call = current = new AST.Call();
                     current.type = CompilerUtil.getFieldType(type, call, true, type.equals(clazzName));
@@ -434,7 +447,7 @@ final class SyntacticParser {
                     current.clazz = clazzName;
                     current.call = call;
                     ast.type = current.type;
-                }else throw new RuntimeException(STR."Field \{call} is not defined");
+                }else throw new RuntimeException("Field "+call+" is not defined");
 
                 ast.finaly = CompilerUtil.isFinal(clazzName, call);
             }
@@ -465,9 +478,9 @@ final class SyntacticParser {
 
                 th.assertToken("]");
 
-                if(!current.argTypes[0].type.equals("int")) throw new RuntimeException(STR."Expected type int got \{current.argTypes[0].type}");
+                if(!current.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+current.argTypes[0].type);
             }else{
-                current.call = th.assertToken(Token.Type.IDENTIFIER).s();
+                current.call = th.assertToken(Token.Type.IDENTIFIER).s;
 
                 if (th.isNext("(")) {
                     StringBuilder desc = new StringBuilder(current.call);
@@ -482,7 +495,7 @@ final class SyntacticParser {
                     for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
                     if (CompilerUtil.getMethodReturnType(currentType, desc.toString(), false, currentType.equals(clazzName)) == null)
-                        throw new RuntimeException(STR."Method \{desc.toString()} is not defined for class \{currentType}");
+                        throw new RuntimeException("Method "+ desc +" is not defined for class "+currentType);
 
                     current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false, currentType.equals(clazzName));
                     current.clazz = currentType;
@@ -493,7 +506,7 @@ final class SyntacticParser {
                     current.type = CompilerUtil.getFieldType(currentType, current.call, false, currentType.equals(clazzName));
 
                     if (current.type == null)
-                        throw new RuntimeException(STR."Field \{current.call} is not defined for class \{currentType}");
+                        throw new RuntimeException("Field "+current.call+" is not defined for class "+currentType);
 
                     current.clazz = currentType;
                     current.argTypes = null;

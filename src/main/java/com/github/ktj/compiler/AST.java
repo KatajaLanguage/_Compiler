@@ -1,6 +1,6 @@
 package com.github.ktj.compiler;
 
-abstract sealed class AST permits AST.Calc, AST.CalcArg, AST.Call, AST.If, AST.Load, AST.Return, AST.VarAssignment, AST.While {
+abstract class AST {
 
     String type = null;
 
@@ -38,7 +38,7 @@ abstract sealed class AST permits AST.Calc, AST.CalcArg, AST.Call, AST.If, AST.L
         }
     }
 
-    static sealed class CalcArg extends AST{}
+    static class CalcArg extends AST{}
 
     static final class Value extends CalcArg{
         Load load = null;
@@ -57,7 +57,7 @@ abstract sealed class AST permits AST.Calc, AST.CalcArg, AST.Call, AST.If, AST.L
         boolean finaly = false;
     }
 
-    static sealed class Call extends AST permits StaticCall {
+    static class Call extends AST{
         boolean statik = false;
         String clazz = null;
         String call = null;

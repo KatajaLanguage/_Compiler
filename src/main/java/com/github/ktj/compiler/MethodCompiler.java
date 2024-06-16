@@ -46,12 +46,28 @@ final class MethodCompiler {
         if(ast.calc != null) compileCalc(ast.calc);
 
         switch(ast.type){
-            case "void" -> code.add(Opcode.RETURN);
-            case "int", "boolean", "char", "byte", "short" -> code.add(Opcode.IRETURN);
-            case "float" -> code.add(Opcode.FRETURN);
-            case "double" -> code.add(Opcode.DRETURN);
-            case "long" -> code.add(Opcode.LRETURN);
-            default -> code.add(Opcode.ARETURN);
+            case "void":
+                code.add(Opcode.RETURN);
+                break;
+            case "int":
+            case "boolean":
+            case "char":
+            case "byte":
+            case "short":
+                code.add(Opcode.IRETURN);
+                break;
+            case "float":
+                code.add(Opcode.FRETURN);
+                break;
+            case "double":
+                code.add(Opcode.DRETURN);
+                break;
+            case "long":
+                code.add(Opcode.LRETURN);
+                break;
+            default:
+                code.add(Opcode.ARETURN);
+                break;
         }
     }
 
@@ -112,26 +128,30 @@ final class MethodCompiler {
 
         if(ast.name != null){
             switch (ast.clazz){
-                case "int", "boolean", "char", "byte", "short" -> {
+                case "int":
+                case "boolean":
+                case "char":
+                case "byte":
+                case "short":
                     code.addIload(os.get(ast.name));
                     os.push(1);
-                }
-                case "float" -> {
+                    break;
+                case "float":
                     code.addFload(os.get(ast.name));
                     os.push(1);
-                }
-                case "double" -> {
+                    break;
+                case "double":
                     code.addDload(os.get(ast.name));
                     os.push(2);
-                }
-                case "long" -> {
+                    break;
+                case "long":
                     code.addLload(os.get(ast.name));
                     os.push(2);
-                }
-                default -> {
+                    break;
+                default:
                     code.addAload(os.get(ast.name));
                     os.push(1);
-                }
+                    break;
             }
             first = false;
         }
@@ -170,7 +190,7 @@ final class MethodCompiler {
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
         }
 
-        os.push(Set.of("double", "long").contains(call.type) ? 2 : 1);
+        os.push(call.type.equals("double") || call.type.equals("long") ? 2 : 1);
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){
@@ -186,18 +206,32 @@ final class MethodCompiler {
 
             if(where == -1) {
                 os.pop();
-                where = os.push(ast.load.name, Set.of("double", "long").contains(ast.load.type) ? 2 : 1);
+                where = os.push(ast.load.name, ast.load.type.equals("double") || ast.load.type.equals("long") ? 2 : 1);
             }
 
             if(ast.load.call != null && ast.load.call.call == null){
                 code.add(Opcode.AASTORE);
             }else{
                 switch (ast.load.type) {
-                    case "int", "boolean", "char", "byte", "short" -> code.addIstore(where);
-                    case "float" -> code.addFstore(where);
-                    case "double" -> code.addDstore(where);
-                    case "long" -> code.addLstore(where);
-                    default -> code.addAstore(where);
+                    case "int":
+                    case "boolean":
+                    case "char":
+                    case "byte":
+                    case "short":
+                        code.addIstore(where);
+                        break;
+                    case "float":
+                        code.addFstore(where);
+                        break;
+                    case "double":
+                        code.addDstore(where);
+                        break;
+                    case "long":
+                        code.addLstore(where);
+                        break;
+                    default:
+                        code.addAstore(where);
+                        break;
                 }
             }
         }else{
@@ -216,89 +250,136 @@ final class MethodCompiler {
     private void compileCast(AST.Cast ast){
         compileCalc(ast.calc);
 
+        String temp;
+
         switch(ast.calc.type){
-            case "int", "short", "byte" -> {
+            case "int":
+            case "short":
+            case "byte":
                 switch(ast.type){
-                    case "double" -> {
+                    case "double":
                         code.add(Opcode.I2D);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 2);
-                    }
-                    case "long" -> {
+                        break;
+                    case "long":
                         code.add(Opcode.I2L);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 2);
-                    }
-                    case "float" -> code.add(Opcode.I2F);
-                    case "byte" -> code.add(Opcode.I2B);
-                    case "char" -> code.add(Opcode.I2C);
-                    case "short" -> code.add(Opcode.I2S);
+                        break;
+                    case "float":
+                        code.add(Opcode.I2F);
+                        break;
+                    case "byte":
+                        code.add(Opcode.I2B);
+                        break;
+                    case "char":
+                        code.add(Opcode.I2C);
+                        break;
+                    case "short":
+                        code.add(Opcode.I2S);
+                        break;
                 }
-            }
-            case "double" -> {
+                break;
+            case "double":
                 switch(ast.type){
-                    case "int" -> {
+                    case "int":
                         code.add(Opcode.D2I);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 1);
-                    }
-                    case "long" -> code.add(Opcode.D2L);
-                    case "float" -> {
+                        break;
+                    case "long":
+                        code.add(Opcode.D2L);
+                        break;
+                    case "float":
                         code.add(Opcode.D2F);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 1);
-                    }
+                        break;
                 }
-            }
-            case "long" -> {
+                break;
+            case "long":
                 switch(ast.type){
-                    case "double" -> code.add(Opcode.L2D);
-                    case "int" -> {
+                    case "double":
+                        code.add(Opcode.L2D);
+                        break;
+                    case "int":
                         code.add(Opcode.L2I);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 1);
-                    }
-                    case "float" -> {
+                        break;
+                    case "float":
                         code.add(Opcode.L2F);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 1);
-                    }
+                        break;
                 }
-            }
-            case "float" -> {
+                break;
+            case "float":
                 switch(ast.type){
-                    case "double" -> {
+                    case "double":
                         code.add(Opcode.F2D);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 2);
-                    }
-                    case "long" -> {
+                        break;
+                    case "long":
                         code.add(Opcode.F2L);
-                        String temp = os.pop();
+                        temp = os.pop();
                         os.push(temp, 2);
-                    }
-                    case "int" -> code.add(Opcode.F2I);
+                        break;
+                    case "int":
+                        code.add(Opcode.F2I);
+                        break;
                 }
-            }
+                break;
         }
     }
 
     private void compileOperator(AST.Calc ast){
         switch(ast.type){
-            case "int", "char", "byte", "short", "boolean" -> {
+            case "int":
+            case "char":
+            case "byte":
+            case "short":
+            case "boolean":
                 switch (ast.op){
-                    case "+" -> code.add(Opcode.IADD);
-                    case "-" -> code.add(Opcode.ISUB);
-                    case "*" -> code.add(Opcode.IMUL);
-                    case "/" -> code.add(Opcode.IDIV);
-                    case "==", "!=", "<", "<=", ">", ">=" -> {
+                    case "+":
+                        code.add(Opcode.DADD);
+                        break;
+                    case "-":
+                        code.add(Opcode.DSUB);
+                        break;
+                    case "*":
+                        code.add(Opcode.DMUL);
+                        break;
+                    case "/" :
+                        code.add(Opcode.DDIV);
+                        break;
+                    case "==":
+                    case "!=":
+                    case "<=":
+                    case "<":
+                    case ">=":
+                    case ">":
                         switch(ast.op) {
-                            case "==" -> code.addOpcode(Opcode.IF_ICMPEQ);
-                            case "!=" -> code.addOpcode(Opcode.IF_ICMPNE);
-                            case "<" -> code.addOpcode(Opcode.IF_ICMPLT);
-                            case "<=" -> code.addOpcode(Opcode.IF_ICMPLE);
-                            case ">" -> code.addOpcode(Opcode.IF_ICMPGT);
-                            case ">=" -> code.addOpcode(Opcode.IF_ICMPGE);
+                            case "==":
+                                code.addOpcode(Opcode.IF_ICMPEQ);
+                                break;
+                            case "!=":
+                                code.addOpcode(Opcode.IF_ICMPNE);
+                                break;
+                            case "<":
+                                code.addOpcode(Opcode.IF_ICMPLT);
+                                break;
+                            case "<=":
+                                code.addOpcode(Opcode.IF_ICMPLE);
+                                break;
+                            case ">":
+                                code.addOpcode(Opcode.IF_ICMPGT);
+                                break;
+                            case ">=":
+                                code.addOpcode(Opcode.IF_ICMPGE);
+                                break;
                         }
                         int branchLocation = code.getSize();
                         code.addIndex(0);
@@ -309,45 +390,84 @@ final class MethodCompiler {
                         code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
                         code.addIconst(1);
                         code.write16bit(endLocation, code.getSize() - endLocation + 1);
-                    }
+                        break;
                 }
-            }
-            case "double" -> {
+                break;
+            case "double":
                 switch (ast.op){
-                    case "+" -> code.add(Opcode.DADD);
-                    case "-" -> code.add(Opcode.DSUB);
-                    case "*" -> code.add(Opcode.DMUL);
-                    case "/" -> code.add(Opcode.DDIV);
-                    case "==", "!=", "<=", "<", ">=", ">" -> {
+                    case "+":
+                        code.add(Opcode.DADD);
+                        break;
+                    case "-":
+                        code.add(Opcode.DSUB);
+                        break;
+                    case "*":
+                        code.add(Opcode.DMUL);
+                        break;
+                    case "/" :
+                        code.add(Opcode.DDIV);
+                        break;
+                    case "==":
+                    case "!=":
+                    case "<=":
+                    case "<":
+                    case ">=":
+                    case ">":
                         code.add(Opcode.DCMPG);
                         compileBoolOp(ast);
-                    }
+                        break;
                 }
-            }
-            case "float" -> {
+                break;
+            case "float":
                 switch (ast.op){
-                    case "+" -> code.add(Opcode.FADD);
-                    case "-" -> code.add(Opcode.FSUB);
-                    case "*" -> code.add(Opcode.FMUL);
-                    case "/" -> code.add(Opcode.FDIV);
-                    case "==", "!=", "<=", "<", ">=", ">" -> {
+                    case "+":
+                        code.add(Opcode.FADD);
+                        break;
+                    case "-":
+                        code.add(Opcode.FSUB);
+                        break;
+                    case "*":
+                        code.add(Opcode.FMUL);
+                        break;
+                    case "/" :
+                        code.add(Opcode.FDIV);
+                        break;
+                    case "==":
+                    case "!=":
+                    case "<=":
+                    case "<":
+                    case ">=":
+                    case ">":
                         code.add(Opcode.FCMPG);
                         compileBoolOp(ast);
-                    }
+                        break;
                 }
-            }
-            case "long" -> {
+                break;
+            case "long":
                 switch (ast.op){
-                    case "+" -> code.add(Opcode.LADD);
-                    case "-" -> code.add(Opcode.LSUB);
-                    case "*" -> code.add(Opcode.LMUL);
-                    case "/" -> code.add(Opcode.LDIV);
-                    case "==", "!=", "<=", "<", ">=", ">" -> {
+                    case "+":
+                        code.add(Opcode.LADD);
+                        break;
+                    case "-":
+                        code.add(Opcode.LSUB);
+                        break;
+                    case "*":
+                        code.add(Opcode.LMUL);
+                        break;
+                    case "/" :
+                        code.add(Opcode.LDIV);
+                        break;
+                    case "==":
+                    case "!=":
+                    case "<=":
+                    case "<":
+                    case ">=":
+                    case ">":
                         code.add(Opcode.LCMP);
                         compileBoolOp(ast);
-                    }
+                        break;
                 }
-            }
+                break;
         }
         os.pop();
         if(CompilerUtil.BOOL_OPERATORS.contains(ast.op)) {
@@ -357,25 +477,29 @@ final class MethodCompiler {
     }
 
     private void compileBoolOp(AST.Calc ast){
+        AST.Value value;
         switch(ast.op){
-            case "==", "!=" -> {
+            case "==":
+            case "!=":
                 code.addIconst(0);
                 code.addOpcode(Opcode.IF_ICMPEQ);
-            }
-            case "<", ">" -> {
-                AST.Value value = new AST.Value();
+                break;
+            case "<":
+            case ">":
+                value = new AST.Value();
                 value.type = "int";
                 value.token = new Token(ast.op.equals("<") ? "-1" : "1", Token.Type.INTEGER);
                 compileValue(value);
                 code.addOpcode(Opcode.IF_ICMPEQ);
-            }
-            case "<=", ">=" -> {
-                AST.Value value = new AST.Value();
+                break;
+            case "<=":
+            case ">=":
+                value = new AST.Value();
                 value.type = "int";
                 value.token = new Token(ast.op.equals("<=") ? "1" : "-1", Token.Type.INTEGER);
                 compileValue(value);
                 code.addOpcode(Opcode.IF_ICMPNE);
-            }
+                break;
         }
         int branchLocation = code.getSize();
         code.addIndex(0);
@@ -397,13 +521,18 @@ final class MethodCompiler {
             return;
         }
 
-        switch (ast.token.t().toString()){
-            case "int", "short", "byte", "char" -> {
+        int index;
+
+        switch (ast.token.t.toString()){
+            case "int":
+            case "short":
+            case "byte":
+            case "char":
                 int intValue;
                 if(ast.type.equals("char"))
-                    intValue = ast.token.s().toCharArray()[1];
+                    intValue = ast.token.s.toCharArray()[1];
                 else
-                    intValue = Integer.parseInt(ast.token.s());
+                    intValue = Integer.parseInt(ast.token.s);
 
                 if(intValue < 6 && intValue >= 0)
                     code.addIconst(intValue);
@@ -411,10 +540,10 @@ final class MethodCompiler {
                     code.add(Opcode.BIPUSH ,intValue);
 
                 os.push(1);
-            }
-            case "float" -> {
-                int index = 0;
-                float floatValue = Float.parseFloat(ast.token.s());
+                break;
+            case "float":
+                index = 0;
+                float floatValue = Float.parseFloat(ast.token.s);
                 cp.addFloatInfo(floatValue);
                 while(index < cp.getSize()){
                     try{
@@ -424,10 +553,10 @@ final class MethodCompiler {
                 }
                 code.addLdc(index);
                 os.push(1);
-            }
-            case "double" -> {
-                int index = 0;
-                double doubleValue = Double.parseDouble(ast.token.s());
+                break;
+            case "double":
+                index = 0;
+                double doubleValue = Double.parseDouble(ast.token.s);
                 cp.addDoubleInfo(doubleValue);
                 while(index < cp.getSize()){
                     try{
@@ -437,10 +566,10 @@ final class MethodCompiler {
                 }
                 code.addLdc(index);
                 os.push(2);
-            }
-            case "long" -> {
-                int index = 0;
-                long longValue = Long.parseLong(ast.token.s());
+                break;
+            case "long":
+                index = 0;
+                long longValue = Long.parseLong(ast.token.s);
                 cp.addLongInfo(longValue);
                 while(index < cp.getSize()){
                     try{
@@ -450,16 +579,16 @@ final class MethodCompiler {
                 }
                 code.addLdc(index);
                 os.push(2);
-            }
-            case "java.lang.String" -> {
-                code.addLdc(ast.token.s().substring(1, ast.token.s().length() - 1));
+                break;
+            case "java.lang.String":
+                code.addLdc(ast.token.s.substring(1, ast.token.s.length() - 1));
                 os.push(1);
-            }
-            default -> {
-                if(ast.type.equals("boolean")) code.addIconst(ast.token.s().equals("true") ? 1 : 0);
-                if(ast.token.s().equals("null")) code.add(Opcode.ACONST_NULL);
+                break;
+            default:
+                if(ast.type.equals("boolean")) code.addIconst(ast.token.s.equals("true") ? 1 : 0);
+                if(ast.token.s.equals("null")) code.add(Opcode.ACONST_NULL);
                 os.push(1);
-            }
+                break;
         }
     }
 
@@ -473,7 +602,7 @@ final class MethodCompiler {
         String name = desc.split("%", 2)[0];
         StringBuilder descBuilder = new StringBuilder("(");
 
-        for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(p.type()));
+        for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(p.type));
 
         descBuilder.append(")").append(CompilerUtil.toDesc(method.returnType));
 
@@ -492,7 +621,7 @@ final class MethodCompiler {
                 assert clazz instanceof KtjClass;
 
                 String initValues = ((KtjClass) clazz).initValues();
-                getInstance().compileCode(code, STR."\{initValues != null ? initValues : ""} \n \{method.code}", clazz, clazzName, method, cp);
+                getInstance().compileCode(code, (initValues != null ? initValues : "") + "\n"+method.code, clazz, clazzName, method, cp);
             }else getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
 
             if(code.getMaxLocals() == 0) code.setMaxLocals(code.getMaxLocals() + method.getLocals());

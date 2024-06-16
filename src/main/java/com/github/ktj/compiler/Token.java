@@ -1,23 +1,29 @@
 package com.github.ktj.compiler;
 
-record Token(String s, Type t){
+class Token{
 
     public enum Type{
         SIMPLE, IDENTIFIER, STRING, OPERATOR, CHAR, INTEGER, LONG, DOUBLE, FLOAT, SHORT;
 
         @Override
         public String toString() {
-            return switch (this){
-                case FLOAT -> "float";
-                case DOUBLE -> "double";
-                case SHORT -> "short";
-                case INTEGER -> "int";
-                case LONG -> "long";
-                case CHAR -> "char";
-                case STRING -> "java.lang.String";
-                default -> super.toString();
-            };
+            if(this == FLOAT) return "float";
+            if(this == DOUBLE) return "double";
+            if(this == SHORT) return "short";
+            if(this == INTEGER) return "int";
+            if(this == LONG) return "long";
+            if(this == CHAR) return "char";
+            if(this == STRING) return "java.lang.String";
+            return super.toString();
         }
+    }
+
+    public String s;
+    public Type t;
+
+    public Token(String s, Type t){
+        this.s = s;
+        this.t = t;
     }
 
     @Override

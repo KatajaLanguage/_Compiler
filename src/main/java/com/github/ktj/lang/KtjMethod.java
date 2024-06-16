@@ -5,7 +5,14 @@ import java.util.HashMap;
 
 public class KtjMethod extends Compilable{
 
-    public record Parameter(String type, String name){}
+    public static class Parameter{
+        public String name, type;
+
+        public Parameter(String type, String name){
+            this.name = name;
+            this.type = type;
+        }
+    }
 
     public Parameter[] parameter;
     public String returnType;
