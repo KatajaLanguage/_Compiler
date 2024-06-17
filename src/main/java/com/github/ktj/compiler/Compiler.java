@@ -56,45 +56,49 @@ public final class Compiler {
         printDebug("debug set successfully");
     }
 
-    public void compileFile(String file, boolean execute, boolean clearOutFolder) throws IllegalArgumentException{
+    public void compile(String file, boolean execute, boolean clearOutFolder) throws IllegalArgumentException{
         compiledClasses = new ArrayList<>();
 
         File f = new File(file);
 
-        if(f.exists()){
-            if(f.isDirectory() || !getExtension(f.getName()).equals("ktj")) throw new IllegalArgumentException("Expected kataja (.ktj) File, got "+(f.isDirectory() ? "directory" : "."+getExtension(f.getName())+" file"));
+        if(!f.exists()) throw new IllegalArgumentException("Unable not find " + f.getAbsolutePath());
 
+        if(f.isDirectory()){
+            for(File folderEntry:f.listFiles()){
+                if(!folderEntry.isDirectory() && getExtension(folderEntry.getName()).equals("ktj")) classes.putAll(parser.parseFile(f));
+            }
+        }else if(getExtension(f.getName()).equals("ktj")) {
             classes.putAll(parser.parseFile(f));
+        }else throw new IllegalArgumentException("Expected kataja (.ktj) File, got ."+getExtension(f.getName())+" file");
 
-            for(String name:classes.keySet()){
-                try {
-                    classes.get(name).validateTypes();
-                }catch(RuntimeException e){
-                    RuntimeException exception = new RuntimeException(e+" in Class "+name);
-                    exception.setStackTrace(e.getStackTrace());
-                    throw exception;
-                }
+        for(String name:classes.keySet()){
+            try {
+                classes.get(name).validateTypes();
+            }catch(RuntimeException e){
+                RuntimeException exception = new RuntimeException(e+" in Class "+name);
+                exception.setStackTrace(e.getStackTrace());
+                throw exception;
             }
+        }
 
-            for(String name:classes.keySet()) compileClass(name);
+        for(String name:classes.keySet()) compileClass(name);
 
-            printDebug("parsing finished successfully");
+        printDebug("parsing finished successfully");
 
-            if(clearOutFolder){
-                clearFolder(outFolder);
-                printDebug("out folder cleared successfully");
-            }
+        if(clearOutFolder){
+            clearFolder(outFolder);
+            printDebug("out folder cleared successfully");
+        }
 
-            validateOutFolder();
+        validateOutFolder();
 
-            for(ClassFile clazz:compiledClasses) writeFile(clazz);
+        for(ClassFile clazz:compiledClasses) writeFile(clazz);
 
-            printDebug("compiling finished successfully");
+        printDebug("compiling finished successfully");
 
-            if(execute) execute();
+        if(execute) execute();
 
-            System.out.println("\nprocess finished successfully");
-        }else throw new IllegalArgumentException("Unable not find " + f.getAbsolutePath());
+        System.out.println("\nprocess finished successfully");
     }
 
     String getExtension(String filename) {
@@ -118,6 +122,7 @@ public final class Compiler {
     }
 
     private void execute(){
+        System.out.println();
         String main = null;
 
         for(String clazzName:classes.keySet()){
