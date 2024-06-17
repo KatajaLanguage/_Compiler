@@ -4,6 +4,7 @@ import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
+import javassist.CtClass;
 import javassist.bytecode.*;
 
 import java.io.File;
@@ -146,7 +147,9 @@ public final class Compiler {
 
     private void writeFile(ClassFile cf){
         try{
-            ClassPool.getDefault().makeClass(cf).writeFile(outFolder.getPath());
+            CtClass ct = ClassPool.getDefault().makeClass(cf);
+            if(ct.isFrozen()) ct.defrost();
+            ct.writeFile(outFolder.getPath());
         }catch (IOException | CannotCompileException e) {
             throw new RuntimeException("failed to write ClassFile for "+cf.getName());
         }

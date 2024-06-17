@@ -1,5 +1,5 @@
 use java/lang/System
 
-main{
-    System.out.println("Hello World!")
+test(){
+
 }

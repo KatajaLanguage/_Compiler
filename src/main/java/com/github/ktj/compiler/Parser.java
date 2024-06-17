@@ -472,7 +472,6 @@ final class Parser {
             th.assertNull();
             addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, getFileName(), _line));
         }else if(th.isNext("{")){
-            th.assertToken("{");
             th.assertNull();
 
             StringBuilder code = new StringBuilder();

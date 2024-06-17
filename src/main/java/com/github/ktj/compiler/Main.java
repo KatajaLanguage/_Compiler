@@ -85,7 +85,11 @@ public final class Main {
             }
 
             if(args[args.length - 1].endsWith(".ktj")){
-                c.compile(args[args.length - 1], execute, toClear);
+                try {
+                    c.compile(args[args.length - 1], execute, toClear);
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             }
         }
     }
