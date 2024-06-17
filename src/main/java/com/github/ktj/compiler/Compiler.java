@@ -65,7 +65,7 @@ public final class Compiler {
 
         if(f.isDirectory()){
             for(File folderEntry:f.listFiles()){
-                if(!folderEntry.isDirectory() && getExtension(folderEntry.getName()).equals("ktj")) classes.putAll(parser.parseFile(f));
+                if(!folderEntry.isDirectory() && getExtension(folderEntry.getName()).equals("ktj")) classes.putAll(parser.parseFile(folderEntry));
             }
         }else if(getExtension(f.getName()).equals("ktj")) {
             classes.putAll(parser.parseFile(f));

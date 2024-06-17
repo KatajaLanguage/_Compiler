@@ -68,7 +68,7 @@ public final class Main {
                         i += 2;
                     }
 
-                    if(args.length >= i){
+                    if(args.length > i){
                         System.out.println("to much arguments");
                     }
                 }
