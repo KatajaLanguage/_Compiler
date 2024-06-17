@@ -56,7 +56,7 @@ public final class Compiler {
         printDebug("debug set successfully");
     }
 
-    public void compile(String file, boolean execute, boolean clearOutFolder) throws IllegalArgumentException{
+    public void compileFile(String file, boolean execute, boolean clearOutFolder) throws IllegalArgumentException{
         compiledClasses = new ArrayList<>();
 
         File f = new File(file);

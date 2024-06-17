@@ -40,7 +40,7 @@ public final class Main {
         Compiler c = Compiler.NewInstance();
         c.setDebug(debug);
         if(out != null) c.setOutFolder(out);
-        c.compile(args[args.length - 1], execute, clear);
+        c.compileFile(args[args.length - 1], execute, clear);
     }
 
     private static void executeContinuousArgs(){
@@ -88,7 +88,7 @@ public final class Main {
 
             if(args[args.length - 1].endsWith(".ktj")){
                 try {
-                    c.compile(args[args.length - 1], execute, toClear);
+                    c.compileFile(args[args.length - 1], execute, toClear);
                 }catch(Exception e){
                     e.printStackTrace();
                 }

@@ -384,7 +384,7 @@ final class Parser {
     private String parseName(){
         String name = th.assertToken(Token.Type.IDENTIFIER).s;
 
-        if(classes.containsKey(name)) err("Type Class "+name+" is already defined");
+        if(CompilerUtil.classExist(name)) err("Type Class "+name+" is already defined");
 
         return name;
     }
