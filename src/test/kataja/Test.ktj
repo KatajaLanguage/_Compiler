@@ -1,5 +1,5 @@
 use java/lang/System
 
 test(){
-    int[] i = int[5]
+
 }
