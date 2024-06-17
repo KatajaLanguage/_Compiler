@@ -147,7 +147,8 @@ public final class Compiler {
 
     private void writeFile(ClassFile cf){
         try{
-            CtClass ct = ClassPool.getDefault().makeClass(cf);
+            CtClass ct = ClassPool.getDefault()
+                    .makeClass(cf);
             if(ct.isFrozen()) ct.defrost();
             ct.writeFile(outFolder.getPath());
         }catch (IOException | CannotCompileException e) {

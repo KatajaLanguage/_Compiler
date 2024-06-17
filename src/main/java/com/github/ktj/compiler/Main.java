@@ -32,7 +32,8 @@ public final class Main {
                     clear = parseBoolean(args[i + 1]);
                     break;
                 default:
-                    throw new RuntimeException("illegal argument "+args[i]);
+                    new RuntimeException("illegal argument "+args[i]).printStackTrace();
+                    break;
             }
         }
 
@@ -80,7 +81,8 @@ public final class Main {
                         break;
                     default:
                         if(i == args.length - 1 && !args[i].startsWith("-")) break;
-                        throw new RuntimeException("illegal argument "+args[i]);
+                        new RuntimeException("illegal argument "+args[i]).printStackTrace();
+                        break;
                 }
             }
 
@@ -96,14 +98,14 @@ public final class Main {
 
     private static boolean parseBoolean(String s){
         switch (s){
-            case "f":
-            case "false":
-                return false;
             case "t":
             case "true":
                 return true;
             default:
-                throw new RuntimeException("illegal argument "+s);
+                new RuntimeException("illegal argument "+s).printStackTrace();
+            case "f":
+            case "false":
+                return false;
         }
     }
 }

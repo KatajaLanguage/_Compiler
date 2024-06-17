@@ -306,6 +306,9 @@ final class Parser {
         String name = parseName();
         KtjDataClass clazz = new KtjDataClass(modifier, uses, getFileName(), line);
 
+        boolean constant = modifier.constant;
+        modifier.constant = false;
+
         th.assertToken("=");
         th.assertToken("(");
 
@@ -313,7 +316,10 @@ final class Parser {
             th.last();
 
             while (th.hasNext()) {
-                if (clazz.addField(th.assertToken(Token.Type.IDENTIFIER).s, th.assertToken(Token.Type.IDENTIFIER).s, line))
+                if(th.isNext("const")){
+                    if(clazz.addField(true, th.assertToken(Token.Type.IDENTIFIER).s, th.assertToken(Token.Type.IDENTIFIER).s, line))
+                        err("field is already defined");
+                }else if(clazz.addField(constant, th.assertToken(Token.Type.IDENTIFIER).s, th.assertToken(Token.Type.IDENTIFIER).s, line))
                     err("field is already defined");
 
                 if (th.hasNext()){

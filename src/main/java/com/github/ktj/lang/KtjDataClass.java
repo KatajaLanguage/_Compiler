@@ -19,10 +19,13 @@ public class KtjDataClass extends Compilable{
         for(KtjField field:fields.values()) field.validateTypes();
     }
 
-    public boolean addField(String type, String name, int line){
+    public boolean addField(boolean constant, String type, String name, int line){
         if(fields.containsKey(name)) return true;
 
-        fields.put(name, new KtjField(new Modifier(AccessFlag.ACC_PUBLIC), type, null, uses, file, line));
+        Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
+        mod.constant = constant;
+
+        fields.put(name, new KtjField(mod, type, null, uses, file, line));
         return false;
     }
 }
