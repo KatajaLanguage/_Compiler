@@ -279,8 +279,22 @@ final class Parser {
         KtjClass clazz = new KtjClass(modifier, uses, getFileName(), line);
         current = clazz;
 
-        if(th.isNext("extends"))
+        if(th.isNext("extends")){
             clazz.superclass = th.assertToken(Token.Type.IDENTIFIER).s;
+
+            ArrayList<String> interfaces = new ArrayList<>();
+
+            while(th.isNext(",")){
+                String in = th.assertToken(Token.Type.IDENTIFIER).s;
+
+                if(!CompilerUtil.isInterface(in)) err("Expected interface got class "+in);
+                if(interfaces.contains(in) || clazz.superclass.equals(in)) throw new RuntimeException("interface "+in+" is already extended");
+
+                interfaces.add(in);
+            }
+
+            if(!interfaces.isEmpty()) clazz.interfaces = interfaces.toArray(new String[0]);
+        }
 
         th.assertToken("{");
         th.assertNull();

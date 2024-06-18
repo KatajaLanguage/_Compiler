@@ -172,6 +172,9 @@ final class ClassCompiler {
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
+        for(String interfaceName: clazz.interfaces)
+            cf.addInterface(interfaceName);
+
         //Fields
         for(String fieldName:clazz.fields.keySet()){
             KtjField field = clazz.fields.get(fieldName);

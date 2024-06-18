@@ -6,6 +6,8 @@ import com.github.ktj.lang.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -123,6 +125,20 @@ public class CompilerUtil {
         }catch(ClassNotFoundException ignored){}
 
         return Compiler.Instance().classes.containsKey(name);
+    }
+
+    public static boolean isInterface(String name){
+        Compilable c = Compiler.Instance().classes.get(name);
+
+        if(c != null){
+            return c instanceof KtjInterface && !(c instanceof KtjClass);
+        }else{
+            try {
+                return Class.forName(name).isInterface();
+            }catch(ClassNotFoundException ignored){}
+        }
+
+        return false;
     }
 
     public static String getOperatorReturnType(String type1, String type2, String operator){

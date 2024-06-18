@@ -23,7 +23,7 @@ public final class Compiler {
     private final Parser parser;
 
     private File outFolder;
-    HashMap<String, Compilable> classes;
+    public HashMap<String, Compilable> classes;
 
     private boolean debug;
 
@@ -74,6 +74,8 @@ public final class Compiler {
         for(String name:classes.keySet()){
             try {
                 classes.get(name).validateTypes();
+
+                if(classes.get(name) instanceof KtjClass) ((KtjClass) classes.get(name)).validateInterfaces();
             }catch(RuntimeException e){
                 RuntimeException exception = new RuntimeException(e+" in Class "+name);
                 exception.setStackTrace(e.getStackTrace());

@@ -1,13 +1,17 @@
 package com.github.ktj.lang;
 
 import com.github.ktj.bytecode.AccessFlag;
+import com.github.ktj.compiler.Compiler;
 import com.github.ktj.compiler.CompilerUtil;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class KtjClass extends KtjInterface{
 
     public HashMap<String, KtjField> fields;
+    public String[] interfaces = new String[0];
     public String superclass = null;
 
     public KtjClass(Modifier modifier, HashMap<String, String> uses, String file, int line){
@@ -57,15 +61,59 @@ public class KtjClass extends KtjInterface{
         }
     }
 
+    public void validateInterfaces(){
+        for(String interfaceName:interfaces){
+            if(Compiler.Instance().classes.containsKey(interfaceName)) validateKtjInterface((KtjInterface) Compiler.Instance().classes.get(interfaceName));
+            else validateJavaInterface(interfaceName);
+        }
+    }
+
+    private void validateKtjInterface(KtjInterface i){
+        for(String method:i.methods.keySet()){
+            if(!methods.containsKey(method)) throw new RuntimeException("No implementation for "+method+" found");
+
+            Modifier mod1 = methods.get(method).modifier;
+            Modifier mod2 = i.methods.get(method).modifier;
+
+            if(mod1.accessFlag != mod2.accessFlag) throw new RuntimeException("Expected "+method+" to be "+mod2.accessFlag);
+            if(mod1.synchronised) throw new RuntimeException("Expected "+method+" to be synchronised");
+        }
+    }
+
+    private void validateJavaInterface(String interfaceName){
+        try{
+            Class<?> clazz = Class.forName(interfaceName);
+
+            for(Method method:clazz.getDeclaredMethods()){
+                StringBuilder desc = new StringBuilder(method.getName());
+
+                for(Class<?> p:method.getParameterTypes()) desc.append("%").append(p.toString().split(" ")[1]);
+
+                if(!methods.containsKey(desc.toString())) throw new RuntimeException("No implementation for "+desc+" found");
+            }
+        }catch(ClassNotFoundException ignored){}
+    }
+
     @Override
     public void validateTypes() {
         super.validateTypes();
 
         for(KtjField field:fields.values()) field.validateTypes();
 
+        Arrays.stream(interfaces).forEach(this::validateType);
+
         if(superclass != null){
             superclass = super.validateType(superclass);
             if(CompilerUtil.isFinal(superclass)) throw new RuntimeException("Class "+superclass+" is final");
+
+            if(CompilerUtil.isInterface(superclass)){
+                String[] help = new String[interfaces.length + 1];
+                help[0] = superclass;
+                System.arraycopy(interfaces, 0, help, 1, interfaces.length);
+
+                interfaces = help;
+                superclass = null;
+            }
         }
     }
 
