@@ -1,6 +1,7 @@
 package com.github.ktj.lang;
 
 import com.github.ktj.bytecode.AccessFlag;
+import com.github.ktj.compiler.CompilerUtil;
 
 import java.util.HashMap;
 
@@ -62,7 +63,10 @@ public class KtjClass extends KtjInterface{
 
         for(KtjField field:fields.values()) field.validateTypes();
 
-        if(superclass != null) superclass = super.validateType(superclass);
+        if(superclass != null){
+            superclass = super.validateType(superclass);
+            if(CompilerUtil.isFinal(superclass)) throw new RuntimeException("Class "+superclass+" is final"); //at "+file+":"+line);
+        }
     }
 
     public int getAccessFlag(){

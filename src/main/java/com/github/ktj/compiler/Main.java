@@ -8,13 +8,13 @@ public final class Main {
         Scanner sc = new Scanner(System.in);
         boolean quit = false;
 
-        if(args.length == 0){
-            System.out.print("> ");
-            args = sc.nextLine().split(" ");
-        }
-
         while (!quit){
             Compiler c = Compiler.NewInstance();
+            boolean debug = false;
+
+            System.out.print("> ");
+            args = sc.nextLine().split(" ");
+
             loop:
                 if(args.length > 0){
                     int i = 0;
@@ -28,6 +28,7 @@ public final class Main {
 
                     if(args[i].equals("-d")){
                         c.setDebug(true);
+                        debug = true;
                         i++;
                     }
 
@@ -53,6 +54,11 @@ public final class Main {
                             c.compile(args[i + 1], false, true);
                         }catch(RuntimeException e){
                             System.out.println(e.getMessage());
+                            if(debug){
+                                for(int j = 0;j < e.getStackTrace().length;j++){
+                                    System.out.println("\t"+e.getStackTrace()[j].toString());
+                                }
+                            }
                         }
                         i += 2;
                     }else if(args[i].equals("-e")){
@@ -72,9 +78,6 @@ public final class Main {
                         System.out.println("to much arguments");
                     }
                 }
-
-            System.out.print("> ");
-            args = sc.nextLine().split(" ");
         }
     }
 }

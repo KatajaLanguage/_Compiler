@@ -236,6 +236,21 @@ public class CompilerUtil {
         return false;
     }
 
+    public static boolean isFinal(String clazz){
+        Compilable compilable = Compiler.Instance().classes.get(clazz);
+
+        if(compilable != null){
+            return compilable.modifier.finaly;
+        }else{
+            try{
+                Class<?> c = Class.forName(clazz);
+                return (c.getModifiers() & AccessFlag.FINAL) != 0;
+            }catch(ClassNotFoundException ignored){}
+        }
+
+        return false;
+    }
+
     public static boolean canCast(String type, String to){
         if(isPrimitive(type) && isPrimitive(to)) return true;
 

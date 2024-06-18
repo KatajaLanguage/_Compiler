@@ -1,4 +1,8 @@
-use java/lang/String
+use java/lang/Object
 
-public class ClassTest extends String{
+public class Test extends Object{
+}
+
+public class Class{
+
 }
