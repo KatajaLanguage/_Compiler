@@ -319,11 +319,11 @@ final class SyntacticParser {
 
         String call = th.assertToken(Token.Type.IDENTIFIER).s;
         if(th.isNext("[")){
-            if(!method.uses.containsKey(call) || !CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
+            if(!CompilerUtil.isPrimitive(call) && (!method.uses.containsKey(call) || !CompilerUtil.classExist(method.uses.get(call)))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
 
             ast.call = current = new AST.Call();
             current.call = "<init>";
-            current.clazz = "["+method.uses.get(call);
+            current.clazz = "["+(CompilerUtil.isPrimitive(call) ? call : method.uses.get(call));
             current.type = current.clazz;
             current.argTypes = new AST.Calc[]{parseCalc()};
             ast.finaly = false;

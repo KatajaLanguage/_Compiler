@@ -65,7 +65,7 @@ public class KtjClass extends KtjInterface{
 
         if(superclass != null){
             superclass = super.validateType(superclass);
-            if(CompilerUtil.isFinal(superclass)) throw new RuntimeException("Class "+superclass+" is final"); //at "+file+":"+line);
+            if(CompilerUtil.isFinal(superclass)) throw new RuntimeException("Class "+superclass+" is final");
         }
     }
 

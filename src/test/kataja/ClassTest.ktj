@@ -1,8 +1,4 @@
-use java/lang/Object
+public final class ArrayTest{
 
-public class Test extends Object{
-}
-
-public class Class{
-
+    private int[] intArray = int[5]
 }
