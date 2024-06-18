@@ -276,11 +276,14 @@ final class Parser {
 
         if(classes.containsKey(name)) err("Class "+name+" is already defined");
 
-        th.assertToken("{");
-        th.assertNull();
-
         KtjClass clazz = new KtjClass(modifier, uses, getFileName(), line);
         current = clazz;
+
+        if(th.isNext("extends"))
+            clazz.superclass = th.assertToken(Token.Type.IDENTIFIER).s;
+
+        th.assertToken("{");
+        th.assertNull();
 
         while (sc.hasNextLine()){
             nextLine();

@@ -1,0 +1,4 @@
+use java/lang/String
+
+public class ClassTest extends String{
+}

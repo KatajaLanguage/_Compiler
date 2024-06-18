@@ -168,7 +168,7 @@ final class ClassCompiler {
     }
 
     static void compileClass(KtjClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java.lang.Object");
+        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, clazz.superclass);
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 

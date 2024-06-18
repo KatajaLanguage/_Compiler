@@ -7,6 +7,7 @@ import java.util.HashMap;
 public class KtjClass extends KtjInterface{
 
     public HashMap<String, KtjField> fields;
+    public String superclass = null;
 
     public KtjClass(Modifier modifier, HashMap<String, String> uses, String file, int line){
         super(modifier, uses, file, line);
@@ -60,6 +61,8 @@ public class KtjClass extends KtjInterface{
         super.validateTypes();
 
         for(KtjField field:fields.values()) field.validateTypes();
+
+        if(superclass != null) superclass = super.validateType(superclass);
     }
 
     public int getAccessFlag(){
