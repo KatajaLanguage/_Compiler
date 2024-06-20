@@ -60,35 +60,32 @@ final class SyntacticParser {
 
         while(hasNext()){
             try {
-                AST e = parseNextLine();
+                AST e = parseNextStatement(true);
                 if(e != null) ast.add(e);
                 else if(th.toStringNonMarked().startsWith("}")) throw new RuntimeException("illegal argument");
             }catch(RuntimeException e){
-                RuntimeException exception = new RuntimeException(e.getMessage()+" at "+method.file+":"+method.line+1);
+                RuntimeException exception = new RuntimeException(e.getMessage()+" at "+method.file+":"+method.line);
                 exception.setStackTrace(e.getStackTrace());
                 throw exception;
             }
         }
 
-        if(!(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
+        if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
 
         return ast.toArray(new AST[0]);
     }
 
-    private AST parseNextLine(){
-        nextLine();
+    private AST parseNextStatement(boolean nextLine){
+        if(nextLine) nextLine();
         if(th.isEmpty() || th.toStringNonMarked().startsWith("}")) return null;
 
         switch(th.assertToken(Token.Type.IDENTIFIER).s){
             case "while":
-                parseWhile();
-                break;
+                return parseWhile();
             case "if":
-                parseIf();
-                break;
+                return parseIf();
             case "return":
-                parseReturn();
-                break;
+                return parseReturn();
             default:
                 th.last();
                 AST ast = parseStatement();
@@ -97,8 +94,6 @@ final class SyntacticParser {
 
                 return ast;
         }
-
-        return null;
     }
 
     private AST.Return parseReturn(){
@@ -138,27 +133,31 @@ final class SyntacticParser {
         th.assertHasNext();
         ast.condition = parseCalc();
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
-        th.assertToken("{");
-        th.assertNull();
+        if(th.assertToken("->", "{").equals("->")){
+            ast.ast = new AST[]{parseNextStatement(false)};
+        }else{
+            th.assertNull();
 
-        ast.ast = parseContent();
+            ast.ast = parseContent();
 
-        AST.If current = ast;
-        boolean end = false;
-        while(th.hasNext() && !end){
-            current = (current.elif = new AST.If());
-            th.assertToken("else");
+            AST.If current = ast;
+            boolean end = false;
+            while (th.hasNext() && !end) {
+                current = (current.elif = new AST.If());
+                th.assertToken("else");
 
-            if(th.assertToken("if", "{").equals("if")){
-                current.condition = parseCalc();
-                if(!current.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+current.condition.type);
-                th.assertToken("{");
-            }else end = true;
+                if (th.assertToken("if", "{").equals("if")) {
+                    current.condition = parseCalc();
+                    if (!current.condition.type.equals("boolean"))
+                        throw new RuntimeException("Expected type boolean got " + current.condition.type);
+                    th.assertToken("{");
+                } else end = true;
 
-            current.ast = parseContent();
+                current.ast = parseContent();
+            }
+
+            if (!th.toStringNonMarked().equals("} ")) throw new RuntimeException("illegal argument");
         }
-
-        if(!th.toStringNonMarked().equals("} ")) throw new RuntimeException("illegal argument");
 
         return ast;
     }
@@ -167,11 +166,11 @@ final class SyntacticParser {
         scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();
 
-        AST current = parseNextLine();
+        AST current = parseNextStatement(true);
         if(current != null) astList.add(current);
 
         while(!th.toStringNonMarked().startsWith("}")){
-            current = parseNextLine();
+            current = parseNextStatement(true);
             if(current != null) astList.add(current);
         }
 

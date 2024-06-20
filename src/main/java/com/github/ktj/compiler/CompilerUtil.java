@@ -153,7 +153,7 @@ public class CompilerUtil {
                 return type1.equals("boolean") ? null : "boolean";
 
             if(NUMBER_OPERATORS.contains(operator))
-                return type1.equals("boolean") ? null : type1;
+                return type1.equals("boolean") ? null : "boolean";
         }else return ((operator.equals("==") || operator.equals("!=")) && type1.equals(type2)) ? "boolean" : null;
 
         return null;

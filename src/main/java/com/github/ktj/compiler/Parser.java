@@ -68,24 +68,27 @@ final class Parser {
             }
         }
 
-        if(!statik.isEmpty()) classes.put(classes.isEmpty() ? name : "_"+name, statik);
+        if(!statik.isEmpty()){
+            if(classes.isEmpty()) uses.put("_"+name, path.replace("/", ".")+"."+file);
+            classes.put(classes.isEmpty() ? name : "_"+name, statik);
+        }
 
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
             String name = classes.keySet().toArray(new String[0])[0];
             Compilable clazz = classes.remove(name);
-            classes.put(CompilerUtil.validateClassName((path.equals("") ? "" : path+".")+name), clazz);
+            classes.put(CompilerUtil.validateClassName((path.isEmpty() ? "" : path+".")+name), clazz);
 
             if(uses.containsKey(name)) err("."+name+" is already defined");
-            uses.put(name, CompilerUtil.validateClassName((path.equals("") ? "" : path+".")+name));
+            uses.put(name, CompilerUtil.validateClassName((path.isEmpty() ? "" : path+".")+name));
         }else{
             HashMap<String, Compilable> help = new HashMap<>();
 
             for(String clazz: classes.keySet()){
-                help.put(CompilerUtil.validateClassName((path.equals("") ? "" : path+".")+name+"."+clazz), classes.get(clazz));
+                help.put(CompilerUtil.validateClassName((path.isEmpty() ? "" : path+".")+name+"."+clazz), classes.get(clazz));
 
                 path = CompilerUtil.validateClassName(path);
                 if(uses.containsKey(clazz)) err("."+clazz+" is already defined");
-                uses.put(clazz, (path.equals("") ? "" : path+".")+name+"."+clazz);
+                uses.put(clazz, (path.isEmpty() ? "" : path+".")+name+"."+clazz);
             }
 
             classes = help;
@@ -489,46 +492,35 @@ final class Parser {
         }
 
         StringBuilder desc = new StringBuilder(name);
-        for(KtjMethod.Parameter p:parameter) desc.append("%"+p.type);
+        for(KtjMethod.Parameter p:parameter) desc.append("%").append(p.type);
 
         if(mod.abstrakt){
             th.assertNull();
             addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, getFileName(), _line));
         }else if(th.isNext("{")){
-            th.assertNull();
-
             StringBuilder code = new StringBuilder();
             int i = 1;
 
-            while (sc.hasNextLine()) {
-                nextLine();
-
-                if (th.isEmpty()) code.append("\n");
-                else if (th.next().s.equals("}")) {
-                    if(!th.hasNext() || !th.next().equals("else")) {
-                        i--;
-
-                        if(i > 0){
-                            if (!(code.length() == 0)) code.append("\n");
-                            code.append(th.toStringNonMarked());
-                        }else{
-                            if(Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
-
-                            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
-                            return;
-                        }
-                    }else{
-                        if (!(code.length() == 0)) code.append("\n");
-                        code.append(th.toStringNonMarked());
-                    }
-                }else{
-                    if(th.current().s.equals("if") || th.current().s.equals("while")) i++;
-                    if (!(code.length() == 0)) code.append("\n");
-                    code.append(th.toStringNonMarked());
+            while(i != 0){
+                while(!th.hasNext()){
+                    if(!sc.hasNextLine()) break;
+                    nextLine();
+                    code.append("\n");
                 }
+
+                String current = th.next().s;
+
+                if(current.equals("}")) i--;
+                else if(current.equals("{")) i++;
+
+                if(i > 0) code.append(" ").append(current);
             }
 
-            err("Expected '}'");
+            if(!th.current().equals("}")) err("Expected '}'");
+
+            if(Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
+
+            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
         }else{
             StringBuilder code = new StringBuilder();
 

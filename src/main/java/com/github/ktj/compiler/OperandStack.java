@@ -123,7 +123,8 @@ final class OperandStack {
     String pop(){
         String temp = stack.getKey(stack.size() - 1);
         int length = stack.getValue(stack.size() - 1);
-        length -= stack.getValue(stack.size() - 2);
+        if(stack.size() > 1) length -= stack.getValue(stack.size() - 2);
+        else length = 0;
         stack.remove(stack.size() - 1);
         size -= length;
         //System.out.println(stack);

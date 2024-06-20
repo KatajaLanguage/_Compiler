@@ -1,0 +1,4 @@
+public test(){
+    if 3 > 5 -> return
+}
+#-c src/test/kataja/Test.ktj
