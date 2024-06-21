@@ -116,8 +116,8 @@ final class OperandStack {
         return size - length;
     }
 
-    void push(int length){
-        push("&temp", length);
+    int push(int length){
+        return push("&temp", length);
     }
 
     String pop(){

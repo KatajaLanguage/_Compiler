@@ -243,6 +243,7 @@ final class MethodCompiler {
     private void compileCalc(AST.Calc ast){
         if(ast.right != null) compileCalc(ast.right);
         if(ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+        else if(ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
         else compileValue((AST.Value) ast.arg);
         if(ast.op != null) compileOperator(ast);
     }
@@ -603,6 +604,74 @@ final class MethodCompiler {
                 os.push(1);
                 break;
         }
+    }
+
+    private void compileArrayCreation(AST.ArrayCreation ast){
+        int length = ast.calcs.length;
+
+        if(CompilerUtil.isPrimitive(ast.type.substring(1))) {
+            int atype = 0;
+            switch (ast.type.substring(1)) {
+                case "boolean":
+                    atype = 4;
+                    break;
+                case "char":
+                    atype = 5;
+                    break;
+                case "float":
+                    atype = 6;
+                    break;
+                case "double":
+                    atype = 7;
+                    break;
+                case "byte":
+                    atype = 8;
+                    break;
+                case "short":
+                    atype = 9;
+                    break;
+                case "int":
+                    atype = 10;
+                    break;
+                case "long":
+                    atype = 11;
+                    break;
+            }
+            code.addNewarray(atype, length);
+        }else code.addAnewarray(ast.type.substring(1));
+
+        for(int i = 0;i < length;i++){
+            code.add(Opcode.DUP);
+            if(i < 6) code.addIconst(i);
+            else code.add(Opcode.BIPUSH ,i);
+
+            compileCalc(ast.calcs[i]);
+            os.pop();
+
+            switch(ast.type.substring(1)){
+                case "int":
+                case "boolean":
+                case "char":
+                case "byte":
+                case "short":
+                    code.add(Opcode.IASTORE);
+                    break;
+                case "float":
+                    code.add(Opcode.FASTORE);
+                    break;
+                case "double":
+                    code.add(Opcode.DASTORE);
+                    break;
+                case "long":
+                    code.add(Opcode.LASTORE);
+                    break;
+                default:
+                    code.add(Opcode.AASTORE);
+                    break;
+            }
+        }
+
+        os.push(1);
     }
 
     static MethodCompiler getInstance(){

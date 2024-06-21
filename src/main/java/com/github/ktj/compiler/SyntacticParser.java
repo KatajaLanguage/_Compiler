@@ -20,7 +20,7 @@ final class SyntacticParser {
             vars.put("this", type);
             vars.put("null", "java.lang.method");
             for(int i = 0;i < method.parameter.length;i++){
-                if(vars.containsKey(method.parameter[i].name)) throw new RuntimeException(method.parameter[i].name+" is already defined at "+method.file+":"+method.line+1);
+                if(vars.containsKey(method.parameter[i].name)) throw new RuntimeException(method.parameter[i].name+" is already defined at "+method.file+":"+method.line);
                 vars.put(method.parameter[i].name, method.parameter[i].type);
             }
         }
@@ -310,10 +310,32 @@ final class SyntacticParser {
                 ast.token = th.current();
                 ast.type = "java.lang.String";
                 break;
+            case SIMPLE:
+                if(th.current().equals("{")) return parseArrayCreation();
             default:
-                throw new RuntimeException("illegal argument");
+                throw new RuntimeException("illegal argument "+th.current());
         }
 
+        return ast;
+    }
+
+    private AST.ArrayCreation parseArrayCreation(){
+        if(th.isNext("}")) throw new RuntimeException("Expected values");
+        ArrayList<AST.Calc> calcs = new ArrayList<>();
+
+        AST.Calc calc = parseCalc();
+        String type = calc.type;
+        calcs.add(calc);
+
+        while(th.assertToken(",", "}").equals(",")){
+            calc = parseCalc();
+            calcs.add(calc);
+            if(!calc.type.equals(type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+        }
+
+        AST.ArrayCreation ast = new AST.ArrayCreation();
+        ast.type = "["+type;
+        ast.calcs = calcs.toArray(new AST.Calc[0]);
         return ast;
     }
 
@@ -324,6 +346,8 @@ final class SyntacticParser {
         String call = th.assertToken(Token.Type.IDENTIFIER).s;
         if(th.isNext("[")){
             if(!CompilerUtil.isPrimitive(call) && (!method.uses.containsKey(call) || !CompilerUtil.classExist(method.uses.get(call)))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
+
+            th.assertToken("]");
 
             ast.call = current = new AST.Call();
             current.call = "<init>";
@@ -534,7 +558,7 @@ final class SyntacticParser {
     }
 
     private void nextLine(){
-        clazz.line++;
+        method.line++;
         index++;
         th = Lexer.lex(code[index]);
     }

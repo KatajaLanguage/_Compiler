@@ -50,6 +50,10 @@ abstract class AST {
         String cast = null;
     }
 
+    static final class ArrayCreation extends CalcArg{
+        Calc[] calcs = null;
+    }
+
     static final class Load extends AST{
         String name = null;
         String clazz = null;
