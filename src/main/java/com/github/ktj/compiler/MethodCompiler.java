@@ -414,9 +414,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.DCMPG);
-                        compileBoolOp(ast);
                         break;
                 }
+                compileBoolOp(ast);
                 break;
             case "float":
                 switch (ast.op){
@@ -439,9 +439,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.FCMPG);
-                        compileBoolOp(ast);
                         break;
                 }
+                compileBoolOp(ast);
                 break;
             case "long":
                 switch (ast.op){
@@ -464,13 +464,26 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.LCMP);
-                        compileBoolOp(ast);
                         break;
                 }
+                compileBoolOp(ast);
+                break;
+            default:
+                if(ast.op.equals("==")) code.add(Opcode.IF_ACMPEQ);
+                else code.add(Opcode.IF_ACMPNE);
+                int branchLocation = code.getSize();
+                code.addIndex(0);
+                code.addIconst(0);
+                code.addOpcode(Opcode.GOTO);
+                int endLocation = code.getSize();
+                code.addIndex(0);
+                code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
+                code.addIconst(1);
+                code.write16bit(endLocation, code.getSize() - endLocation + 1);
                 break;
         }
         os.pop();
-        if(CompilerUtil.BOOL_OPERATORS.contains(ast.op)) {
+        if(CompilerUtil.BOOL_OPERATORS.contains(ast.op) || CompilerUtil.NUM_BOOL_OPERATORS.contains(ast.op)) {
             os.pop();
             os.push(1);
         }

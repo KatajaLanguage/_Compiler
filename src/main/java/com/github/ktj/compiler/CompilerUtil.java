@@ -142,12 +142,12 @@ public class CompilerUtil {
     }
 
     public static String getOperatorReturnType(String type1, String type2, String operator){
+        if(BOOL_OPERATORS.contains(operator) && type1.equals(type2))
+            return "boolean";
+
         if(isPrimitive(type1)){
             if(!type1.equals(type2))
                 return null;
-
-            if(BOOL_OPERATORS.contains(operator))
-                return "boolean";
 
             if(NUM_BOOL_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : "boolean";
