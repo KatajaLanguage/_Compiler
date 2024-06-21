@@ -118,11 +118,14 @@ final class SyntacticParser {
 
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
-        th.assertToken("{");
-        th.assertNull();
+        if(th.assertToken("{", "->").equals("->")){
+            ast.ast = new AST[]{parseNextStatement(false)};
+        }else{
+            th.assertNull();
 
-        ast.ast = parseContent();
-        th.assertNull();
+            ast.ast = parseContent();
+            th.assertNull();
+        }
 
         return ast;
     }
@@ -184,8 +187,11 @@ final class SyntacticParser {
     }
 
     private AST parseStatement(){
-        if(th.next().equals(Token.Type.IDENTIFIER) && th.next().equals(Token.Type.IDENTIFIER)){
-            th.toFirst();
+        if(!th.isNext(Token.Type.IDENTIFIER)) throw new RuntimeException("illegal argument");
+
+        if(th.isNext(Token.Type.IDENTIFIER)){
+            th.last();
+            th.last();
 
             String type = th.assertToken(Token.Type.IDENTIFIER).s;
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
@@ -213,8 +219,8 @@ final class SyntacticParser {
             ast.load.clazz = type;
 
             return ast;
-        }else {
-            th.toFirst();
+        }else{
+            th.last();
             AST.Load load = parseCall();
 
             if(load.finaly) th.assertNull();

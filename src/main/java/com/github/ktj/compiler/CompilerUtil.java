@@ -21,12 +21,12 @@ public class CompilerUtil {
     static{
         BOOL_OPERATORS.add("==");
         BOOL_OPERATORS.add("!=");
-        NUMBER_OPERATORS.add("||");
-        NUMBER_OPERATORS.add("&&");
-        NUMBER_OPERATORS.add(">");
-        NUMBER_OPERATORS.add("<");
-        NUMBER_OPERATORS.add(">=");
-        NUMBER_OPERATORS.add("<=");
+        NUM_BOOL_OPERATORS.add("||");
+        NUM_BOOL_OPERATORS.add("&&");
+        NUM_BOOL_OPERATORS.add(">");
+        NUM_BOOL_OPERATORS.add("<");
+        NUM_BOOL_OPERATORS.add(">=");
+        NUM_BOOL_OPERATORS.add("<=");
         NUMBER_OPERATORS.add("+");
         NUMBER_OPERATORS.add("-");
         NUMBER_OPERATORS.add("*");
@@ -153,7 +153,7 @@ public class CompilerUtil {
                 return type1.equals("boolean") ? null : "boolean";
 
             if(NUMBER_OPERATORS.contains(operator))
-                return type1.equals("boolean") ? null : "boolean";
+                return type1.equals("boolean") ? null : type1;
         }else return ((operator.equals("==") || operator.equals("!=")) && type1.equals(type2)) ? "boolean" : null;
 
         return null;

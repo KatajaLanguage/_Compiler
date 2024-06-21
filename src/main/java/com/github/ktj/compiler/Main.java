@@ -75,7 +75,7 @@ public final class Main {
                     }
 
                     if(args.length > i){
-                        System.out.println("to much arguments");
+                        System.out.println("illegal argument(s)");
                     }
                 }
         }
