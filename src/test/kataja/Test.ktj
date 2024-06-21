@@ -1,8 +1,4 @@
-public test(){
-    int i = 0
-
-    while i < 5 -> i = i + 1
-
-    if 3 > 5 -> return
+public int[] test(){
+    return {1, 2, 3}
 }
 #-c src/test/kataja/Test.ktj

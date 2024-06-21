@@ -58,9 +58,13 @@ final class SyntacticParser {
 
         ArrayList<AST> ast = new ArrayList<>();
 
-        while(hasNext()){
+        if(this.code.length == 0) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
+
+        nextLine();
+
+        while(hasNextStatement()){
             try {
-                AST e = parseNextStatement(true);
+                AST e = parseNextStatement();
                 if(e != null) ast.add(e);
                 else if(th.toStringNonMarked().startsWith("}")) throw new RuntimeException("illegal argument");
             }catch(RuntimeException e){
@@ -75,25 +79,33 @@ final class SyntacticParser {
         return ast.toArray(new AST[0]);
     }
 
-    private AST parseNextStatement(boolean nextLine){
-        if(nextLine) nextLine();
-        if(th.isEmpty() || th.toStringNonMarked().startsWith("}")) return null;
+    private AST parseNextStatement(){
+        if(th.toStringNonMarked().startsWith("}") || !hasNextStatement()) return null;
+
+        if(!th.hasNext()) nextLine();
+
+        AST ast;
 
         switch(th.assertToken(Token.Type.IDENTIFIER).s){
             case "while":
-                return parseWhile();
+                ast = parseWhile();
+                break;
             case "if":
-                return parseIf();
+                ast = parseIf();
+                break;
             case "return":
-                return parseReturn();
+                ast = parseReturn();
+                break;
             default:
                 th.last();
-                AST ast = parseStatement();
+                ast = parseStatement();
 
                 if(ast instanceof AST.Load && (((AST.Load)(ast)).call == null || ((AST.Load)(ast)).call.argTypes == null)) throw new RuntimeException("not a statement");
-
-                return ast;
+                break;
         }
+
+        th.isNext(";");
+        return ast;
     }
 
     private AST.Return parseReturn(){
@@ -102,7 +114,7 @@ final class SyntacticParser {
         if(th.hasNext()){
             ast.calc = parseCalc();
             ast.type = ast.calc.type;
-            th.assertNull();
+            assertEndOfStatement();
         }else ast.type = "void";
 
         if(!ast.type.equals(method.returnType)  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
@@ -119,13 +131,8 @@ final class SyntacticParser {
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
         if(th.assertToken("{", "->").equals("->")){
-            ast.ast = new AST[]{parseNextStatement(false)};
-        }else{
-            th.assertNull();
-
-            ast.ast = parseContent();
-            th.assertNull();
-        }
+            ast.ast = new AST[]{parseNextStatement()};
+        }else ast.ast = parseContent();
 
         return ast;
     }
@@ -137,10 +144,8 @@ final class SyntacticParser {
         ast.condition = parseCalc();
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
         if(th.assertToken("->", "{").equals("->")){
-            ast.ast = new AST[]{parseNextStatement(false)};
+            ast.ast = new AST[]{parseNextStatement()};
         }else{
-            th.assertNull();
-
             ast.ast = parseContent();
 
             AST.If current = ast;
@@ -169,18 +174,12 @@ final class SyntacticParser {
         scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();
 
-        AST current = parseNextStatement(true);
-        if(current != null) astList.add(current);
-
-        while(!th.toStringNonMarked().startsWith("}")){
-            current = parseNextStatement(true);
+        while(!th.isNext("}")){
+            AST current = parseNextStatement();
             if(current != null) astList.add(current);
         }
 
-        if(th.toStringNonMarked().startsWith("}")){
-            th.toFirst();
-            th.assertToken("}");
-        }else throw new RuntimeException("Expected }");
+        if(!th.current().equals("}")) throw new RuntimeException("Expected }");
 
         scope = scope.last;
         return astList.toArray(new AST[0]);
@@ -197,7 +196,7 @@ final class SyntacticParser {
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");
             AST.Calc calc = parseCalc();
-            th.assertNull();
+            assertEndOfStatement();
 
             if(method.uses.containsKey(type)){
                 if(!CompilerUtil.classExist(method.uses.get(type))) throw new RuntimeException("Class "+method.uses.get(type)+" is not defined");
@@ -223,12 +222,12 @@ final class SyntacticParser {
             th.last();
             AST.Load load = parseCall();
 
-            if(load.finaly) th.assertNull();
+            if(load.finaly) assertEndOfStatement();
 
             if (th.hasNext()) {
                 th.assertToken("=");
                 AST.Calc calc = parseCalc();
-                th.assertNull();
+                assertEndOfStatement();
 
                 if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
 
@@ -526,13 +525,21 @@ final class SyntacticParser {
         return ast;
     }
 
+    private void assertEndOfStatement(){
+        if(!th.isNext(";")) th.assertNull();
+    }
+
+    private boolean hasNextStatement(){
+        return th.hasNext() || hasNextLine();
+    }
+
     private void nextLine(){
         clazz.line++;
         index++;
         th = Lexer.lex(code[index]);
     }
 
-    private boolean hasNext(){
+    private boolean hasNextLine(){
         return index < code.length - 1;
     }
 }
