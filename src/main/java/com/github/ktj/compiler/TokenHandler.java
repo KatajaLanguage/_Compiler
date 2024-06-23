@@ -16,7 +16,7 @@ final class TokenHandler {
     public Token next() throws RuntimeException {
         if(!hasNext()) throw new RuntimeException("expected Token got nothing in: "+this);
         index++;
-        return tokens[index];
+        return index >= 0 ? tokens[index] : null;
     }
 
     public Token current() throws RuntimeException {

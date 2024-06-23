@@ -31,7 +31,7 @@ public class KtjInterface extends Compilable{
             String[] args = methodName.split("%");
             StringBuilder desc = new StringBuilder(args[0]);
 
-            for(int i = 1;i < args.length;i++) desc.append("%").append(validateType(args[i]));
+            for(int i = 1;i < args.length;i++) desc.append("%").append(validateType(args[i], true));
 
             help.put(desc.toString(), method);
         }

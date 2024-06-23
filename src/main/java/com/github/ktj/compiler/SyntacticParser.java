@@ -188,20 +188,30 @@ final class SyntacticParser {
     private AST parseStatement(){
         if(!th.isNext(Token.Type.IDENTIFIER)) throw new RuntimeException("illegal argument");
 
-        if(th.isNext(Token.Type.IDENTIFIER)){
-            th.last();
-            th.last();
+        int i = 1;
+
+        while(th.isNext("[")){
+            i++;
+            if(th.isNext("]")) i++;
+            else break;
+        }
+
+        if(th.isNext(Token.Type.IDENTIFIER) && i % 2 != 0){
+            for(int j = 0;j <= i;j++) th.last();
 
             String type = th.assertToken(Token.Type.IDENTIFIER).s;
+
+            while(th.isNext("[")){
+                th.assertToken("]");
+                type = "["+type;
+            }
+
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");
             AST.Calc calc = parseCalc();
             assertEndOfStatement();
 
-            if(method.uses.containsKey(type)){
-                if(!CompilerUtil.classExist(method.uses.get(type))) throw new RuntimeException("Class "+method.uses.get(type)+" is not defined");
-                type = method.uses.get(type);
-            }
+            type = method.validateType(type, false);
 
             if(!type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(type))) throw new RuntimeException("Expected type "+type+" got "+calc.type);
             if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
@@ -219,7 +229,7 @@ final class SyntacticParser {
 
             return ast;
         }else{
-            th.last();
+            for(int j = 0;j <= i;j++) th.last();
             AST.Load load = parseCall();
 
             if(load.finaly) assertEndOfStatement();
@@ -350,212 +360,149 @@ final class SyntacticParser {
 
     private AST.Load parseCall(){
         AST.Load ast = new AST.Load();
-        AST.Call current;
 
         String call = th.assertToken(Token.Type.IDENTIFIER).s;
-        if(th.isNext("[")){
-            if(!CompilerUtil.isPrimitive(call) && (!method.uses.containsKey(call) || !CompilerUtil.classExist(method.uses.get(call)))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
 
-            th.assertToken("]");
+        if(CompilerUtil.isPrimitive(call) || method.uses.containsKey(call)){
+            ast.call = new AST.Call();
 
-            ast.call = current = new AST.Call();
-            current.call = "<init>";
-            current.clazz = "["+(CompilerUtil.isPrimitive(call) ? call : method.uses.get(call));
-            current.type = current.clazz;
-            current.argTypes = new AST.Calc[]{parseCalc()};
-            ast.finaly = false;
-            ast.type = current.type;
-
-            th.assertToken("]");
-            if(!current.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+current.argTypes[0].type);
-        }else if(th.isNext("(")){
-            if(!method.uses.containsKey(call)){
-                StringBuilder desc = new StringBuilder(call);
-                ArrayList<AST.Calc> args = new ArrayList<>();
-
-                while (th.hasNext() && !th.next().equals(")")) {
-                    th.last();
-                    args.add(parseCalc());
-                    th.assertToken(",", ")");
-                }
-
-                for (AST.Calc calc : args) desc.append("%").append(calc.type);
-
-                ast.call = current = new AST.Call();
-
-                if (CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, true) != null) {
-                    current.statik = false;
-                    current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, true);
-                } else if (CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, true) != null) {
-                    current.statik = true;
-                    current.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, true);
-                } else
-                    throw new RuntimeException("Method "+desc+" is not defined for class "+clazzName);
-
-                current.clazz = clazzName;
-                current.call = call;
-                current.argTypes = args.toArray(new AST.Calc[0]);
-                ast.finaly = true;
-                ast.type = current.type;
-            }else{
-                if(!CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
-
-                String type = method.uses.get(call);
-                call = "<init>";
-                StringBuilder desc = new StringBuilder(call);
-                ArrayList<AST.Calc> args = new ArrayList<>();
-
-                while (th.hasNext() && !th.next().equals(")")) {
-                    th.last();
-                    args.add(parseCalc());
-                    th.assertToken(",", ")");
-                }
-
-                for (AST.Calc calc : args) desc.append("%").append(calc.type);
-
-                if (CompilerUtil.getMethodReturnType(type, desc.toString(), false, type.equals(clazzName)) == null)
-                    throw new RuntimeException("static Method "+desc+" is not defined for class "+type);
-
-                ast.call = current = new AST.Call();
-                current.type = type;
-                current.argTypes = args.toArray(new AST.Calc[0]);
-                ast.finaly = true;
-                current.call = call;
-                current.clazz = type;
-                current.statik = false;
-                ast.type = current.type;
-            }
-        }else{
-            if(scope.getType(call) != null){
-                ast.name = call;
-                ast.type = scope.getType(call);
-                ast.clazz = ast.type;
-                current = null;
-            }else if(method.uses.containsKey(call)) {
-                if(!CompilerUtil.classExist(method.uses.get(call))) throw new RuntimeException("Class "+method.uses.get(call)+" is not defined");
-
-                String type = method.uses.get(call);
-                th.assertToken(".");
-                call = th.assertToken(Token.Type.IDENTIFIER).s;
-
-                if (th.isNext("(")) {
-                    StringBuilder desc = new StringBuilder(call);
-                    ArrayList<AST.Calc> args = new ArrayList<>();
-
-                    while(th.hasNext() && !th.next().equals(")")){
-                        th.last();
-                        args.add(parseCalc());
-                        th.assertToken(",", ")");
-                    }
-
-                    for(AST.Calc calc:args) desc.append("%").append(calc.type);
-
-                    if(CompilerUtil.getMethodReturnType(type, desc.toString(), true, type.equals(clazzName)) == null) throw new RuntimeException("static Method "+ desc +" is not defined for class "+type);
-
-                    ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getMethodReturnType(type, desc.toString(), true, type.equals(clazzName));
-                    current.argTypes = args.toArray(new AST.Calc[0]);
-                    ast.finaly = true;
-                }else{
-                    if (CompilerUtil.getFieldType(type, call, true, type.equals(clazzName)) == null)
-                        throw new RuntimeException("static Field "+call+" is not defined for class "+type);
-
-                    ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getFieldType(type, call, true, type.equals(clazzName));
-                    ast.finaly = CompilerUtil.isFinal(type, call);
-                }
-
-                current.call = call;
-                current.clazz = type;
-                current.statik = true;
-                ast.type = current.type;
-            }else{
-                if(CompilerUtil.getFieldType(clazzName, call, true, true) != null){
-                    ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getFieldType(clazzName, call, false, true);
-                    current.clazz = clazzName;
-                    current.call = call;
-                    current.statik = true;
-                    ast.call = current = current.toStatic();
-                    ast.type = current.type;
-                }else if(CompilerUtil.getFieldType(clazzName, call, false, true) != null){
-                    ast.call = current = new AST.Call();
-                    current.type = CompilerUtil.getFieldType(clazzName, call, false, true);
-                    current.clazz = clazzName;
-                    current.call = call;
-                    ast.type = current.type;
-                }else throw new RuntimeException("Field "+call+" is not defined");
-
-                ast.finaly = CompilerUtil.isFinal(clazzName, call);
-            }
-        }
-
-        while(th.hasNext()) {
-            if (!th.next().equals(".") && !th.current().equals("[")) {
+            if(th.isNext("[")){
                 th.last();
-                break;
-            }
 
-            String currentType;
+                ast.call.clazz = CompilerUtil.isPrimitive(call) ? call : method.uses.get(call);
+                ast.call.call = "<init>";
 
-            if (current == null) {
-                current = new AST.Call();
-                ast.call = current;
-                currentType = ast.type;
-            } else {
-                currentType = current.type;
-                current.setPrev();
-            }
+                ArrayList<AST.Calc> args = new ArrayList<>();
 
-            if(th.current().equals("[")){
-                current.statik = false;
-                current.type = currentType.substring(1);
-                current.clazz = currentType;
-                current.argTypes = new AST.Calc[]{parseCalc()};
+                while(th.isNext("[")){
+                    args.add(parseCalc());
+                    ast.call.clazz = "["+ast.call.clazz;
 
-                th.assertToken("]");
+                    if(!args.get(args.size() - 1).type.equals("int")) throw new RuntimeException("Expected int got "+args.get(args.size() - 1).type);
 
-                if(!current.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+current.argTypes[0].type);
+                    th.assertToken("]");
+                }
+
+                ast.call.argTypes = args.toArray(new AST.Calc[0]);
+                ast.call.type = ast.call.clazz;
+                ast.type = ast.call.type;
+            }else if(th.isNext("(")){
+                if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
+
+                ast.call.clazz = method.uses.get(call);
+                ast.call.call = "<init>";
+
+                StringBuilder desc = new StringBuilder(call);
+                ArrayList<AST.Calc> args = new ArrayList<>();
+
+                if(!th.isNext(")")){
+                    while (th.hasNext()) {
+                        args.add(parseCalc());
+                        if (th.assertToken(",", ")").equals(";")) th.assertHasNext();
+                        else break;
+                    }
+                }
+
+                for (AST.Calc calc:args) desc.append("%").append(calc.type);
+
+                if (CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), false, ast.call.clazz.equals(clazzName)) == null)
+                    throw new RuntimeException("static Method "+desc+" is not defined for class "+ast.call.clazz);
+
+                ast.call.argTypes = args.toArray(new AST.Calc[0]);
+                ast.type = method.uses.get(call);
             }else{
-                current.call = th.assertToken(Token.Type.IDENTIFIER).s;
+                if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
 
-                if (th.isNext("(")) {
-                    StringBuilder desc = new StringBuilder(current.call);
+                th.assertToken(".");
+                ast.call.clazz = method.uses.get(call);
+
+                if(th.isNext("(")) {
+                    StringBuilder desc = new StringBuilder(th.assertToken(Token.Type.IDENTIFIER).s);
                     ArrayList<AST.Calc> args = new ArrayList<>();
 
-                    while (th.hasNext() && !th.next().equals(")")) {
-                        th.last();
-                        args.add(parseCalc());
-                        th.assertToken(",", ")");
+                    if (!th.isNext(")")) {
+                        while (th.hasNext()) {
+                            args.add(parseCalc());
+                            if (th.assertToken(",", ")").equals(";")) th.assertHasNext();
+                            else break;
+                        }
                     }
 
                     for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                    if (CompilerUtil.getMethodReturnType(currentType, desc.toString(), false, currentType.equals(clazzName)) == null)
-                        throw new RuntimeException("Method "+ desc +" is not defined for class "+currentType);
+                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, ast.call.clazz.equals(clazzName));
+                    ast.call.type = ast.type;
 
-                    current.type = CompilerUtil.getMethodReturnType(currentType, desc.toString(), false, currentType.equals(clazzName));
-                    current.clazz = currentType;
-                    current.argTypes = args.toArray(new AST.Calc[0]);
-                    current.statik = false;
-                    ast.finaly = true;
-                } else {
-                    current.type = CompilerUtil.getFieldType(currentType, current.call, false, currentType.equals(clazzName));
+                    if (ast.type == null)
+                        throw new RuntimeException("static Method " + desc + " is not defined for class " + ast.call.clazz);
 
-                    if (current.type == null)
-                        throw new RuntimeException("Field "+current.call+" is not defined for class "+currentType);
+                    ast.call.argTypes = args.toArray(new AST.Calc[0]);
+                }else{
+                    ast.call.call = call;
+                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, ast.call.clazz.equals(clazzName));
 
-                    current.clazz = currentType;
-                    current.argTypes = null;
-                    current.statik = false;
-                    ast.finaly = CompilerUtil.isFinal(currentType, call);
+                    if(ast.call.type == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
+
+                    ast.type = ast.call.type;
+                }
+            }
+        }else if(scope.getType(call) != null){
+            ast.name = call;
+            ast.type = scope.getType(call);
+            ast.clazz = ast.type;
+        }
+
+        if(th.isNext(".")) ast.call = parseCallArg(ast.call, ast.type);
+
+        if(ast.call != null) ast.type = ast.call.type;
+
+        return ast;
+    }
+
+    private AST.Call parseCallArg(AST.Call call, String currentClass){
+        if(call != null) call.setPrev();
+        else call = new AST.Call();
+
+        String name = th.assertToken(Token.Type.IDENTIFIER).s;
+        call.clazz = currentClass;
+
+        if(th.isNext("(")){
+            StringBuilder desc = new StringBuilder(th.assertToken(Token.Type.IDENTIFIER).s);
+            ArrayList<AST.Calc> args = new ArrayList<>();
+
+            if(!th.isNext(")")){
+                while (th.hasNext()) {
+                    args.add(parseCalc());
+                    if (th.assertToken(",", ")").equals(";")) th.assertHasNext();
+                    else break;
                 }
             }
 
-            ast.type = current.type;
+            for (AST.Calc calc:args) desc.append("%").append(calc.type);
+
+            call.call = desc.toString();
+            call.type = CompilerUtil.getMethodReturnType(call.clazz, desc.toString(), false, call.clazz.equals(clazzName));
+        }else{
+            call.call = name;
+            call.type = CompilerUtil.getFieldType(call.clazz, name, false, call.clazz.equals(clazzName));
+
+            if(call.type == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
         }
 
-        return ast;
+        while(th.isNext("[")){
+            if(!call.type.startsWith("[")) throw new RuntimeException("Expected array got "+call.type);
+
+            call.setPrev();
+            call.clazz = call.prev.type;
+            call.type = call.clazz.substring(1);
+            call.argTypes = new AST.Calc[]{parseCalc()};
+
+            if(!call.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+call.argTypes[0].type);
+        }
+
+        if(th.isNext(".")) call = parseCallArg(call, call.type);
+
+        return call;
     }
 
     private void assertEndOfStatement(){

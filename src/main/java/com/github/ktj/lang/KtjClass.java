@@ -100,10 +100,10 @@ public class KtjClass extends KtjInterface{
 
         for(KtjField field:fields.values()) field.validateTypes();
 
-        Arrays.stream(interfaces).forEach(this::validateType);
+        Arrays.stream(interfaces).forEach(type -> validateType(type, true));
 
         if(superclass != null){
-            superclass = super.validateType(superclass);
+            superclass = super.validateType(superclass, true);
             if(CompilerUtil.isFinal(superclass)) throw new RuntimeException("Class "+superclass+" is final");
 
             if(CompilerUtil.isInterface(superclass)){
