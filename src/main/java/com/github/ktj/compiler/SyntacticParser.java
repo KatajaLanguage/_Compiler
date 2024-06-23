@@ -82,7 +82,7 @@ final class SyntacticParser {
     private AST parseNextStatement(){
         if(th.toStringNonMarked().startsWith("}") || !hasNextStatement()) return null;
 
-        if(!th.hasNext()) nextLine();
+        while(!th.hasNext() || th.isEmpty()) nextLine();
 
         AST ast;
 
@@ -312,6 +312,15 @@ final class SyntacticParser {
                 break;
             case SIMPLE:
                 if(th.current().equals("{")) return parseArrayCreation();
+                else throw new RuntimeException("illegal argument "+th.current());
+            case OPERATOR:
+                if(th.current().equals("-")){
+                    th.assertToken(Token.Type.INTEGER, Token.Type.DOUBLE, Token.Type.LONG, Token.Type.SHORT, Token.Type.FLOAT);
+
+                    ast.token = new Token("-"+th.current().s, th.current().t);
+                    ast.type = th.current().t.toString();
+                    break;
+                }
             default:
                 throw new RuntimeException("illegal argument "+th.current());
         }

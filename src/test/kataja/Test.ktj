@@ -1,6 +1,6 @@
 public int[] test(){
-    int[] i = {1, 2, 3}
-
-    return i;
+    #int[] i = {1, 2, 3}
+    int i = -1
+    #return i;
 }
 #-c src/test/kataja/Test.ktj
