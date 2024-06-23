@@ -66,7 +66,6 @@ final class SyntacticParser {
             try {
                 AST e = parseNextStatement();
                 if(e != null) ast.add(e);
-                else if(th.toStringNonMarked().startsWith("}")) throw new RuntimeException("illegal argument");
             }catch(RuntimeException e){
                 RuntimeException exception = new RuntimeException(e.getMessage()+" at "+method.file+":"+method.line);
                 exception.setStackTrace(e.getStackTrace());
@@ -80,9 +79,9 @@ final class SyntacticParser {
     }
 
     private AST parseNextStatement(){
-        if(th.toStringNonMarked().startsWith("}") || !hasNextStatement()) return null;
+        while((!th.hasNext() || th.isEmpty()) && hasNextLine()) nextLine();
 
-        while(!th.hasNext() || th.isEmpty()) nextLine();
+        if(!hasNextStatement() || th.isNext("}")) return null;
 
         AST ast;
 
@@ -174,7 +173,7 @@ final class SyntacticParser {
         scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();
 
-        while(!th.isNext("}")){
+        while(!th.current().equals("}")){
             AST current = parseNextStatement();
             if(current != null) astList.add(current);
         }
@@ -197,7 +196,7 @@ final class SyntacticParser {
         }
 
         if(th.isNext(Token.Type.IDENTIFIER) && i % 2 != 0){
-            for(int j = 0;j < i;j++) th.last();
+            for(int j = 0;j <= i;j++) th.last();
 
             String type = th.assertToken(Token.Type.IDENTIFIER).s;
 
@@ -229,7 +228,7 @@ final class SyntacticParser {
 
             return ast;
         }else{
-            for(int j = 0;j < i;j++) th.last();
+            for(int j = 0;j <= i;j++) th.last();
             AST.Load load = parseCall();
 
             if(load.finaly) assertEndOfStatement();
@@ -393,11 +392,11 @@ final class SyntacticParser {
                 ast.call.clazz = method.uses.get(call);
                 ast.call.call = "<init>";
 
-                StringBuilder desc = new StringBuilder(call);
+                StringBuilder desc = new StringBuilder("<init>");
                 ArrayList<AST.Calc> args = new ArrayList<>();
 
                 if(!th.isNext(")")){
-                    while (th.hasNext()) {
+                    while(th.hasNext()){
                         args.add(parseCalc());
                         if (th.assertToken(",", ")").equals(",")) th.assertHasNext();
                         else break;
@@ -410,7 +409,8 @@ final class SyntacticParser {
                     throw new RuntimeException("static Method "+desc+" is not defined for class "+ast.call.clazz);
 
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
-                ast.type = method.uses.get(call);
+                ast.call.type = method.uses.get(call);
+                ast.type = ast.call.type;
             }else{
                 if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
 
@@ -424,7 +424,7 @@ final class SyntacticParser {
                     if (!th.isNext(")")) {
                         while (th.hasNext()) {
                             args.add(parseCalc());
-                            if (th.assertToken(",", ")").equals(";")) th.assertHasNext();
+                            if (th.assertToken(",", ")").equals(",")) th.assertHasNext();
                             else break;
                         }
                     }
@@ -449,10 +449,81 @@ final class SyntacticParser {
                     ast.type = ast.call.type;
                 }
             }
-        }else if(scope.getType(call) != null){
-            ast.name = call;
-            ast.type = scope.getType(call);
-            ast.clazz = ast.type;
+        }else{
+            if(scope.getType(call) != null) {
+                ast.name = call;
+                ast.type = scope.getType(call);
+                ast.clazz = ast.type;
+            }else if(th.isNext("(")){
+                ast.call = new AST.Call();
+                ast.call.clazz = clazzName;
+                ast.call.call = call;
+
+                StringBuilder desc = new StringBuilder(call);
+                ArrayList<AST.Calc> args = new ArrayList<>();
+
+                if (!th.isNext(")")) {
+                    while (th.hasNext()) {
+                        args.add(parseCalc());
+                        if (th.assertToken(",", ")").equals(",")) th.assertHasNext();
+                        else break;
+                    }
+                }
+
+                for (AST.Calc calc : args) desc.append("%").append(calc.type);
+
+                ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, true);
+
+                if(ast.type == null){
+                    ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, true);
+                    ast.call.statik = true;
+                }
+
+                ast.call.type = ast.type;
+
+                if (ast.type == null)
+                    throw new RuntimeException("static Method " + desc + " is not defined for class " + ast.call.clazz);
+
+                ast.call.argTypes = args.toArray(new AST.Calc[0]);
+            }else{
+                ast.call = new AST.Call();
+                ast.call.clazz = clazzName;
+
+                ast.call.call = call;
+                ast.call.type = CompilerUtil.getFieldType(clazzName, call, false, true);
+
+                if(ast.call.type == null){
+                    ast.call.type = CompilerUtil.getFieldType(clazzName, call, true, true);
+                    ast.call.statik = true;
+                }
+
+                if(ast.call.type == null) throw new RuntimeException("Field "+call+" is not defined for class "+ ast.call.clazz);
+
+                ast.call.statik = true;
+                ast.type = ast.call.type;
+            }
+
+            while(th.isNext("[")){
+                if(ast.call == null){
+                    ast.call = new AST.Call();
+                    ast.call.clazz = ast.type;
+                }else {
+                    if (!ast.call.type.startsWith("["))
+                        throw new RuntimeException("Expected array got " + ast.call.type);
+
+                    ast.call.setPrev();
+                    ast.call.clazz = ast.call.prev.type;
+                }
+
+                ast.call.type = ast.call.clazz.substring(1);
+                ast.call.argTypes = new AST.Calc[]{parseCalc()};
+                ast.call.call = "";
+                th.assertToken("]");
+
+                if(!ast.call.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+ast.call.argTypes[0].type);
+            }
+
+            if(ast.call != null) ast.type = ast.call.type;
         }
 
         if(th.isNext(".")) ast.call = parseCallArg(ast.call, ast.type);
@@ -500,6 +571,8 @@ final class SyntacticParser {
             call.clazz = call.prev.type;
             call.type = call.clazz.substring(1);
             call.argTypes = new AST.Calc[]{parseCalc()};
+            call.call = "";
+            th.assertToken("]");
 
             if(!call.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+call.argTypes[0].type);
         }

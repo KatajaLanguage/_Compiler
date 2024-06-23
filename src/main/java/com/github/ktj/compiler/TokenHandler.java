@@ -25,7 +25,7 @@ final class TokenHandler {
     }
 
     public Token last() throws RuntimeException {
-        index--;
+        if(index >= 0) index--;
         return index >= 0 ? tokens[index] : null;
     }
 
