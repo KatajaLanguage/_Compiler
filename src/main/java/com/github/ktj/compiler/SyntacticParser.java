@@ -197,7 +197,7 @@ final class SyntacticParser {
         }
 
         if(th.isNext(Token.Type.IDENTIFIER) && i % 2 != 0){
-            for(int j = 0;j <= i;j++) th.last();
+            for(int j = 0;j < i;j++) th.last();
 
             String type = th.assertToken(Token.Type.IDENTIFIER).s;
 
@@ -229,7 +229,7 @@ final class SyntacticParser {
 
             return ast;
         }else{
-            for(int j = 0;j <= i;j++) th.last();
+            for(int j = 0;j < i;j++) th.last();
             AST.Load load = parseCall();
 
             if(load.finaly) assertEndOfStatement();
@@ -277,6 +277,7 @@ final class SyntacticParser {
     private AST.CalcArg parseValue(){
         th.next();
 
+        /*TODO
         if(th.isNext(Token.Type.IDENTIFIER)){
             AST.Cast ast = new AST.Cast();
 
@@ -289,7 +290,7 @@ final class SyntacticParser {
             if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) throw new RuntimeException("Unable to cast "+ast.calc.type+" to "+ast.cast);
 
             return ast;
-        }
+        }*/
 
         AST.Value ast = new AST.Value();
 
@@ -398,7 +399,7 @@ final class SyntacticParser {
                 if(!th.isNext(")")){
                     while (th.hasNext()) {
                         args.add(parseCalc());
-                        if (th.assertToken(",", ")").equals(";")) th.assertHasNext();
+                        if (th.assertToken(",", ")").equals(",")) th.assertHasNext();
                         else break;
                     }
                 }
@@ -436,13 +437,15 @@ final class SyntacticParser {
                     if (ast.type == null)
                         throw new RuntimeException("static Method " + desc + " is not defined for class " + ast.call.clazz);
 
+                    ast.call.statik = true;
                     ast.call.argTypes = args.toArray(new AST.Calc[0]);
                 }else{
-                    ast.call.call = call;
+                    ast.call.call = call = th.assertToken(Token.Type.IDENTIFIER).s;
                     ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, ast.call.clazz.equals(clazzName));
 
                     if(ast.call.type == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
 
+                    ast.call.statik = true;
                     ast.type = ast.call.type;
                 }
             }
@@ -467,7 +470,7 @@ final class SyntacticParser {
         call.clazz = currentClass;
 
         if(th.isNext("(")){
-            StringBuilder desc = new StringBuilder(th.assertToken(Token.Type.IDENTIFIER).s);
+            StringBuilder desc = new StringBuilder(name);
             ArrayList<AST.Calc> args = new ArrayList<>();
 
             if(!th.isNext(")")){
@@ -480,7 +483,8 @@ final class SyntacticParser {
 
             for (AST.Calc calc:args) desc.append("%").append(calc.type);
 
-            call.call = desc.toString();
+            call.argTypes = args.toArray(new AST.Calc[0]);
+            call.call = name;
             call.type = CompilerUtil.getMethodReturnType(call.clazz, desc.toString(), false, call.clazz.equals(clazzName));
         }else{
             call.call = name;
