@@ -131,6 +131,10 @@ final class OperandStack {
         return temp;
     }
 
+    void pop(int i){
+        for(int j = 0;j < i;j++) pop();
+    }
+
     void clearScope(Bytecode code){
         while (size > scopes.get(scopes.size() - 1)) {
             //code.addOpcode(Opcode.POP);
@@ -156,6 +160,10 @@ final class OperandStack {
             return -1;
 
         return stack.getValue(name);
+    }
+
+    boolean isEmpty(){
+        return stack.size() == 0;
     }
 
     static OperandStack forMethod(KtjMethod method){

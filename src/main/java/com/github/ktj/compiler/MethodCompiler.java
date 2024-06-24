@@ -183,7 +183,6 @@ final class MethodCompiler {
                 if(call.call.equals("<init>")){
                     if(call.clazz.startsWith("[[")) code.addMultiNewarray(call.clazz, call.clazz.lastIndexOf("[") + 1);
                     else code.addAnewarray(call.clazz.substring(1));
-                    os.push(1);
                 }else{
                     switch(call.clazz){
                         case "[int":
@@ -206,14 +205,12 @@ final class MethodCompiler {
                             code.add(Opcode.AALOAD);
                             break;
                     }
-                    os.push(1);
                 }
             }else if(call.call.equals("<init>")){
                 code.addNew(call.clazz);
                 code.add(Opcode.DUP);
                 for(AST.Calc calc:call.argTypes) compileCalc(calc);
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));
-                os.push(1);
             }else if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
         }
@@ -225,19 +222,17 @@ final class MethodCompiler {
         if(ast.load.name == null && ast.load.call != null && !ast.load.call.statik && ast.load.call.clazz.equals(clazzName)) code.addAload(0);
         compileCall(ast.load, false);
 
-        if(ast.load.call != null && ast.load.call.call == null) compileCalc(ast.load.call.argTypes[0]);
-
-        if(ast.load == null || !ast.load.clazz.startsWith("[")) compileCalc(ast.calc);
-
-        if(ast.load.call == null || ast.load.call.call == null){
-            int where = os.get(ast.load.name);
+        if(ast.load.call == null){
+            int where = os.isEmpty() ? 0 : os.get(ast.load.name);
 
             if(where == -1) {
                 os.pop();
                 where = os.push(ast.load.name, ast.load.type.equals("double") || ast.load.type.equals("long") ? 2 : 1);
             }
 
-            switch (ast.type) {
+            compileCalc(ast.calc);
+
+            switch(ast.type){
                 case "int":
                 case "boolean":
                 case "char":
@@ -263,7 +258,7 @@ final class MethodCompiler {
                 compileCalc(ast.load.call.argTypes[0]);
                 compileCalc(ast.calc);
 
-                switch(ast.load.type){
+                switch(ast.load.clazz){
                     case "[int":
                     case "[boolean":
                     case "[char":

@@ -1,6 +1,4 @@
-public int[] test(){
-    #int[] i = {1, 2, 3}
-    int i = -1
-    #return i;
+public int test(int[][] i){
+    return i[0][0]
 }
 #-c src/test/kataja/Test.ktj
