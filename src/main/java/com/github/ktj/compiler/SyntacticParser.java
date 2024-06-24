@@ -66,6 +66,7 @@ final class SyntacticParser {
             try {
                 AST e = parseNextStatement();
                 if(e != null) ast.add(e);
+                else if(th.isNext("}")) throw new RuntimeException("Illegal argument");
             }catch(RuntimeException e){
                 RuntimeException exception = new RuntimeException(e.getMessage()+" at "+method.file+":"+method.line);
                 exception.setStackTrace(e.getStackTrace());
@@ -79,9 +80,14 @@ final class SyntacticParser {
     }
 
     private AST parseNextStatement(){
+        if(!hasNextStatement()) return null;
+
         while((!th.hasNext() || th.isEmpty()) && hasNextLine()) nextLine();
 
-        if(!hasNextStatement() || th.isNext("}")) return null;
+        if(th.isNext("}")){
+            th.last();
+            return null;
+        }
 
         AST ast;
 
@@ -163,7 +169,7 @@ final class SyntacticParser {
                 current.ast = parseContent();
             }
 
-            if (!th.toStringNonMarked().equals("} ")) throw new RuntimeException("illegal argument");
+            if (th.current().equals("} ")) throw new RuntimeException("illegal argument");
         }
 
         return ast;
@@ -173,7 +179,7 @@ final class SyntacticParser {
         scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();
 
-        while(!th.current().equals("}")){
+        while(!th.isNext("}")){
             AST current = parseNextStatement();
             if(current != null) astList.add(current);
         }

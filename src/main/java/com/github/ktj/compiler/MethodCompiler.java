@@ -183,12 +183,37 @@ final class MethodCompiler {
                 if(call.call.equals("<init>")){
                     if(call.clazz.startsWith("[[")) code.addMultiNewarray(call.clazz, call.clazz.lastIndexOf("[") + 1);
                     else code.addAnewarray(call.clazz.substring(1));
-                }else code.add(Opcode.AALOAD);
+                    os.push(1);
+                }else{
+                    switch(call.clazz){
+                        case "[int":
+                        case "[boolean":
+                        case "[char":
+                        case "[byte":
+                        case "[short":
+                            code.add(Opcode.IALOAD);
+                            break;
+                        case "[float":
+                            code.add(Opcode.FALOAD);
+                            break;
+                        case "[double":
+                            code.add(Opcode.DALOAD);
+                            break;
+                        case "[long":
+                            code.add(Opcode.LALOAD);
+                            break;
+                        default:
+                            code.add(Opcode.AALOAD);
+                            break;
+                    }
+                    os.push(1);
+                }
             }else if(call.call.equals("<init>")){
                 code.addNew(call.clazz);
                 code.add(Opcode.DUP);
                 for(AST.Calc calc:call.argTypes) compileCalc(calc);
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));
+                os.push(1);
             }else if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
         }
@@ -202,7 +227,7 @@ final class MethodCompiler {
 
         if(ast.load.call != null && ast.load.call.call == null) compileCalc(ast.load.call.argTypes[0]);
 
-        compileCalc(ast.calc);
+        if(ast.load == null || !ast.load.clazz.startsWith("[")) compileCalc(ast.calc);
 
         if(ast.load.call == null || ast.load.call.call == null){
             int where = os.get(ast.load.name);
@@ -212,33 +237,54 @@ final class MethodCompiler {
                 where = os.push(ast.load.name, ast.load.type.equals("double") || ast.load.type.equals("long") ? 2 : 1);
             }
 
-            if(ast.load.call != null && ast.load.call.call == null){
-                code.add(Opcode.AASTORE);
-            }else{
-                switch (ast.load.type) {
-                    case "int":
-                    case "boolean":
-                    case "char":
-                    case "byte":
-                    case "short":
-                        code.addIstore(where);
-                        break;
-                    case "float":
-                        code.addFstore(where);
-                        break;
-                    case "double":
-                        code.addDstore(where);
-                        break;
-                    case "long":
-                        code.addLstore(where);
-                        break;
-                    default:
-                        code.addAstore(where);
-                        break;
-                }
+            switch (ast.type) {
+                case "int":
+                case "boolean":
+                case "char":
+                case "byte":
+                case "short":
+                    code.addIstore(where);
+                    break;
+                case "float":
+                    code.addFstore(where);
+                    break;
+                case "double":
+                    code.addDstore(where);
+                    break;
+                case "long":
+                    code.addLstore(where);
+                    break;
+                default:
+                    code.addAstore(where);
+                    break;
             }
         }else{
-            if(ast.load.call.statik) code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+            if(ast.load.clazz.startsWith("[")){
+                compileCalc(ast.load.call.argTypes[0]);
+                compileCalc(ast.calc);
+
+                switch(ast.load.type){
+                    case "[int":
+                    case "[boolean":
+                    case "[char":
+                    case "[byte":
+                    case "[short":
+                        code.add(Opcode.IASTORE);
+                        break;
+                    case "[float":
+                        code.add(Opcode.FASTORE);
+                        break;
+                    case "[double":
+                        code.add(Opcode.DASTORE);
+                        break;
+                    case "[long":
+                        code.add(Opcode.LASTORE);
+                        break;
+                    default:
+                        code.add(Opcode.AASTORE);
+                        break;
+                }
+            }else if(ast.load.call.statik) code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
             else code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
         }
     }
