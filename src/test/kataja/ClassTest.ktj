@@ -1,0 +1,9 @@
+use src/test/kataja/InterfaceTest/Test
+
+public final class ArrayTest extends Test{
+
+    private int[] intArray = int[5]
+
+    public void test(){
+    }
+}

@@ -14,6 +14,6 @@ public class KtjField extends Compilable{
 
     @Override
     public void validateTypes() {
-        type = validateType(type);
+        type = validateType(type, true);
     }
 }

@@ -5,33 +5,15 @@ Kataja Compiler, written in Java, to compile Kataja Code to Java Bytecode
 The Master Branch contains the latest (stable) Version of the Compiler. All other Branches representing a specified Version of the Compiler and the latest Version can contain bugs and/or could not provide all features.
 
 ## How to use
-First Download the latest Version ([here](https://github.com/XaverWeste/Kataja-Compiler/tree/master/releases)). You can use the Compiler in two different ways, with and without arguments, as described below.
+First Download the latest Version ([here](https://github.com/XaverWeste/Kataja-Compiler/tree/master/releases)) and run the jar ````java -jar KatajaCompiler-0.7.2.jar````. The Compiler starts a command prompt and waits for arguments.
 
-### With Arguments
-The last Argument has to be the Path to the Kataja File that should be compiled. Before that you can set several options:
-- -o String | path to the Output Folder, default = out
-- -e boolean | execute main method, default = false
-- -d boolean | debug, default = false
-- -c boolean | clear output Folder before compiling, default = false
+Every Argument has to be a combination of the arguments described below (Note that the order of arguments is fixed, in the Order of the list below, every argument is optional).
 
-example:
-````
-java -jar KatajaCompiler.jar -o C:\Users\user\compiled -e true src/kataja/HelloWorld.ktj
-````
+- ``-q`` quits the application after the execution of the current commands
+- ``-d`` enables debug information
+- ``-o String`` set the output folder to the given path
+- ``-c String`` compiles the file or folder with the given path
+- ``-e String`` compiles the file or folder with the given path and executes the main method
 
-### Without Arguments
-If you run the Compiler with zero arguments the Compiler starts a Console application, where you can enter several commands in several statements:
-- -o String | path to the Output Folder, default = out
-- -e boolean | execute main method, default = false
-- -d boolean | debug, default = false
-- -c boolean | clear output Folder before compiling, default = false
-- -n | creates a new Compiler Instance
-- -q | quits the application after executing the current input
-
-example:
-````
-java -jar KatajaCompiler.jar
-> -d true -e true
-> -o C:\Users\user\compiled
-> -q -n src/kataja/HelloWorld.ktj
-````
+Example:
+````-q -d -e src/test/kataja/HelloWorld.ktj````

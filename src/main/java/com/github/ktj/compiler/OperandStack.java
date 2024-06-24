@@ -116,18 +116,23 @@ final class OperandStack {
         return size - length;
     }
 
-    void push(int length){
-        push("&temp", length);
+    int push(int length){
+        return push("&temp", length);
     }
 
     String pop(){
         String temp = stack.getKey(stack.size() - 1);
         int length = stack.getValue(stack.size() - 1);
-        length -= stack.getValue(stack.size() - 2);
+        if(stack.size() > 1) length -= stack.getValue(stack.size() - 2);
+        else length = 0;
         stack.remove(stack.size() - 1);
         size -= length;
         //System.out.println(stack);
         return temp;
+    }
+
+    void pop(int i){
+        for(int j = 0;j < i;j++) pop();
     }
 
     void clearScope(Bytecode code){
@@ -155,6 +160,10 @@ final class OperandStack {
             return -1;
 
         return stack.getValue(name);
+    }
+
+    boolean isEmpty(){
+        return stack.size() == 0;
     }
 
     static OperandStack forMethod(KtjMethod method){

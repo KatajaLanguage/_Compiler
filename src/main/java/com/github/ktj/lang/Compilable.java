@@ -26,12 +26,12 @@ public abstract class Compilable {
 
     public abstract void validateTypes();
 
-    protected String validateType(String type) throws RuntimeException{
-        if(type.startsWith("[")) return "["+validateType(type.substring(1));
+    public String validateType(String type, boolean errorAt) throws RuntimeException{
+        if(type.startsWith("[")) return "["+validateType(type.substring(1), errorAt);
 
         if(CompilerUtil.isPrimitive(type)) return type;
 
-        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException("Unknown Type "+type+" at "+file+":"+line);
+        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException("Unknown Type "+type+(errorAt?" at "+file+":"+line:""));
 
         return uses.get(type);
     }

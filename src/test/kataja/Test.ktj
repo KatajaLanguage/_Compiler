@@ -1,5 +1,4 @@
-use java/lang/System
-
-test(){
-
+public int test(int[][] i){
+    return i[0][0]
 }
+#-c src/test/kataja/Test.ktj

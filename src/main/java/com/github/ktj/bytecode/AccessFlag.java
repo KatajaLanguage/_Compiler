@@ -21,4 +21,20 @@ public enum AccessFlag {
     public static final int SYNTHETIC    = 0x1000;
     public static final int ANNOTATION   = 0x2000;
     public static final int ENUM         = 0x4000;
+
+    @Override
+    public String toString() {
+        switch(this){
+            case ACC_PACKAGE_PRIVATE:
+                return "package-private";
+            case ACC_PUBLIC:
+                return "public";
+            case ACC_PRIVATE:
+                return "private";
+            case ACC_PROTECTED:
+                return "protected";
+        }
+
+        return super.toString();
+    }
 }

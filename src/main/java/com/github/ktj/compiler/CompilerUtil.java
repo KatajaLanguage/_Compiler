@@ -6,6 +6,8 @@ import com.github.ktj.lang.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,12 +21,12 @@ public class CompilerUtil {
     static{
         BOOL_OPERATORS.add("==");
         BOOL_OPERATORS.add("!=");
-        NUMBER_OPERATORS.add("||");
-        NUMBER_OPERATORS.add("&&");
-        NUMBER_OPERATORS.add(">");
-        NUMBER_OPERATORS.add("<");
-        NUMBER_OPERATORS.add(">=");
-        NUMBER_OPERATORS.add("<=");
+        NUM_BOOL_OPERATORS.add("||");
+        NUM_BOOL_OPERATORS.add("&&");
+        NUM_BOOL_OPERATORS.add(">");
+        NUM_BOOL_OPERATORS.add("<");
+        NUM_BOOL_OPERATORS.add(">=");
+        NUM_BOOL_OPERATORS.add("<=");
         NUMBER_OPERATORS.add("+");
         NUMBER_OPERATORS.add("-");
         NUMBER_OPERATORS.add("*");
@@ -125,13 +127,27 @@ public class CompilerUtil {
         return Compiler.Instance().classes.containsKey(name);
     }
 
+    public static boolean isInterface(String name){
+        Compilable c = Compiler.Instance().classes.get(name);
+
+        if(c != null){
+            return c instanceof KtjInterface && !(c instanceof KtjClass);
+        }else{
+            try {
+                return Class.forName(name).isInterface();
+            }catch(ClassNotFoundException ignored){}
+        }
+
+        return false;
+    }
+
     public static String getOperatorReturnType(String type1, String type2, String operator){
+        if(BOOL_OPERATORS.contains(operator) && type1.equals(type2))
+            return "boolean";
+
         if(isPrimitive(type1)){
             if(!type1.equals(type2))
                 return null;
-
-            if(BOOL_OPERATORS.contains(operator))
-                return "boolean";
 
             if(NUM_BOOL_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : "boolean";
@@ -231,6 +247,21 @@ public class CompilerUtil {
                 Field f = Class.forName(clazzName).getField(field);
                 return (f.getModifiers() & AccessFlag.FINAL) != 0;
             }catch(Exception ignored){}
+        }
+
+        return false;
+    }
+
+    public static boolean isFinal(String clazz){
+        Compilable compilable = Compiler.Instance().classes.get(clazz);
+
+        if(compilable != null){
+            return compilable.modifier.finaly;
+        }else{
+            try{
+                Class<?> c = Class.forName(clazz);
+                return (c.getModifiers() & AccessFlag.FINAL) != 0;
+            }catch(ClassNotFoundException ignored){}
         }
 
         return false;
