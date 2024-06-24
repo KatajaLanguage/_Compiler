@@ -1,4 +1,4 @@
-public int test(int[][] i){
-    return i[0][0]
+public int test(){
+    return int 3.5
 }
 #-c src/test/kataja/Test.ktj

@@ -282,20 +282,21 @@ final class SyntacticParser {
     private AST.CalcArg parseValue(){
         th.next();
 
-        /*TODO
-        if(th.isNext(Token.Type.IDENTIFIER)){
-            AST.Cast ast = new AST.Cast();
+        if(th.current().equals(Token.Type.IDENTIFIER) && (CompilerUtil.isPrimitive(th.current().s) || method.uses.containsKey(th.current().s))){
+            if(th.isNext(Token.Type.OPERATOR) || th.isNext(Token.Type.SIMPLE)){
+                th.last();
+            }else{
+                AST.Cast ast = new AST.Cast();
 
-            ast.cast = th.current().s;
-            ast.calc = parseCalc();
-            ast.type = ast.cast;
+                ast.cast = CompilerUtil.isPrimitive(th.current().s) ? th.current().s : method.uses.get(th.current().s);
+                ast.calc = parseCalc();
+                ast.type = ast.cast;
 
-            if(!(CompilerUtil.isPrimitive(ast.cast) || (method.uses.containsKey(ast.cast) && CompilerUtil.classExist(method.uses.get(ast.cast))))) throw new RuntimeException("Type "+ast.cast+" is not defined");
+                if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) throw new RuntimeException("Unable to cast "+ast.calc.type+" to "+ast.cast);
 
-            if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) throw new RuntimeException("Unable to cast "+ast.calc.type+" to "+ast.cast);
-
-            return ast;
-        }*/
+                return ast;
+            }
+        }
 
         AST.Value ast = new AST.Value();
 
@@ -353,6 +354,7 @@ final class SyntacticParser {
         calcs.add(calc);
 
         while(th.assertToken(",", "}").equals(",")){
+            if(th.isNext("{")) throw new RuntimeException("illegal argument");
             calc = parseCalc();
             calcs.add(calc);
             if(!calc.type.equals(type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
