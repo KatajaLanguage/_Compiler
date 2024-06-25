@@ -218,7 +218,11 @@ final class SyntacticParser {
 
             type = method.validateType(type, false);
 
-            if(!type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(type))) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+            if(CompilerUtil.isPrimitive(type)){
+                if(!type.equals(calc.type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+            }else if(!calc.type.equals("null")){
+                if(!CompilerUtil.isSuperClass(calc.type, type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+            }
             if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
 
             scope.add(name, type);

@@ -267,10 +267,39 @@ public class CompilerUtil {
         return false;
     }
 
+    public static boolean isSuperClass(String clazz, String superClass){
+        if(clazz.equals("java.lang.Object")) return false;
+        if(isPrimitive(clazz) || isPrimitive(superClass)) return false;
+        if(clazz.equals(superClass)) return true;
+
+        if(Compiler.Instance().classes.containsKey(clazz)){
+            Compilable c = Compiler.Instance().classes.get(clazz);
+
+            if(c instanceof KtjInterface && !(c instanceof KtjClass)) return false;
+            else if(c instanceof KtjDataClass) return superClass.equals("java.lang.Object");
+            else if(c instanceof KtjTypeClass) return superClass.equals("java.lang.Enum") || superClass.equals("java.lang.Object");
+            else if(c instanceof KtjClass){
+                if(((KtjClass) c).superclass != null && ((KtjClass) c).superclass.equals(superClass)) return true;
+                for(String i:((KtjClass) c).interfaces) if(i.equals(superClass)) return true;
+
+                return ((KtjClass) c).superclass != null && isSuperClass(((KtjClass) c).superclass, superClass);
+            }
+        }else{
+            try{
+                Class<?> c = Class.forName(clazz);
+                if(c.getSuperclass().toString().split(" ")[1].equals(superClass)) return true;
+                for(Class<?> i:c.getInterfaces()) if(i.toString().split(" ")[1].equals(superClass)) return true;
+
+                return isSuperClass(clazz, c.getSuperclass().toString().split(" ")[1]);
+            }catch(ClassNotFoundException ignored){}
+        }
+        return false;
+    }
+
     public static boolean canCast(String type, String to){
         if(isPrimitive(type) && isPrimitive(to)) return true;
 
-        return true;
+        return isSuperClass(to, type);
     }
 
     public static boolean isPrimitive(String type){

@@ -1,4 +1,8 @@
-public int test(){
-    return int 3.5
+use java/lang/Object
+use java/lang/String
+
+public test(){
+    Object o = String()
+    String s = String o
 }
 #-c src/test/kataja/Test.ktj

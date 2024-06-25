@@ -377,6 +377,8 @@ final class MethodCompiler {
                         break;
                 }
                 break;
+            default:
+                code.addCheckcast(ast.cast);
         }
     }
 
