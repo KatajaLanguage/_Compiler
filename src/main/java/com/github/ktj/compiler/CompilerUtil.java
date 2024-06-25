@@ -268,9 +268,9 @@ public class CompilerUtil {
     }
 
     public static boolean isSuperClass(String clazz, String superClass){
-        if(clazz.equals("java.lang.Object")) return false;
         if(isPrimitive(clazz) || isPrimitive(superClass)) return false;
         if(clazz.equals(superClass)) return true;
+        if(clazz.equals("java.lang.Object")) return false;
 
         if(Compiler.Instance().classes.containsKey(clazz)){
             Compilable c = Compiler.Instance().classes.get(clazz);

@@ -1,8 +1,7 @@
 use java/lang/Object
 use java/lang/String
 
-public test(){
-    Object o = String()
+public test(Object o){
     String s = String o
 }
 #-c src/test/kataja/Test.ktj

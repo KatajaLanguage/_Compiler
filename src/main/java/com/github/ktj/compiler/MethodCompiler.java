@@ -223,14 +223,14 @@ final class MethodCompiler {
         compileCall(ast.load, false);
 
         if(ast.load.call == null){
+            compileCalc(ast.calc);
+
             int where = os.isEmpty() ? 0 : os.get(ast.load.name);
 
             if(where == -1) {
                 os.pop();
                 where = os.push(ast.load.name, ast.load.type.equals("double") || ast.load.type.equals("long") ? 2 : 1);
             }
-
-            compileCalc(ast.calc);
 
             switch(ast.type){
                 case "int":
