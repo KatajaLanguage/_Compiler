@@ -120,6 +120,10 @@ final class OperandStack {
         return push("&temp", length);
     }
 
+    int push(String type){
+        return push("&temp", (type.equals("long") || type.equals("double")) ? 2 : 1);
+    }
+
     String pop(){
         String temp = stack.getKey(stack.size() - 1);
         int length = stack.getValue(stack.size() - 1);

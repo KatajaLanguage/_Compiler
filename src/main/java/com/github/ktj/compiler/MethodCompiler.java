@@ -215,7 +215,7 @@ final class MethodCompiler {
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
         }
 
-        os.push(call.type.equals("double") || call.type.equals("long") ? 2 : 1);
+        os.push(call.type);
     }
 
     private void compileVarAssignment(AST.VarAssignment ast){
@@ -279,12 +279,16 @@ final class MethodCompiler {
                         code.add(Opcode.AASTORE);
                         break;
                 }
+
+                os.push(1);
             }else if(ast.load.call.statik){
                 compileCalc(ast.calc);
                 code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+                os.push(ast.load.call.type);
             }else{
                 compileCalc(ast.calc);
                 code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+                os.push(ast.load.call.type);
             }
         }
     }
