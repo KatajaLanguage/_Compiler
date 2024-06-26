@@ -254,7 +254,7 @@ final class MethodCompiler {
                     break;
             }
         }else{
-            if(ast.load.clazz.startsWith("[")){
+            if(ast.load.call.clazz.startsWith("[")){
                 compileCalc(ast.load.call.argTypes[0]);
                 compileCalc(ast.calc);
 
@@ -279,8 +279,13 @@ final class MethodCompiler {
                         code.add(Opcode.AASTORE);
                         break;
                 }
-            }else if(ast.load.call.statik) code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
-            else code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+            }else if(ast.load.call.statik){
+                compileCalc(ast.calc);
+                code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+            }else{
+                compileCalc(ast.calc);
+                code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+            }
         }
     }
 

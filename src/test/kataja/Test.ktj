@@ -1,7 +1,7 @@
 use java/lang/Object
 use java/lang/String
 
-public test(Object o){
-    String s = String o
+public test(){
+
 }
-#-c src/test/kataja/Test.ktj
+#-q -c src/test/kataja/Test.ktj

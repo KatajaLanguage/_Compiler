@@ -169,7 +169,7 @@ public class CompilerUtil {
                         if(method.split("%").length - 1 == m.getParameterTypes().length){
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[1])) {
+                                if (!isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))) {
                                     matches = false;
                                     break;
                                 }
@@ -177,13 +177,13 @@ public class CompilerUtil {
                             if(matches) return clazzName;
                         }
                     }
-                }else {
+                }else{
                     for (Method m : Class.forName(clazzName).getMethods()) {
-                        if(((m.getModifiers() & AccessFlag.STATIC) != 0 && !statik) || ((m.getModifiers() & AccessFlag.STATIC) == 0 && statik)) return null;
+                        if(((m.getModifiers() & AccessFlag.STATIC) == 0) == statik) return null;
                         if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getName())){
+                                if (!isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))){
                                     matches = false;
                                     break;
                                 }

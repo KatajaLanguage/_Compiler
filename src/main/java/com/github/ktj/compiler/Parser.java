@@ -121,7 +121,7 @@ final class Parser {
             ArrayList<String> classes = new ArrayList<>();
             classes.add(current);
 
-            if(th.current().equals(",")){
+            while(th.current().equals(",")){
                 classes.add(th.assertToken(Token.Type.IDENTIFIER).s);
                 th.assertToken(",", "from");
             }
@@ -132,13 +132,13 @@ final class Parser {
                 if(th.assertToken("/", "as").equals("as")){
                     if(classes.size() != 1) err("illegal argument");
                     if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s)) err(th.current()+" is already defined");
-                    uses.put(th.current().s, (path + classes.get(0)).replace("/", "."));
+                    uses.put(th.current().s, path.toString().replace("/", ".")+"."+classes.get(0));
                 }else path.append("/").append(th.assertToken(Token.Type.IDENTIFIER).s);
             }
 
             for(String clazz:classes){
                 if(uses.containsKey(clazz)) err(clazz+" is already defined");
-                uses.put(clazz, path.toString().replace("/", "."));
+                uses.put(clazz, path.toString().replace("/", ".")+"."+clazz);
             }
         }
     }
@@ -518,7 +518,7 @@ final class Parser {
 
             if(!th.current().equals("}")) err("Expected '}'");
 
-            if(Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
+            if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
 
             addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
         }else{

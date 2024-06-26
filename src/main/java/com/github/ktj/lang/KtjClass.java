@@ -114,7 +114,7 @@ public class KtjClass extends KtjInterface{
                 interfaces = help;
                 superclass = null;
             }
-        }
+        }else superclass = "java.lang.Object";
     }
 
     public int getAccessFlag(){

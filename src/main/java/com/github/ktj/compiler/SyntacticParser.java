@@ -511,7 +511,6 @@ final class SyntacticParser {
 
                 if(ast.call.type == null) throw new RuntimeException("Field "+call+" is not defined for class "+ ast.call.clazz);
 
-                ast.call.statik = true;
                 ast.type = ast.call.type;
             }
 
@@ -559,7 +558,7 @@ final class SyntacticParser {
             if(!th.isNext(")")){
                 while (th.hasNext()) {
                     args.add(parseCalc());
-                    if (th.assertToken(",", ")").equals(";")) th.assertHasNext();
+                    if (th.assertToken(",", ")").equals(",")) th.assertHasNext();
                     else break;
                 }
             }
@@ -569,6 +568,8 @@ final class SyntacticParser {
             call.argTypes = args.toArray(new AST.Calc[0]);
             call.call = name;
             call.type = CompilerUtil.getMethodReturnType(call.clazz, desc.toString(), false, call.clazz.equals(clazzName));
+
+            if(call.type == null) throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
         }else{
             call.call = name;
             call.type = CompilerUtil.getFieldType(call.clazz, name, false, call.clazz.equals(clazzName));
