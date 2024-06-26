@@ -2,6 +2,7 @@ package com.github.ktj.compiler;
 
 import com.github.ktj.lang.KtjMethod;
 import javassist.bytecode.Bytecode;
+import javassist.bytecode.Opcode;
 
 import java.util.ArrayList;
 
@@ -110,28 +111,16 @@ final class OperandStack {
 
     int push(String name, int length){
         stack.add(name, size);
-        //System.out.println(name + " " + size);
         size += length;
-        //System.out.println(stack);
         return size - length;
-    }
-
-    int push(int length){
-        return push("&temp", length);
-    }
-
-    int push(String type){
-        return push("&temp", (type.equals("long") || type.equals("double")) ? 2 : 1);
     }
 
     String pop(){
         String temp = stack.getKey(stack.size() - 1);
         int length = stack.getValue(stack.size() - 1);
-        if(stack.size() > 1) length -= stack.getValue(stack.size() - 2);
-        else length = 0;
+        length -= stack.getValue(stack.size() - 2);
         stack.remove(stack.size() - 1);
         size -= length;
-        //System.out.println(stack);
         return temp;
     }
 
