@@ -154,7 +154,7 @@ public class CompilerUtil {
 
             if(NUMBER_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : type1;
-        }else return ((operator.equals("==") || operator.equals("!=")) && type1.equals(type2)) ? "boolean" : null;
+        }else return ((operator.equals("==") || operator.equals("!=")) && (type1.equals(type2)) || type2.equals("null")) ? "boolean" : null;
 
         return null;
     }
@@ -169,7 +169,7 @@ public class CompilerUtil {
                         if(method.split("%").length - 1 == m.getParameterTypes().length){
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))) {
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getTypeName()) && !isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))) {
                                     matches = false;
                                     break;
                                 }
@@ -183,7 +183,7 @@ public class CompilerUtil {
                         if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))){
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getTypeName()) && !isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))){
                                     matches = false;
                                     break;
                                 }

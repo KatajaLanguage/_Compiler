@@ -757,7 +757,7 @@ final class MethodCompiler {
                 getInstance().compileCode(code, (initValues != null ? initValues : "") + "\n"+method.code, clazz, clazzName, method, cp);
             }else getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
 
-            if(code.getMaxLocals() == 0) code.setMaxLocals(code.getMaxLocals() + method.getLocals());
+            code.setMaxLocals(code.getMaxLocals() + method.getLocals());
 
             mInfo.setCodeAttribute(code.toCodeAttribute());
         }

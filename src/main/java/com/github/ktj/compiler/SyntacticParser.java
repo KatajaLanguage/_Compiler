@@ -263,8 +263,13 @@ final class SyntacticParser {
     private AST.Calc parseCalc(){
         AST.Calc ast = new AST.Calc();
 
-        ast.arg = parseValue();
-        ast.type = ast.arg.type;
+        if(th.isNext("(")){
+            ast = parseCalc();
+            th.assertToken(")");
+        }else{
+            ast.arg = parseValue();
+            ast.type = ast.arg.type;
+        }
 
         while(th.hasNext()){
             if(!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")){
