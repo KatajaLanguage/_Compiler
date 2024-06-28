@@ -291,6 +291,12 @@ final class MethodCompiler {
 
     private void compileCalc(AST.Calc ast){
         if(ast.right != null) compileCalc(ast.right);
+
+        if(ast.op != null && ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type)){
+            code.addInstanceof(((AST.Value)ast.arg).token.s);
+            return;
+        }
+
         if(ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
         else if(ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
         else compileValue((AST.Value) ast.arg);

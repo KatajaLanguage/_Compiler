@@ -155,9 +155,9 @@ public class CompilerUtil {
 
             if(NUMBER_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : type1;
-        }else return ((operator.equals("==") || operator.equals("!=")) && (type1.equals(type2)) || type2.equals("null")) ? "boolean" : null;
+        }
 
-        return null;
+        return ((operator.equals("==") || operator.equals("!=")) && (type1.equals(type2)) || type2.equals("null")) ? "boolean" : null;
     }
 
     public static String getMethodReturnType(String clazzName, String method, boolean statik, boolean allowPrivate){

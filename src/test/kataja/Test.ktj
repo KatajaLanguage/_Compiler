@@ -1,7 +1,7 @@
 use java/lang/RuntimeException
 
 main{
-    throw RuntimeException("Test")
+    if args >> RuntimeException -> throw RuntimeException()
 }
 #exceptions
 

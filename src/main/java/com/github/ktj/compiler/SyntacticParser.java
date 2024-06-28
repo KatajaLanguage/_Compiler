@@ -292,8 +292,20 @@ final class SyntacticParser {
 
             ast.setRight();
             ast.op = th.current().s;
-            ast.arg = parseValue();
-            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+
+            if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
+                AST.Value value = new AST.Value();
+
+                value.token = th.current();
+                if(!method.uses.containsKey(value.token.s)) throw new RuntimeException("Class "+value.token.s+" is not defined");
+                value.token = new Token(method.uses.get(value.token.s), null);
+
+                ast.arg = value;
+                ast.type = "boolean";
+            }else{
+                ast.arg = parseValue();
+                ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+            }
 
             if(ast.type == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);
         }

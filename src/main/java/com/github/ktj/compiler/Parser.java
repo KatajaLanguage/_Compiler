@@ -164,36 +164,27 @@ final class Parser {
         StringBuilder code = new StringBuilder();
         int i = 1;
 
-        while (sc.hasNextLine()) {
-            nextLine();
-
-            if (th.isEmpty()) code.append("\n");
-            else if (th.next().s.equals("}")) {
-                if(!th.hasNext() || !th.next().equals("else")) {
-                    i--;
-
-                    if (i > 0) {
-                        if (!(code.length() == 0)) code.append("\n");
-                        code.append(th.toStringNonMarked());
-                    } else {
-                        Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
-                        mod.statik = true;
-                        addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, getFileName(), _line));
-                        uses.put("_String", "java.lang.String");
-                        return;
-                    }
-                }else{
-                    if (!(code.length() == 0)) code.append("\n");
-                    code.append(th.toStringNonMarked());
-                }
-            }else{
-                if(th.current().s.equals("if") || th.current().s.equals("while")) i++;
-                if (!(code.length() == 0)) code.append("\n");
-                code.append(th.toStringNonMarked());
+        while(i != 0){
+            while(!th.hasNext()){
+                if(!sc.hasNextLine()) break;
+                nextLine();
+                code.append("\n");
             }
+
+            String current = th.next().s;
+
+            if(current.equals("}")) i--;
+            else if(current.equals("{")) i++;
+
+            if(i > 0) code.append(" ").append(current);
         }
 
-        err("Expected '}'");
+        if(!th.current().equals("}")) err("Expected '}'");
+
+        Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
+        mod.statik = true;
+        addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, getFileName(), _line));
+        uses.put("_String", "java.lang.String");
     }
 
     private void parseModifier(String clazzName){
