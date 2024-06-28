@@ -140,8 +140,14 @@ public final class Compiler {
         else{
             try{
                 URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
-            }catch(ClassNotFoundException |  NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException | MalformedURLException e){
-                RuntimeException exception = new RuntimeException("Failed to execute main Method");
+            }catch(InvocationTargetException e){
+                //RuntimeException exception = new RuntimeException("Failed to execute main Method" + (debug ? " : "+e.getTargetException().getClass().getName()+" "+e.getTargetException().getMessage() : ""));
+                //exception.setStackTrace(e.getTargetException().getStackTrace());
+                //throw exception;
+                //System.err.println(e.getTargetException().getClass()+": "+e.getTargetException().getMessage());
+                e.getTargetException().printStackTrace();
+            }catch(ClassNotFoundException |  NoSuchMethodException | SecurityException | IllegalAccessException | MalformedURLException e){
+                RuntimeException exception = new RuntimeException("Failed to execute main Method" + (debug ? " : "+e.getClass().getName()+" "+e.getMessage() : ""));
                 exception.setStackTrace(e.getStackTrace());
                 throw exception;
             }

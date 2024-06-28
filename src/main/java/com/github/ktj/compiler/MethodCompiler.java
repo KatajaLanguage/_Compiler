@@ -366,7 +366,7 @@ final class MethodCompiler {
     }
 
     private void compileOperator(AST.Calc ast){
-        switch(ast.type){
+        switch(ast.right.type){
             case "int":
             case "char":
             case "byte":
