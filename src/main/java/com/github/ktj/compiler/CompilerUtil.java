@@ -162,6 +162,21 @@ public class CompilerUtil {
 
     public static String getMethodReturnType(String clazzName, String method, boolean statik, boolean allowPrivate){
         if(Compiler.Instance().classes.containsKey(clazzName)){
+            if(Compiler.Instance().classes.get(clazzName) instanceof KtjDataClass){
+                KtjDataClass clazz = (KtjDataClass) Compiler.Instance().classes.get(clazzName);
+                boolean matches = true;
+
+                if(!method.startsWith("<init>") || ((method.split("%").length - 1) != clazz.fields.size())) return null;
+
+                for (int i = 0; i < clazz.fields.size(); i++){
+                    if (!method.split("%")[i + 1].equals(clazz.fields.get(clazz.fields.keySet().toArray(new String[0])[i]).type) && !isSuperClass(method.split("%")[i + 1], clazz.fields.get(clazz.fields.keySet().toArray(new String[0])[i]).type)) {
+                        matches = false;
+                        break;
+                    }
+                }
+
+                return matches ? clazzName : null;
+            }
             return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.containsKey(method) && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.statik == statik && (allowPrivate || ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.accessFlag != AccessFlag.ACC_PRIVATE)) ? ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).returnType : null;
         }else{
             try{
@@ -214,7 +229,7 @@ public class CompilerUtil {
             }else if(compilable instanceof KtjTypeClass){
                 if (((KtjTypeClass)(compilable)).hasValue(field) && statik) return clazzName;
             }else if(compilable instanceof KtjDataClass){
-                if (((KtjDataClass)(compilable)).fields.containsKey(field) && ((KtjDataClass)(compilable)).fields.get(field).modifier.statik != statik)
+                if (((KtjDataClass)(compilable)).fields.containsKey(field) && ((KtjDataClass)(compilable)).fields.get(field).modifier.statik == statik)
                     return ((KtjDataClass)(compilable)).fields.get(field).type;
             }
         }else{
@@ -320,8 +335,8 @@ public class CompilerUtil {
             AST.Value value = new AST.Value();
 
             value.type = type;
-            Token.Type t = null;
-            String v = null;
+            Token.Type t;
+            String v;
 
             switch (type){
                 case "char":
