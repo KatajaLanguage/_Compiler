@@ -5,8 +5,6 @@ import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
 import javassist.bytecode.*;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 
 import java.util.ArrayList;
 
@@ -38,11 +36,17 @@ final class MethodCompiler {
         if(ast instanceof AST.While) compileWhile((AST.While) ast);
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
+        else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
         else if(ast instanceof AST.Load){
             compileCall((AST.Load) ast, true);
             if(!ast.type.equals("void"))
                 code.add(Opcode.POP);
         }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
+    }
+
+    private void compileThrow(AST.Throw ast){
+        compileCalc(ast.calc);
+        code.add(Opcode.ATHROW);
     }
 
     private void compileReturn(AST.Return ast){

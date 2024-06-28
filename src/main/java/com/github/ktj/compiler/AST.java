@@ -121,4 +121,8 @@ abstract class AST {
         Calc calc = null;
         Load load = null;
     }
+
+    static final class Throw extends AST{
+        Calc calc = null;
+    }
 }

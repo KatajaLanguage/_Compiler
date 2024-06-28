@@ -101,6 +101,9 @@ final class SyntacticParser {
             case "return":
                 ast = parseReturn();
                 break;
+            case "throw":
+                ast = parseThrow();
+                break;
             default:
                 th.last();
                 ast = parseStatement();
@@ -110,6 +113,16 @@ final class SyntacticParser {
         }
 
         th.isNext(";");
+        return ast;
+    }
+
+    private AST.Throw parseThrow(){
+        AST.Throw ast = new AST.Throw();
+
+        ast.calc = parseCalc();
+
+        if(!CompilerUtil.isSuperClass(ast.calc.type, "java.lang.Throwable")) throw new RuntimeException();
+
         return ast;
     }
 
