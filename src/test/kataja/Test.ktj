@@ -1,8 +1,7 @@
-use java/lang/RuntimeException
+use java/lang/System
 
 main{
-    if args >> RuntimeException -> throw RuntimeException()
+    if args.length == 0 && true -> System.out.println("true")
 }
-#exceptions
 
 #-q -d -e src/test/kataja/Test.ktj

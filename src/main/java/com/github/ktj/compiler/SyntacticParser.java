@@ -251,7 +251,7 @@ final class SyntacticParser {
 
             return ast;
         }else{
-            for(int j = 0;j <= i;j++) th.last();
+            for(int j = 0;j < i;j++) th.last();
             AST.Load load = parseCall();
 
             if(load.finaly) assertEndOfStatement();

@@ -295,8 +295,28 @@ final class MethodCompiler {
     private void compileCalc(AST.Calc ast){
         if(ast.right != null) compileCalc(ast.right);
 
-        if(ast.op != null && ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type)){
-            code.addInstanceof(((AST.Value)ast.arg).token.s);
+        if(ast.op != null){
+            if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type)){
+                code.addInstanceof(((AST.Value) ast.arg).token.s);
+            }else if(ast.op.equals("&&") && ast.arg.type.equals("boolean")){
+                code.add(Opcode.IFEQ);
+                int branchLocation1 = code.getSize();
+                code.addIndex(0);
+                if(ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+                else if(ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+                else compileValue((AST.Value) ast.arg);
+                code.add(Opcode.IFEQ);
+                int branchLocation2 = code.getSize();
+                code.addIndex(0);
+                code.add(Opcode.ICONST_1);
+                code.add(Opcode.GOTO);
+                int endLocation = code.getSize();
+                code.addIndex(0);
+                code.write16bit(branchLocation1, code.getSize() - branchLocation1 + 1);
+                code.write16bit(branchLocation2, code.getSize() - branchLocation2 + 1);
+                code.add(Opcode.ICONST_0);
+                code.write16bit(endLocation, code.getSize() - endLocation + 1);
+            }
             return;
         }
 
@@ -397,10 +417,6 @@ final class MethodCompiler {
                         break;
                     case "/" :
                         code.add(Opcode.IDIV);
-                        break;
-                    case "&&":
-                        break;
-                    case "||":
                         break;
                     case "==":
                     case "!=":
