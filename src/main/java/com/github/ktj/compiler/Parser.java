@@ -121,7 +121,7 @@ final class Parser {
             ArrayList<String> classes = new ArrayList<>();
             classes.add(current);
 
-            if(th.current().equals(",")){
+            while(th.current().equals(",")){
                 classes.add(th.assertToken(Token.Type.IDENTIFIER).s);
                 th.assertToken(",", "from");
             }
@@ -132,13 +132,13 @@ final class Parser {
                 if(th.assertToken("/", "as").equals("as")){
                     if(classes.size() != 1) err("illegal argument");
                     if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s)) err(th.current()+" is already defined");
-                    uses.put(th.current().s, (path + classes.get(0)).replace("/", "."));
+                    uses.put(th.current().s, path.toString().replace("/", ".")+"."+classes.get(0));
                 }else path.append("/").append(th.assertToken(Token.Type.IDENTIFIER).s);
             }
 
             for(String clazz:classes){
                 if(uses.containsKey(clazz)) err(clazz+" is already defined");
-                uses.put(clazz, path.toString().replace("/", "."));
+                uses.put(clazz, path.toString().replace("/", ".")+"."+clazz);
             }
         }
     }
@@ -164,36 +164,27 @@ final class Parser {
         StringBuilder code = new StringBuilder();
         int i = 1;
 
-        while (sc.hasNextLine()) {
-            nextLine();
-
-            if (th.isEmpty()) code.append("\n");
-            else if (th.next().s.equals("}")) {
-                if(!th.hasNext() || !th.next().equals("else")) {
-                    i--;
-
-                    if (i > 0) {
-                        if (!(code.length() == 0)) code.append("\n");
-                        code.append(th.toStringNonMarked());
-                    } else {
-                        Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
-                        mod.statik = true;
-                        addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, getFileName(), _line));
-                        uses.put("_String", "java.lang.String");
-                        return;
-                    }
-                }else{
-                    if (!(code.length() == 0)) code.append("\n");
-                    code.append(th.toStringNonMarked());
-                }
-            }else{
-                if(th.current().s.equals("if") || th.current().s.equals("while")) i++;
-                if (!(code.length() == 0)) code.append("\n");
-                code.append(th.toStringNonMarked());
+        while(i != 0){
+            while(!th.hasNext()){
+                if(!sc.hasNextLine()) break;
+                nextLine();
+                code.append("\n");
             }
+
+            String current = th.next().s;
+
+            if(current.equals("}")) i--;
+            else if(current.equals("{")) i++;
+
+            if(i > 0) code.append(" ").append(current);
         }
 
-        err("Expected '}'");
+        if(!th.current().equals("}")) err("Expected '}'");
+
+        Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
+        mod.statik = true;
+        addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, getFileName(), _line));
+        uses.put("_String", "java.lang.String");
     }
 
     private void parseModifier(String clazzName){
@@ -518,7 +509,7 @@ final class Parser {
 
             if(!th.current().equals("}")) err("Expected '}'");
 
-            if(Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
+            if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
 
             addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
         }else{

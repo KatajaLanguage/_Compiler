@@ -1,4 +1,7 @@
-public int test(int[][] i){
-    return i[0][0]
+use java/lang/System
+
+main{
+    if false || true -> System.out.println("true")
 }
-#-c src/test/kataja/Test.ktj
+
+#-q -d -e src/test/kataja/Test.ktj

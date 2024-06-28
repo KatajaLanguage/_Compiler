@@ -70,7 +70,7 @@ abstract class AST {
 
         void setPrev(){
             Call help = prev;
-            prev = this instanceof StaticCall ? new StaticCall() : new Call();
+            prev = new Call();
             prev.prev = help;
             prev.call = call;
             prev.type = type;
@@ -84,22 +84,6 @@ abstract class AST {
             argTypes = null;
             type = null;
         }
-
-        StaticCall toStatic(){
-            StaticCall help = new StaticCall();
-
-            help.statik = statik;
-            help.clazz = clazz;
-            help.type = type;
-            help.call = call;
-            help.prev = prev;
-            help.argTypes = argTypes;
-
-            return help;
-        }
-    }
-
-    static final class StaticCall extends Call{
     }
 
     static final class Return extends AST{
@@ -120,5 +104,9 @@ abstract class AST {
     static final class VarAssignment extends AST{
         Calc calc = null;
         Load load = null;
+    }
+
+    static final class Throw extends AST{
+        Calc calc = null;
     }
 }

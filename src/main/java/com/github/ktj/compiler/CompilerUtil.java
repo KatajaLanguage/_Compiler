@@ -21,8 +21,6 @@ public class CompilerUtil {
     static{
         BOOL_OPERATORS.add("==");
         BOOL_OPERATORS.add("!=");
-        NUM_BOOL_OPERATORS.add("||");
-        NUM_BOOL_OPERATORS.add("&&");
         NUM_BOOL_OPERATORS.add(">");
         NUM_BOOL_OPERATORS.add("<");
         NUM_BOOL_OPERATORS.add(">=");
@@ -149,18 +147,36 @@ public class CompilerUtil {
             if(!type1.equals(type2))
                 return null;
 
+            if(type1.equals("boolean") && (operator.equals("&&") || operator.equals("||")))
+                return "boolean";
+
             if(NUM_BOOL_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : "boolean";
 
             if(NUMBER_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : type1;
-        }else return ((operator.equals("==") || operator.equals("!=")) && type1.equals(type2)) ? "boolean" : null;
+        }
 
-        return null;
+        return ((operator.equals("==") || operator.equals("!=")) && (type1.equals(type2)) || type2.equals("null")) ? "boolean" : null;
     }
 
     public static String getMethodReturnType(String clazzName, String method, boolean statik, boolean allowPrivate){
         if(Compiler.Instance().classes.containsKey(clazzName)){
+            if(Compiler.Instance().classes.get(clazzName) instanceof KtjDataClass){
+                KtjDataClass clazz = (KtjDataClass) Compiler.Instance().classes.get(clazzName);
+                boolean matches = true;
+
+                if(!method.startsWith("<init>") || ((method.split("%").length - 1) != clazz.fields.size())) return null;
+
+                for (int i = 0; i < clazz.fields.size(); i++){
+                    if (!method.split("%")[i + 1].equals(clazz.fields.get(clazz.fields.keySet().toArray(new String[0])[i]).type) && !isSuperClass(method.split("%")[i + 1], clazz.fields.get(clazz.fields.keySet().toArray(new String[0])[i]).type)) {
+                        matches = false;
+                        break;
+                    }
+                }
+
+                return matches ? clazzName : null;
+            }
             return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.containsKey(method) && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.statik == statik && (allowPrivate || ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.accessFlag != AccessFlag.ACC_PRIVATE)) ? ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).returnType : null;
         }else{
             try{
@@ -169,7 +185,7 @@ public class CompilerUtil {
                         if(method.split("%").length - 1 == m.getParameterTypes().length){
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].toString().split(" ")[1])) {
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getTypeName()) && !isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))) {
                                     matches = false;
                                     break;
                                 }
@@ -177,13 +193,13 @@ public class CompilerUtil {
                             if(matches) return clazzName;
                         }
                     }
-                }else {
+                }else{
                     for (Method m : Class.forName(clazzName).getMethods()) {
-                        if(((m.getModifiers() & AccessFlag.STATIC) != 0 && !statik) || ((m.getModifiers() & AccessFlag.STATIC) == 0 && statik)) return null;
+                        if(((m.getModifiers() & AccessFlag.STATIC) == 0) == statik) return null;
                         if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getName())){
+                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getTypeName()) && !isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))){
                                     matches = false;
                                     break;
                                 }
@@ -213,7 +229,7 @@ public class CompilerUtil {
             }else if(compilable instanceof KtjTypeClass){
                 if (((KtjTypeClass)(compilable)).hasValue(field) && statik) return clazzName;
             }else if(compilable instanceof KtjDataClass){
-                if (((KtjDataClass)(compilable)).fields.containsKey(field) && ((KtjDataClass)(compilable)).fields.get(field).modifier.statik != statik)
+                if (((KtjDataClass)(compilable)).fields.containsKey(field) && ((KtjDataClass)(compilable)).fields.get(field).modifier.statik == statik)
                     return ((KtjDataClass)(compilable)).fields.get(field).type;
             }
         }else{
@@ -267,10 +283,39 @@ public class CompilerUtil {
         return false;
     }
 
+    public static boolean isSuperClass(String clazz, String superClass){
+        if(isPrimitive(clazz) || isPrimitive(superClass)) return false;
+        if(clazz.equals(superClass)) return true;
+        if(clazz.equals("java.lang.Object")) return false;
+
+        if(Compiler.Instance().classes.containsKey(clazz)){
+            Compilable c = Compiler.Instance().classes.get(clazz);
+
+            if(c instanceof KtjInterface && !(c instanceof KtjClass)) return false;
+            else if(c instanceof KtjDataClass) return superClass.equals("java.lang.Object");
+            else if(c instanceof KtjTypeClass) return superClass.equals("java.lang.Enum") || superClass.equals("java.lang.Object");
+            else if(c instanceof KtjClass){
+                if(((KtjClass) c).superclass != null && ((KtjClass) c).superclass.equals(superClass)) return true;
+                for(String i:((KtjClass) c).interfaces) if(i.equals(superClass)) return true;
+
+                return ((KtjClass) c).superclass != null && isSuperClass(((KtjClass) c).superclass, superClass);
+            }
+        }else{
+            try{
+                Class<?> c = Class.forName(clazz);
+                if(c.getSuperclass().toString().split(" ")[1].equals(superClass)) return true;
+                for(Class<?> i:c.getInterfaces()) if(i.toString().split(" ")[1].equals(superClass)) return true;
+
+                return isSuperClass(clazz, c.getSuperclass().toString().split(" ")[1]);
+            }catch(ClassNotFoundException ignored){}
+        }
+        return false;
+    }
+
     public static boolean canCast(String type, String to){
         if(isPrimitive(type) && isPrimitive(to)) return true;
 
-        return true;
+        return isSuperClass(type, to) || isSuperClass(to, type);
     }
 
     public static boolean isPrimitive(String type){
@@ -290,8 +335,8 @@ public class CompilerUtil {
             AST.Value value = new AST.Value();
 
             value.type = type;
-            Token.Type t = null;
-            String v = null;
+            Token.Type t;
+            String v;
 
             switch (type){
                 case "char":

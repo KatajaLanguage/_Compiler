@@ -70,6 +70,11 @@ public final class Main {
                             c.compile(args[i + 1], true, true);
                         }catch(RuntimeException e){
                             System.out.println(e.getMessage());
+                            if(debug){
+                                for(int j = 0;j < e.getStackTrace().length;j++){
+                                    System.out.println("\t"+e.getStackTrace()[j].toString());
+                                }
+                            }
                         }
                         i += 2;
                     }
