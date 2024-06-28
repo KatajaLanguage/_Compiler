@@ -1,7 +1,7 @@
 use java/lang/System
 
 main{
-    if args.length == 0 && true -> System.out.println("true")
+    if false || true -> System.out.println("true")
 }
 
 #-q -d -e src/test/kataja/Test.ktj
