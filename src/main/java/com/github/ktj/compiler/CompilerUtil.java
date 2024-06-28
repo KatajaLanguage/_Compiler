@@ -21,8 +21,6 @@ public class CompilerUtil {
     static{
         BOOL_OPERATORS.add("==");
         BOOL_OPERATORS.add("!=");
-        NUM_BOOL_OPERATORS.add("||");
-        NUM_BOOL_OPERATORS.add("&&");
         NUM_BOOL_OPERATORS.add(">");
         NUM_BOOL_OPERATORS.add("<");
         NUM_BOOL_OPERATORS.add(">=");
@@ -148,6 +146,9 @@ public class CompilerUtil {
         if(isPrimitive(type1)){
             if(!type1.equals(type2))
                 return null;
+
+            if(type1.equals("boolean") && (operator.equals("&&") || operator.equals("||")))
+                return "boolean";
 
             if(NUM_BOOL_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : "boolean";
@@ -299,7 +300,7 @@ public class CompilerUtil {
     public static boolean canCast(String type, String to){
         if(isPrimitive(type) && isPrimitive(to)) return true;
 
-        return isSuperClass(to, type);
+        return isSuperClass(type, to) || isSuperClass(to, type);
     }
 
     public static boolean isPrimitive(String type){

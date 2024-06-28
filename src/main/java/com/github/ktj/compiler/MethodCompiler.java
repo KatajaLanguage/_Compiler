@@ -385,6 +385,10 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.IDIV);
                         break;
+                    case "&&":
+                        break;
+                    case "||":
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
