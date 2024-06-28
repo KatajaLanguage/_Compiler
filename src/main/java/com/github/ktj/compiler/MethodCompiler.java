@@ -166,7 +166,10 @@ final class MethodCompiler {
     private void compileCall(AST.Call call, boolean first){
         if(call == null) return;
 
-        if(call.prev != null) compileCall(call.prev, false);
+        if(call.prev != null){
+            compileCall(call.prev, first);
+            first = false;
+        }
 
         if(call.argTypes == null) {
             if(call.clazz.startsWith("[")) code.add(Opcode.ARRAYLENGTH);
@@ -258,7 +261,7 @@ final class MethodCompiler {
                 compileCalc(ast.load.call.argTypes[0]);
                 compileCalc(ast.calc);
 
-                switch(ast.load.clazz){
+                switch(ast.load.call.clazz){
                     case "[int":
                     case "[boolean":
                     case "[char":
