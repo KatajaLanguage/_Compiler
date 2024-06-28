@@ -1,12 +1,8 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.lang.*;
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
 import javassist.bytecode.*;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 final class ClassCompiler {

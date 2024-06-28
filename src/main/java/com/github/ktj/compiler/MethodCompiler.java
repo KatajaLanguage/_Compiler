@@ -5,9 +5,10 @@ import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
 import javassist.bytecode.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 
 import java.util.ArrayList;
-import java.util.Set;
 
 final class MethodCompiler {
 
@@ -26,7 +27,6 @@ final class MethodCompiler {
     private void compileCode(Bytecode code, String ktjCode, KtjInterface clazz, String clazzName, KtjMethod method, ConstPool cp){
         this.code = code;
         this.cp = cp;
-        this.clazz = clazz;
         this.clazzName = clazzName;
         os = OperandStack.forMethod(method);
         AST[] ast = parser.parseAst(clazz, clazzName, method, ktjCode);
@@ -295,8 +295,6 @@ final class MethodCompiler {
 
     private void compileCast(AST.Cast ast){
         compileCalc(ast.calc);
-
-        String temp;
 
         switch(ast.calc.type){
             case "int":

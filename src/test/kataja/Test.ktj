@@ -1,7 +1,11 @@
-use java/lang/Object
-use java/lang/String
+use java/lang/System
 
-public test(){
-
+main{
+    while args.length != 0 {
+        System.out.println(0)
+    }
+    System.out.println("test")
 }
-#-q -c src/test/kataja/Test.ktj
+#exceptions
+
+#-q -d -e src/test/kataja/Test.ktj

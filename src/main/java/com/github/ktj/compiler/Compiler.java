@@ -4,10 +4,12 @@ import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
-import javassist.CtClass;
 import javassist.bytecode.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
@@ -154,12 +156,22 @@ public final class Compiler {
 
     private void writeFile(ClassFile cf){
         try{
-            CtClass ct = ClassPool.getDefault()
-                    .makeClass(cf);
-            if(ct.isFrozen()) ct.defrost();
-            ct.writeFile(outFolder.getPath());
-        }catch (IOException | CannotCompileException e) {
-            throw new RuntimeException("failed to write ClassFile for "+cf.getName());
+            byte[] classBytecode = ClassPool.getDefault().makeClass(cf).toBytecode();
+
+            ClassReader reader = new ClassReader(classBytecode);
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+
+            reader.accept(writer, ClassReader.EXPAND_FRAMES);
+
+            File file = new File(outFolder + "/" + cf.getName().replace(".", "/") + ".class");
+            if(file.getParentFile() != null && !file.getParentFile().exists())
+                file.getParentFile().mkdirs();
+
+            try (FileOutputStream fos = new FileOutputStream(file)){
+                fos.write(writer.toByteArray());
+            }
+        }catch(IOException | CannotCompileException e){
+            throw new RuntimeException("Failed to write ClassFile for " + cf.getName() + (debug ? " : " + e.getMessage() : ""));
         }
     }
 
