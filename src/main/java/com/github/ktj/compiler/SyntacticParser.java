@@ -252,6 +252,7 @@ final class SyntacticParser {
             return ast;
         }else{
             for(int j = 0;j < i;j++) th.last();
+            if(th.isValid() && th.current().equals(Token.Type.IDENTIFIER)) th.last();
             AST.Load load = parseCall();
 
             if(load.finaly) assertEndOfStatement();
@@ -303,8 +304,14 @@ final class SyntacticParser {
                 ast.arg = value;
                 ast.type = "boolean";
             }else{
-                ast.arg = parseValue();
-                ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+                if(th.isNext("(")){
+                    ast.left = parseCalc();
+                    th.assertToken(")");
+                    ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                }else{
+                    ast.arg = parseValue();
+                    ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+                }
             }
 
             if(ast.type == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);

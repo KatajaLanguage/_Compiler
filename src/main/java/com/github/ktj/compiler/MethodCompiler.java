@@ -298,13 +298,16 @@ final class MethodCompiler {
         if(ast.op != null){
             if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type)){
                 code.addInstanceof(((AST.Value) ast.arg).token.s);
-            }else if(ast.op.equals("&&") && ast.arg.type.equals("boolean")){
+                return;
+            }else if(ast.op.equals("&&") && ((ast.left != null && ast.left.type.equals("boolean")) || ast.arg.type.equals("boolean"))){
                 code.add(Opcode.IFEQ);
                 int branchLocation1 = code.getSize();
                 code.addIndex(0);
-                if(ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
-                else if(ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
-                else compileValue((AST.Value) ast.arg);
+                if(ast.left == null){
+                    if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+                    else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+                    else compileValue((AST.Value) ast.arg);
+                }else compileCalc(ast.left);
                 code.add(Opcode.IFEQ);
                 int branchLocation2 = code.getSize();
                 code.addIndex(0);
@@ -316,13 +319,16 @@ final class MethodCompiler {
                 code.write16bit(branchLocation2, code.getSize() - branchLocation2 + 1);
                 code.add(Opcode.ICONST_0);
                 code.write16bit(endLocation, code.getSize() - endLocation + 1);
-            }else if(ast.op.equals("||") && ast.arg.type.equals("boolean")){
+                return;
+            }else if(ast.op.equals("||") && ((ast.left != null && ast.left.type.equals("boolean")) || ast.arg.type.equals("boolean"))){
                 code.add(Opcode.IFNE);
                 int branchLocation1 = code.getSize();
                 code.addIndex(0);
-                if(ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
-                else if(ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
-                else compileValue((AST.Value) ast.arg);
+                if(ast.left == null){
+                    if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+                    else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+                    else compileValue((AST.Value) ast.arg);
+                }else compileCalc(ast.left);
                 code.add(Opcode.IFEQ);
                 int branchLocation2 = code.getSize();
                 code.addIndex(0);
@@ -334,13 +340,15 @@ final class MethodCompiler {
                 code.write16bit(branchLocation2, code.getSize() - branchLocation2 + 1);
                 code.add(Opcode.ICONST_0);
                 code.write16bit(endLocation, code.getSize() - endLocation + 1);
+                return;
             }
-            return;
         }
 
-        if(ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
-        else if(ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
-        else compileValue((AST.Value) ast.arg);
+        if(ast.left == null){
+            if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+            else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+            else compileValue((AST.Value) ast.arg);
+        }else compileCalc(ast.left);
         if(ast.op != null) compileOperator(ast);
     }
 

@@ -1,7 +1,7 @@
 use java/lang/System
 
 main{
-    if false || true -> System.out.println("true")
+    boolean b = args.length > 1 || (args.length == 0)
 }
 
-#-q -d -e src/test/kataja/Test.ktj
+#-q -d -c src/test/kataja/Test.ktj
