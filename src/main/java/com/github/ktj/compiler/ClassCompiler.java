@@ -8,7 +8,7 @@ import java.util.Arrays;
 final class ClassCompiler {
 
     static void compileTypeClass(KtjTypeClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java.lang.Enum");
+        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java/lang/Enum");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
@@ -29,7 +29,7 @@ final class ClassCompiler {
         mInfo.setAccessFlags(0x9);
         Bytecode code = new Bytecode(cf.getConstPool());
         code.addGetstatic(name, "$VALUES", "[L"+name+";");
-        code.addInvokevirtual("[L"+name+";", "clone","()[Ljava.lang.Object;");
+        code.addInvokevirtual("[L"+name+";", "clone","()[Ljava/lang/Object;");
         code.addCheckcast("[L"+name+";");
         code.add(Opcode.ARETURN);
         mInfo.setCodeAttribute(code.toCodeAttribute());
@@ -115,7 +115,7 @@ final class ClassCompiler {
         mInfo.setAccessFlags(AccessFlag.PUBLIC);
         Bytecode code = new Bytecode(cf.getConstPool());
         code.addAload(0);
-        code.addInvokespecial("java/lang/Object", "<init>", "()V");
+        code.addInvokespecial("java.lang.Object", "<init>", "()V");
 
         int i = 1;
         for(String field:clazz.fields.keySet()){

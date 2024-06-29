@@ -1,7 +1,11 @@
 use java/lang/System
 
+type Boolean = True | False
+
 main{
-    boolean b = args.length > 1 || (args.length == 0)
+    Boolean b = Boolean.True
+
+
 }
 
-#-q -d -c src/test/kataja/Test.ktj
+#-q -d -e src/test/kataja/Test.ktj
