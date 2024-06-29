@@ -1,7 +1,11 @@
 use java/lang/System
 
+type Boolean = True | False
+
 main{
-    if false || true -> System.out.println("true")
+    Boolean b = Boolean.True
+
+
 }
 
 #-q -d -e src/test/kataja/Test.ktj

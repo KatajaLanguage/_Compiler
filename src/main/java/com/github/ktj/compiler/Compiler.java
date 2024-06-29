@@ -11,6 +11,7 @@ import org.objectweb.asm.ClassWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -139,6 +140,7 @@ public final class Compiler {
         if(main == null) throw new RuntimeException("main is not defined");
         else{
             try{
+                //Constructor c = URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass("src.test.b.B12A1.Edge").getConstructors()[0];
                 URLClassLoader.newInstance(new URL[]{outFolder.getAbsoluteFile().toURI().toURL()}).loadClass(main).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
             }catch(InvocationTargetException e){
                 //RuntimeException exception = new RuntimeException("Failed to execute main Method" + (debug ? " : "+e.getTargetException().getClass().getName()+" "+e.getTargetException().getMessage() : ""));
