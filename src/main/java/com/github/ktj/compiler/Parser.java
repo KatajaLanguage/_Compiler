@@ -512,6 +512,89 @@ final class Parser {
             if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
 
             addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
+        }else if(th.isNext(":")){
+            StringBuilder sb = new StringBuilder();
+            boolean last = false;
+
+            while(sc.hasNextLine() && !last){
+                nextLine();
+                if(!th.isEmpty()){
+                    if(!th.isNext("(")) break;
+
+                    TokenHandler ib = th.getInBracket();
+                    StringBuilder arg = new StringBuilder();
+                    if(ib.isEmpty()) err("Expected arguments");
+
+                    for(int i = 0;i < parameter.size();i++){
+                        ib.assertToken(parameter.get(i).name);
+                        if(!ib.isNext(",") && ib.hasNext()){
+                            if(!arg.toString().isEmpty()) arg.append("&&");
+                            arg.append(parameter.get(i).name);
+                            while(!ib.isNext(",") && ib.hasNext()){
+                                if(ib.isNext("(")) arg.append(ib.getInBracket().toStringNonMarked());
+                                else arg.append(ib.next().s);
+                            }
+                        }
+                    }
+
+                    if(arg.toString().isEmpty()){
+                        last = true;
+                        if(!sb.toString().isEmpty()) sb.append("else ");
+                        sb.append("if(true)");
+                    }else{
+                        if(!sb.toString().isEmpty()) sb.append("else ");
+                        sb.append("if( ").append(arg).append(" )");
+                    }
+
+                    switch(th.assertToken("{", "=", "->").s){
+                        case "->":
+                            sb.append("->");
+                            while(th.hasNext()){
+                                sb.append(" ").append(th.next().s);
+
+                                if(th.current().equals(";")) err("illegal argument ;");
+                            }
+                            sb.append("\n");
+                            break;
+                        case "=":
+                            sb.append("->");
+                            sb.append("return ");
+                            while(th.hasNext()){
+                                sb.append(" ").append(th.next().s);
+
+                                if(th.current().equals(";")) err("illegal argument ;");
+                            }
+                            sb.append("\n");
+                            break;
+                        case "{":
+                            int i = 1;
+
+                            while(i != 0){
+                                while(!th.hasNext()){
+                                    if(!sc.hasNextLine()) break;
+                                    nextLine();
+                                    sb.append("\n");
+                                }
+
+                                String current = th.next().s;
+
+                                if(current.equals("}")) i--;
+                                else if(current.equals("{")) i++;
+
+                                if(i > 0) sb.append(" ").append(current);
+                            }
+
+                            if(!th.current().equals("}")) err("Expected '}'");
+                            th.assertNull();
+                            break;
+                    }
+                }
+            }
+
+            if(sb.toString().isEmpty()) err("Expected ( got nothing");
+            if(!last) err("Expected default");
+
+            addMethod(desc.toString(), new KtjMethod(mod, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
         }else{
             StringBuilder code = new StringBuilder();
 
