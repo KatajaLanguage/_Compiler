@@ -195,8 +195,8 @@ public class CompilerUtil {
                     }
                 }else{
                     for (Method m : Class.forName(clazzName).getMethods()) {
-                        if(((m.getModifiers() & AccessFlag.STATIC) == 0) == statik) return null;
                         if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
+                            if(((m.getModifiers() & AccessFlag.STATIC) == 0) == statik) return null;
                             boolean matches = true;
                             for (int i = 0; i < m.getParameterTypes().length; i++) {
                                 if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getTypeName()) && !isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))){

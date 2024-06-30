@@ -211,4 +211,14 @@ final class TokenHandler {
         for(Token t:tokens) sb.append(t.s).append(" ");
         return sb.toString();
     }
+
+    public int getIndex(){
+        return index;
+    }
+
+    public void setIndex(int i){
+        index = i;
+
+        if(!isValid()) throw new RuntimeException("Invalid index "+i+" for length "+tokens.length);
+    }
 }

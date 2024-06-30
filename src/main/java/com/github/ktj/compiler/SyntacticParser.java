@@ -163,26 +163,50 @@ final class SyntacticParser {
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
         if(th.assertToken("->", "{").equals("->")){
             ast.ast = new AST[]{parseNextStatement()};
+
+            if(!th.hasNext() && hasNextLine()){
+                int index = th.getIndex();
+                nextLine();
+                if(th.isNext("else")) th.last();
+                else{
+                    lastLine();
+                    th.setIndex(index);
+                }
+            }
         }else{
             ast.ast = parseContent();
+            if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+        }
 
-            AST.If current = ast;
-            boolean end = false;
-            while (th.hasNext() && !end) {
-                current = (current.elif = new AST.If());
-                th.assertToken("else");
+        AST.If current = ast;
+        boolean end = false;
+        while (th.hasNext() && !end) {
+            current = (current.elif = new AST.If());
+            th.assertToken("else");
 
-                if (th.assertToken("if", "{").equals("if")) {
-                    current.condition = parseCalc();
-                    if (!current.condition.type.equals("boolean"))
-                        throw new RuntimeException("Expected type boolean got " + current.condition.type);
-                    th.assertToken("{");
-                } else end = true;
+            if (th.assertToken("if", "{", "->").equals("if")) {
+                current.condition = parseCalc();
+                if (!current.condition.type.equals("boolean"))
+                    throw new RuntimeException("Expected type boolean got " + current.condition.type);
+                th.assertToken("{", "->");
+            }else end = true;
 
+            if(th.current().equals("->")){
+                current.ast = new AST[]{parseNextStatement()};
+
+                if(!th.hasNext() && hasNextLine()){
+                    int index = th.getIndex();
+                    nextLine();
+                    if(th.isNext("else")) th.last();
+                    else{
+                        lastLine();
+                        th.setIndex(index);
+                    }
+                }
+            }else if(th.current().equals("{")){
                 current.ast = parseContent();
+                if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
             }
-
-            if (th.current().equals("} ")) throw new RuntimeException("illegal argument");
         }
 
         return ast;
@@ -254,6 +278,10 @@ final class SyntacticParser {
             for(int j = 0;j < i;j++) th.last();
             if(th.isValid() && th.current().equals(Token.Type.IDENTIFIER)) th.last();
             AST.Load load = parseCall();
+
+            if(load.call == null){
+                RuntimeException e = new RuntimeException();
+            }
 
             if(load.finaly) assertEndOfStatement();
 
@@ -362,6 +390,9 @@ final class SyntacticParser {
                     th.last();
                     ast.load = parseCall();
                     ast.type = ast.load.type;
+                    if(ast.load.call == null){
+                        RuntimeException e = new RuntimeException();
+                    }
                 }
                 break;
             case STRING:
@@ -466,8 +497,10 @@ final class SyntacticParser {
                 th.assertToken(".");
                 ast.call.clazz = method.uses.get(call);
 
+                call = th.assertToken(Token.Type.IDENTIFIER).s;
+
                 if(th.isNext("(")) {
-                    StringBuilder desc = new StringBuilder(th.assertToken(Token.Type.IDENTIFIER).s);
+                    StringBuilder desc = new StringBuilder(call);
                     ArrayList<AST.Calc> args = new ArrayList<>();
 
                     if (!th.isNext(")")) {
@@ -488,8 +521,9 @@ final class SyntacticParser {
 
                     ast.call.statik = true;
                     ast.call.argTypes = args.toArray(new AST.Calc[0]);
+                    ast.call.call = call;
                 }else{
-                    ast.call.call = call = th.assertToken(Token.Type.IDENTIFIER).s;
+                    ast.call.call = call;
                     ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, ast.call.clazz.equals(clazzName));
 
                     if(ast.call.type == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
@@ -643,6 +677,12 @@ final class SyntacticParser {
     private void nextLine(){
         method.line++;
         index++;
+        th = Lexer.lex(code[index]);
+    }
+
+    private void lastLine(){
+        method.line--;
+        index--;
         th = Lexer.lex(code[index]);
     }
 
