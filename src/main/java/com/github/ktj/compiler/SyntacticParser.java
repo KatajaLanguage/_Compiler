@@ -390,9 +390,6 @@ final class SyntacticParser {
                     th.last();
                     ast.load = parseCall();
                     ast.type = ast.load.type;
-                    if(ast.load.call == null){
-                        RuntimeException e = new RuntimeException();
-                    }
                 }
                 break;
             case STRING:

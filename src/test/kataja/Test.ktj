@@ -1,10 +1,7 @@
-use java/lang/System
-use java/lang/String
+int fib(int i):
+    (i < 0) = -1
+    (i == 0) = 1
+    (i == 1) = 1
+    (i) = fib(i - 1) + fib(i - 2)
 
-data Person = (const String name, int age)
-
-main{
-    Person p = Person("Mustername", 1)
-}
-
-#-q -d -e src/test/kataja/Test.ktj
+#-q -d -c src/test/kataja/Test.ktj
