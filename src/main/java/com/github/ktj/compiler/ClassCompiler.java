@@ -8,7 +8,8 @@ import java.util.Arrays;
 final class ClassCompiler {
 
     static void compileTypeClass(KtjTypeClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java/lang/Enum");
+        name = (path.isEmpty() ? name : path + "." + name).replace(".", "/");
+        ClassFile cf = new ClassFile(false, name, "java/lang/Enum");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
@@ -39,7 +40,7 @@ final class ClassCompiler {
         mInfo = new MethodInfo(cf.getConstPool(), "valueOf", "(Ljava/lang/String;)L"+name+";");
         mInfo.setAccessFlags(0x9);
         code = new Bytecode(cf.getConstPool());
-        code.addLdc("L"+name+";.class"); //TODO Check
+        code.addLdc(cf.getConstPool().addClassInfo(name));
         code.addAload(0);
         code.addInvokestatic("java/lang/Enum", "valueOf", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;");
         code.addCheckcast(name);
@@ -47,7 +48,7 @@ final class ClassCompiler {
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);
 
-        //<inti>
+        //<init>
         mInfo = new MethodInfo(cf.getConstPool(), "<init>", "(Ljava/lang/String;I)V");
         mInfo.setAccessFlags(0x2);
         code = new Bytecode(cf.getConstPool());
@@ -56,22 +57,6 @@ final class ClassCompiler {
         code.addIload(2);
         code.addInvokespecial("java/lang/Enum", "<init>", "(Ljava/lang/String;I)V");
         code.add(Opcode.RETURN);
-        mInfo.setCodeAttribute(code.toCodeAttribute());
-        cf.addMethod2(mInfo);
-
-        //$values
-        mInfo = new MethodInfo(cf.getConstPool(), "$values", "()[L"+name+";");
-        mInfo.setAccessFlags(0x100A);
-        code = new Bytecode(cf.getConstPool());
-        code.addIconst(clazz.values.length);
-        code.addAnewarray(name);
-        for(int i = 0;i < clazz.values.length;i++) {
-            code.add(0x59); //dup
-            code.addIconst(i);
-            code.addGetstatic(name, clazz.values[i], "L"+name+";");
-            code.add(Opcode.AASTORE);
-        }
-        code.add(Opcode.ARETURN);
         mInfo.setCodeAttribute(code.toCodeAttribute());
         cf.addMethod2(mInfo);
 
@@ -87,7 +72,14 @@ final class ClassCompiler {
             code.addInvokespecial(name, "<init>", "(Ljava/lang/String;I)V");
             code.addPutstatic(name, clazz.values[i], "L"+name+";");
         }
-        code.addInvokestatic(name, "$values", "()[L"+name+";");
+        code.addIconst(clazz.values.length);
+        code.addAnewarray(name);
+        for(int i = 0;i < clazz.values.length;i++) {
+            code.add(Opcode.DUP);
+            code.addIconst(i);
+            code.addGetstatic(name, clazz.values[i], "L"+name+";");
+            code.add(Opcode.AASTORE);
+        }
         code.addPutstatic(name, "$VALUES", "[L"+name+";");
         code.add(Opcode.RETURN);
         mInfo.setCodeAttribute(code.toCodeAttribute());

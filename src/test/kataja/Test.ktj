@@ -5,7 +5,7 @@ type Boolean = True | False
 main{
     Boolean b = Boolean.True
 
-
+    if b == Boolean.True -> System.out.println("true")
 }
 
 #-q -d -e src/test/kataja/Test.ktj
