@@ -1,11 +1,10 @@
 use java/lang/System
+use java/lang/String
 
-type Boolean = True | False
+data Person = (const String name, int age)
 
 main{
-    Boolean b = Boolean.True
-
-    if b == Boolean.True -> System.out.println("true")
+    Person p = Person("Mustername", 1)
 }
 
 #-q -d -e src/test/kataja/Test.ktj

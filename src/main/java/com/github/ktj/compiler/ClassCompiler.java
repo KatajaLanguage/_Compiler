@@ -89,7 +89,8 @@ final class ClassCompiler {
     }
 
     static void compileDataClass(KtjDataClass clazz, String name, String path){
-        ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, "java/lang/Object");
+        name = (path.isEmpty() ? name : path + "." + name).replace(".", "/");
+        ClassFile cf = new ClassFile(false, name, "java/lang/Object");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
@@ -145,12 +146,13 @@ final class ClassCompiler {
     }
 
     static void compileInterface(KtjInterface clazz, String name, String path){
-        ClassFile cf = new ClassFile(true, path.isEmpty() ? name : path+"."+name, "java/lang/Object");
+        name = (path.isEmpty() ? name : path + "." + name).replace(".", "/");
+        ClassFile cf = new ClassFile(true, name, "java/lang/Object");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
 
         //Methods
-        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc));
+        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, name, cf.getConstPool(), clazz.methods.get(desc), desc));
 
         Compiler.Instance().compiledClasses.add(cf);
     }
