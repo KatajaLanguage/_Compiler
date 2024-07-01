@@ -150,6 +150,8 @@ public class CompilerUtil {
             if(type1.equals("boolean") && (operator.equals("&&") || operator.equals("||")))
                 return "boolean";
 
+            if((type1.equals("double") || type1.equals("float")) && (operator.equals("&") || operator.equals("|") || operator.equals("<<") || operator.equals(">>") || operator.equals("^"))) return null;
+
             if(NUM_BOOL_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : "boolean";
 

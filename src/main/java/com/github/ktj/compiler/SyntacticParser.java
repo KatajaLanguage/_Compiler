@@ -279,10 +279,6 @@ final class SyntacticParser {
             if(th.isValid() && th.current().equals(Token.Type.IDENTIFIER)) th.last();
             AST.Load load = parseCall();
 
-            if(load.call == null){
-                RuntimeException e = new RuntimeException();
-            }
-
             if(load.finaly) assertEndOfStatement();
 
             if (th.hasNext()) {

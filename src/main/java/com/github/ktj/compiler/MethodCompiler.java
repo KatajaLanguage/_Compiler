@@ -444,6 +444,24 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.IDIV);
                         break;
+                    case "&":
+                        code.add(Opcode.IAND);
+                        break;
+                    case "|":
+                        code.add(Opcode.IOR);
+                        break;
+                    case ">>":
+                        code.add(Opcode.ISHR);
+                        break;
+                    case "<<":
+                        code.add(Opcode.ISHL);
+                        break;
+                    case "^":
+                        code.add(Opcode.IXOR);
+                        break;
+                    case "%":
+                        code.add(Opcode.IREM);
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
@@ -496,6 +514,9 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.DDIV);
                         break;
+                    case "%":
+                        code.add(Opcode.DREM);
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
@@ -521,6 +542,9 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.FDIV);
                         break;
+                    case "%":
+                        code.add(Opcode.FREM);
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
@@ -545,6 +569,24 @@ final class MethodCompiler {
                         break;
                     case "/" :
                         code.add(Opcode.LDIV);
+                        break;
+                    case "&":
+                        code.add(Opcode.LAND);
+                        break;
+                    case "|":
+                        code.add(Opcode.LOR);
+                        break;
+                    case ">>":
+                        code.add(Opcode.LSHR);
+                        break;
+                    case "<<":
+                        code.add(Opcode.LSHL);
+                        break;
+                    case "^":
+                        code.add(Opcode.LXOR);
+                        break;
+                    case "%":
+                        code.add(Opcode.LREM);
                         break;
                     case "==":
                     case "!=":
