@@ -13,6 +13,7 @@ public final class Main {
             boolean debug = false;
 
             System.out.print("> ");
+            while(!sc.hasNextLine());
             args = sc.nextLine().split(" ");
 
             loop:
