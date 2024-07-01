@@ -524,9 +524,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.DCMPG);
+                        compileBoolOp(ast);
                         break;
                 }
-                compileBoolOp(ast);
                 break;
             case "float":
                 switch (ast.op){
@@ -552,9 +552,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.FCMPG);
+                        compileBoolOp(ast);
                         break;
                 }
-                compileBoolOp(ast);
                 break;
             case "long":
                 switch (ast.op){
@@ -595,9 +595,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.LCMP);
+                        compileBoolOp(ast);
                         break;
                 }
-                compileBoolOp(ast);
                 break;
             default:
                 if(ast.op.equals("==")) code.add(Opcode.IF_ACMPEQ);
