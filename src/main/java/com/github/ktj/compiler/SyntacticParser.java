@@ -279,10 +279,6 @@ final class SyntacticParser {
             if(th.isValid() && th.current().equals(Token.Type.IDENTIFIER)) th.last();
             AST.Load load = parseCall();
 
-            if(load.call == null){
-                RuntimeException e = new RuntimeException();
-            }
-
             if(load.finaly) assertEndOfStatement();
 
             if (th.hasNext()) {
@@ -309,8 +305,46 @@ final class SyntacticParser {
             ast = parseCalc();
             th.assertToken(")");
         }else{
-            ast.arg = parseValue();
-            ast.type = ast.arg.type;
+            AST.CalcArg arg = parseValue();
+
+            if(arg instanceof AST.Value && ((AST.Value) arg).op != null && CompilerUtil.isPrimitive(arg.type)){
+                if(((AST.Value) arg).op.equals("++") || ((AST.Value) arg).op.equals("--")){
+                    String op = ((AST.Value) arg).op.substring(1);
+                    ((AST.Value) arg).op = null;
+                    ast.arg = arg;
+                    ast.type = arg.type;
+                    ast.setRight();
+                    ast.op = "=";
+                    ast.type = arg.type;
+                    ast.left = new AST.Calc();
+                    ast.left.type = ast.type;
+                    ast.left.op = op;
+                    AST.Value value = new AST.Value();
+                    value.token = new Token("1", Token.Type.value(ast.type));
+                    value.type = ast.type;
+                    ast.left.arg = value;
+                    ast.left.right = new AST.Calc();
+                    ast.left.right.type = ast.type;
+                    ast.left.right.arg = arg;
+                }else{
+                    ((AST.Value) arg).op = null;
+                    ast.arg = arg;
+                    ast.type = arg.type;
+                    ast.setRight();
+                    ast.type = "boolean";
+                    ast.op = "!=";
+                    AST.Value value = new AST.Value();
+                    value.token = new Token("true", Token.Type.IDENTIFIER);
+                    value.type = ast.type;
+                    ast.arg = value;
+                    ast.right = new AST.Calc();
+                    ast.right.type = ast.type;
+                    ast.right.arg = arg;
+                }
+            }else{
+                ast.arg = arg;
+                ast.type = arg.type;
+            }
         }
 
         while(th.hasNext()){
@@ -322,7 +356,9 @@ final class SyntacticParser {
             ast.setRight();
             ast.op = th.current().s;
 
-            if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
+            if(ast.op.equals("=")){
+                ast.left = parseCalc();
+            }else if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
                 AST.Value value = new AST.Value();
 
                 value.token = th.current();
@@ -337,8 +373,54 @@ final class SyntacticParser {
                     th.assertToken(")");
                     ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
                 }else{
-                    ast.arg = parseValue();
-                    ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+                    AST.CalcArg arg = parseValue();
+
+                    if(arg instanceof AST.Value && ((AST.Value) arg).op != null && CompilerUtil.isPrimitive(arg.type)){
+                        if(((AST.Value) arg).op.equals("++") || ((AST.Value) arg).op.equals("--")){
+                            String op = ((AST.Value) arg).op.substring(1);
+                            ((AST.Value) arg).op = null;
+                            AST.Calc left = new AST.Calc();
+                            left.arg = arg;
+                            left.type = arg.type;
+                            left.setRight();
+                            left.op = "=";
+                            left.type = arg.type;
+                            left.left = new AST.Calc();
+                            left.left.type = left.type;
+                            left.left.op = op;
+                            AST.Value value = new AST.Value();
+                            value.token = new Token("1", Token.Type.value(left.type));
+                            value.type = left.type;
+                            left.left.arg = value;
+                            left.left.right = new AST.Calc();
+                            left.left.right.type = left.type;
+                            left.left.right.arg = arg;
+
+                            ast.left = left;
+                            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                        }else{
+                            ((AST.Value) arg).op = null;
+                            AST.Calc left = new AST.Calc();
+                            left.arg = arg;
+                            left.type = arg.type;
+                            left.setRight();
+                            left.type = "boolean";
+                            left.op = "!=";
+                            AST.Value value = new AST.Value();
+                            value.token = new Token("true", Token.Type.IDENTIFIER);
+                            value.type = left.type;
+                            left.arg = value;
+                            left.right = new AST.Calc();
+                            left.right.type = left.type;
+                            left.right.arg = arg;
+
+                            ast.left = left;
+                            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                        }
+                    }else{
+                        ast.arg = arg;
+                        ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+                    }
                 }
             }
 
@@ -400,12 +482,24 @@ final class SyntacticParser {
                 if(th.current().equals("{")) return parseArrayCreation();
                 else throw new RuntimeException("illegal argument "+th.current());
             case OPERATOR:
-                if(th.current().equals("-")){
+                if(th.current().equals("-") && (th.isNext(Token.Type.INTEGER) || th.isNext(Token.Type.DOUBLE) || th.isNext(Token.Type.LONG) || th.isNext(Token.Type.SHORT) || th.isNext(Token.Type.FLOAT))){
                     th.assertToken(Token.Type.INTEGER, Token.Type.DOUBLE, Token.Type.LONG, Token.Type.SHORT, Token.Type.FLOAT);
 
                     ast.token = new Token("-"+th.current().s, th.current().t);
                     ast.type = th.current().t.toString();
                     break;
+                }else{
+                    String op = th.current().s;
+                    AST.CalcArg arg = parseValue();
+
+                    if(arg instanceof AST.Cast) throw new RuntimeException("Expected value");
+
+                    ((AST.Value) arg).op = op;
+                    String type = CompilerUtil.getOperatorReturnType(arg.type, op);
+                    if(type == null) throw new RuntimeException("Operator "+op+" is not defined for "+arg.type);
+                    arg.type = type;
+
+                    return arg;
                 }
             default:
                 throw new RuntimeException("illegal argument "+th.current());

@@ -12,8 +12,9 @@ Every Argument has to be a combination of the arguments described below (Note th
 - ``-q`` quits the application after the execution of the current commands
 - ``-d`` enables debug information
 - ``-o String`` set the output folder to the given path
-- ``-c String`` compiles the file or folder with the given path
+- ``-c String...`` compiles the files or folders with the given paths
 - ``-e String`` compiles the file or folder with the given path and executes the main method
+- ``-i String`` sets the input to the given File
 
 ### Example:
 

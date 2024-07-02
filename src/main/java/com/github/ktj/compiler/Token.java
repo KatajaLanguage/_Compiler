@@ -16,6 +16,17 @@ class Token{
             if(this == STRING) return "java.lang.String";
             return super.toString();
         }
+
+        public static Type value(String name){
+            if(name.equals("float")) return FLOAT;
+            if(name.equals("double")) return DOUBLE;
+            if(name.equals("short")) return SHORT;
+            if(name.equals("int")) return INTEGER;
+            if(name.equals("long")) return LONG;
+            if(name.equals("char")) return CHAR;
+            if(name.equals("java.lang.String")) return STRING;
+            return null;
+        }
     }
 
     public String s;

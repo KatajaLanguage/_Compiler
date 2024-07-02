@@ -8,6 +8,7 @@ abstract class AST {
         String op = null;
         CalcArg arg = null;
         Calc left = null, right = null;
+        VarAssignment assignment = null;
 
         public void setLeft(){
             Calc temp = new Calc();
@@ -41,6 +42,7 @@ abstract class AST {
     static class CalcArg extends AST{}
 
     static final class Value extends CalcArg{
+        String op = null;
         Load load = null;
         Token token = null;
     }

@@ -510,6 +510,7 @@ final class Parser {
             if(!th.current().equals("}")) err("Expected '}'");
 
             if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
+            if(name.equals("->")) throw new RuntimeException("illegal method name");
 
             addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
         }else if(th.isNext(":")){

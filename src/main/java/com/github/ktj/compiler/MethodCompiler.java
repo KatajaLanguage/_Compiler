@@ -41,7 +41,7 @@ final class MethodCompiler {
             compileCall((AST.Load) ast, true);
             if(!ast.type.equals("void"))
                 code.add(Opcode.POP);
-        }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast);
+        }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast, false);
     }
 
     private void compileThrow(AST.Throw ast){
@@ -222,12 +222,13 @@ final class MethodCompiler {
         }
     }
 
-    private void compileVarAssignment(AST.VarAssignment ast){
+    private void compileVarAssignment(AST.VarAssignment ast, boolean dup){
         if(ast.load.name == null && ast.load.call != null && !ast.load.call.statik && ast.load.call.clazz.equals(clazzName)) code.addAload(0);
         compileCall(ast.load, false);
 
         if(ast.load.call == null){
             compileCalc(ast.calc);
+            if(dup) code.add(Opcode.DUP);
 
             int where = os.isEmpty() ? 0 : os.get(ast.load.name);
 
@@ -259,7 +260,7 @@ final class MethodCompiler {
         }else{
             if(ast.load.call.clazz.startsWith("[")){
                 compileCalc(ast.load.call.argTypes[0]);
-                compileCalc(ast.calc);
+                compileCalc(ast.calc); //TODO
 
                 switch(ast.load.call.clazz){
                     case "[int":
@@ -284,15 +285,32 @@ final class MethodCompiler {
                 }
             }else if(ast.load.call.statik){
                 compileCalc(ast.calc);
+                if(dup) code.add(Opcode.DUP);
                 code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
             }else{
                 compileCalc(ast.calc);
+                if(dup) code.add(Opcode.DUP);
                 code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
             }
         }
     }
 
     private void compileCalc(AST.Calc ast){
+        if(ast.op != null && ast.op.equals("=")){
+            if(ast.right.right != null) compileCalc(ast.right.right);
+
+            assert ast.right.arg instanceof AST.Value;
+
+            AST.VarAssignment varAssignment = new AST.VarAssignment();
+            varAssignment.calc = ast.left;
+            varAssignment.load = ((AST.Value) ast.right.arg).load;
+            varAssignment.type = ast.type;
+            compileVarAssignment(varAssignment, true);
+
+            if(ast.right.right != null) compileOperator(ast);
+            return;
+        }
+
         if(ast.right != null) compileCalc(ast.right);
 
         if(ast.op != null){
@@ -444,6 +462,24 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.IDIV);
                         break;
+                    case "&":
+                        code.add(Opcode.IAND);
+                        break;
+                    case "|":
+                        code.add(Opcode.IOR);
+                        break;
+                    case ">>":
+                        code.add(Opcode.ISHR);
+                        break;
+                    case "<<":
+                        code.add(Opcode.ISHL);
+                        break;
+                    case "^":
+                        code.add(Opcode.IXOR);
+                        break;
+                    case "%":
+                        code.add(Opcode.IREM);
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
@@ -496,6 +532,9 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.DDIV);
                         break;
+                    case "%":
+                        code.add(Opcode.DREM);
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
@@ -503,9 +542,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.DCMPG);
+                        compileBoolOp(ast);
                         break;
                 }
-                compileBoolOp(ast);
                 break;
             case "float":
                 switch (ast.op){
@@ -521,6 +560,9 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.FDIV);
                         break;
+                    case "%":
+                        code.add(Opcode.FREM);
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
@@ -528,9 +570,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.FCMPG);
+                        compileBoolOp(ast);
                         break;
                 }
-                compileBoolOp(ast);
                 break;
             case "long":
                 switch (ast.op){
@@ -546,6 +588,24 @@ final class MethodCompiler {
                     case "/" :
                         code.add(Opcode.LDIV);
                         break;
+                    case "&":
+                        code.add(Opcode.LAND);
+                        break;
+                    case "|":
+                        code.add(Opcode.LOR);
+                        break;
+                    case ">>":
+                        code.add(Opcode.LSHR);
+                        break;
+                    case "<<":
+                        code.add(Opcode.LSHL);
+                        break;
+                    case "^":
+                        code.add(Opcode.LXOR);
+                        break;
+                    case "%":
+                        code.add(Opcode.LREM);
+                        break;
                     case "==":
                     case "!=":
                     case "<=":
@@ -553,9 +613,9 @@ final class MethodCompiler {
                     case ">=":
                     case ">":
                         code.add(Opcode.LCMP);
+                        compileBoolOp(ast);
                         break;
                 }
-                compileBoolOp(ast);
                 break;
             default:
                 if(ast.op.equals("==")) code.add(Opcode.IF_ACMPEQ);

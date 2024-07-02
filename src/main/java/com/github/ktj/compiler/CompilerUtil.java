@@ -139,7 +139,18 @@ public class CompilerUtil {
         return false;
     }
 
+    public static String getOperatorReturnType(String type, String operator){
+         if(type.equals("boolean") && operator.equals("!")) return "boolean";
+         if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
+
+        return null;
+    }
+
     public static String getOperatorReturnType(String type1, String type2, String operator){
+        if(type1.equals("null")) return null;
+
+        if(operator.equals("=")) return type1.equals(type2) ? type1 : null;
+
         if(BOOL_OPERATORS.contains(operator) && type1.equals(type2))
             return "boolean";
 
@@ -149,6 +160,8 @@ public class CompilerUtil {
 
             if(type1.equals("boolean") && (operator.equals("&&") || operator.equals("||")))
                 return "boolean";
+
+            if((type1.equals("double") || type1.equals("float")) && (operator.equals("&") || operator.equals("|") || operator.equals("<<") || operator.equals(">>") || operator.equals("^"))) return null;
 
             if(NUM_BOOL_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : "boolean";
