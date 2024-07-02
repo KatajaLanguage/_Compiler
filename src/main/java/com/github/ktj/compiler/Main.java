@@ -67,34 +67,37 @@ public final class Main {
                     }
 
                     String execute = null;
-
-                    if(args[i].equals("-e")){
-                        if(args.length == i - 1){
-                            System.out.println("Expected argument");
-                            break loop;
-                        }
-                        execute = args[i + 1];
-                        i += 2;
-                    }
-
                     InputStream shell = null;
 
-                    if(args[i].equals("-i")){
-                        if(args.length == i - 1){
-                            System.out.println("Expected argument");
-                            break loop;
-                        }
-                        try{
-                            File f = new File(args[i + 1]);
-                            System.out.println(f.exists());
-
-                            shell = System.in;
-                            System.setIn(new FileInputStream(args[i + 1]));
-                        }catch(FileNotFoundException e){
-                            System.err.println("Unable to find "+args[i + 1]);
+                    if(args.length > i) {
+                        if (args[i].equals("-e")) {
+                            if (args.length == i - 1) {
+                                System.out.println("Expected argument");
+                                break loop;
+                            }
+                            execute = args[i + 1];
+                            i += 2;
                         }
 
-                        i += 2;
+                        if(args.length > i) {
+                            if (args[i].equals("-i")) {
+                                if (args.length == i - 1) {
+                                    System.out.println("Expected argument");
+                                    break loop;
+                                }
+                                try {
+                                    File f = new File(args[i + 1]);
+                                    System.out.println(f.exists());
+
+                                    shell = System.in;
+                                    System.setIn(new FileInputStream(args[i + 1]));
+                                } catch (FileNotFoundException e) {
+                                    System.err.println("Unable to find " + args[i + 1]);
+                                }
+
+                                i += 2;
+                            }
+                        }
                     }
 
                     if(args.length > i){
