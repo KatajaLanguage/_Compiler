@@ -618,17 +618,21 @@ final class MethodCompiler {
                 }
                 break;
             default:
-                if(ast.op.equals("==")) code.add(Opcode.IF_ACMPEQ);
-                else code.add(Opcode.IF_ACMPNE);
-                int branchLocation = code.getSize();
-                code.addIndex(0);
-                code.addIconst(0);
-                code.addOpcode(Opcode.GOTO);
-                int endLocation = code.getSize();
-                code.addIndex(0);
-                code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
-                code.addIconst(1);
-                code.write16bit(endLocation, code.getSize() - endLocation + 1);
+                if(ast.op.equals("===") || ast.op.equals("!==")){
+                    if (ast.op.equals("===")) code.add(Opcode.IF_ACMPEQ);
+                    else code.add(Opcode.IF_ACMPNE);
+                    int branchLocation = code.getSize();
+                    code.addIndex(0);
+                    code.addIconst(0);
+                    code.addOpcode(Opcode.GOTO);
+                    int endLocation = code.getSize();
+                    code.addIndex(0);
+                    code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
+                    code.addIconst(1);
+                    code.write16bit(endLocation, code.getSize() - endLocation + 1);
+                }else{
+                    code.addInvokevirtual(ast.right.type, CompilerUtil.operatorToIdentifier(ast.op), "("+CompilerUtil.toDesc(ast.arg.type)+")"+CompilerUtil.toDesc(ast.type));
+                }
                 break;
         }
     }
@@ -672,74 +676,86 @@ final class MethodCompiler {
     }
 
     private void compileValue(AST.Value ast){
+        String type;
+
         if(ast.load != null){
             compileCall(ast.load, true);
-            return;
+            type = ast.load.type;
+        }else{
+            int index;
+            type = ast.token.t.toString();
+
+            switch (ast.token.t.toString()) {
+                case "int":
+                case "short":
+                case "byte":
+                case "char":
+                    int intValue;
+                    if (ast.type.equals("char"))
+                        intValue = ast.token.s.toCharArray()[1];
+                    else
+                        intValue = Integer.parseInt(ast.token.s);
+
+                    if (intValue < 6 && intValue >= 0)
+                        code.addIconst(intValue);
+                    else
+                        code.add(Opcode.BIPUSH, intValue);
+
+                    break;
+                case "float":
+                    index = 0;
+                    float floatValue = Float.parseFloat(ast.token.s);
+                    cp.addFloatInfo(floatValue);
+                    while (index < cp.getSize()) {
+                        try {
+                            if (cp.getFloatInfo(index) == floatValue) break;
+                            else index++;
+                        } catch (Exception ignored) {
+                            index++;
+                        }
+                    }
+                    code.addLdc(index);
+                    break;
+                case "double":
+                    index = 0;
+                    double doubleValue = Double.parseDouble(ast.token.s);
+                    cp.addDoubleInfo(doubleValue);
+                    while (index < cp.getSize()) {
+                        try {
+                            if (cp.getDoubleInfo(index) == doubleValue) break;
+                            else index++;
+                        } catch (Exception ignored) {
+                            index++;
+                        }
+                    }
+                    code.addLdc(index);
+                    break;
+                case "long":
+                    index = 0;
+                    long longValue = Long.parseLong(ast.token.s);
+                    cp.addLongInfo(longValue);
+                    while (index < cp.getSize()) {
+                        try {
+                            if (cp.getLongInfo(index) == longValue) break;
+                            else index++;
+                        } catch (Exception ignored) {
+                            index++;
+                        }
+                    }
+                    code.addLdc(index);
+                    break;
+                case "java.lang.String":
+                    code.addLdc(ast.token.s.substring(1, ast.token.s.length() - 1));
+                    break;
+                default:
+                    if (ast.type.equals("boolean")) code.addIconst(ast.token.s.equals("true") ? 1 : 0);
+                    if (ast.token.s.equals("null")) code.add(Opcode.ACONST_NULL);
+                    break;
+            }
         }
 
-        int index;
-
-        switch (ast.token.t.toString()){
-            case "int":
-            case "short":
-            case "byte":
-            case "char":
-                int intValue;
-                if(ast.type.equals("char"))
-                    intValue = ast.token.s.toCharArray()[1];
-                else
-                    intValue = Integer.parseInt(ast.token.s);
-
-                if(intValue < 6 && intValue >= 0)
-                    code.addIconst(intValue);
-                else
-                    code.add(Opcode.BIPUSH ,intValue);
-
-                break;
-            case "float":
-                index = 0;
-                float floatValue = Float.parseFloat(ast.token.s);
-                cp.addFloatInfo(floatValue);
-                while(index < cp.getSize()){
-                    try{
-                        if(cp.getFloatInfo(index) == floatValue) break;
-                        else index++;
-                    }catch(Exception ignored){index++;}
-                }
-                code.addLdc(index);
-                break;
-            case "double":
-                index = 0;
-                double doubleValue = Double.parseDouble(ast.token.s);
-                cp.addDoubleInfo(doubleValue);
-                while(index < cp.getSize()){
-                    try{
-                        if(cp.getDoubleInfo(index) == doubleValue) break;
-                        else index++;
-                    }catch(Exception ignored){index++;}
-                }
-                code.addLdc(index);
-                break;
-            case "long":
-                index = 0;
-                long longValue = Long.parseLong(ast.token.s);
-                cp.addLongInfo(longValue);
-                while(index < cp.getSize()){
-                    try{
-                        if(cp.getLongInfo(index) == longValue) break;
-                        else index++;
-                    }catch(Exception ignored){index++;}
-                }
-                code.addLdc(index);
-                break;
-            case "java.lang.String":
-                code.addLdc(ast.token.s.substring(1, ast.token.s.length() - 1));
-                break;
-            default:
-                if(ast.type.equals("boolean")) code.addIconst(ast.token.s.equals("true") ? 1 : 0);
-                if(ast.token.s.equals("null")) code.add(Opcode.ACONST_NULL);
-                break;
-        }
+        if(ast.op != null)
+            code.addInvokevirtual(type, CompilerUtil.operatorToIdentifier(ast.op), "()"+CompilerUtil.toDesc(ast.type));
     }
 
     private void compileArrayCreation(AST.ArrayCreation ast){
