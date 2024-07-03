@@ -2,10 +2,10 @@ class Test{
 
     public test(){
         Test t = Test()
-        t = |t
+        t = t | t
     }
 
-    public Test |() = this
+    public Test |(Test t) = this
 }
 
 #-q -d -c src/test/kataja/Test.ktj

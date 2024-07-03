@@ -454,8 +454,9 @@ final class Parser {
 
         if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) {
             name = CompilerUtil.operatorToIdentifier(name);
-            if(type.equals("void")) throw new RuntimeException("Method should not return void");
-            if(mod.statik || current == null) throw new RuntimeException("Method should not be static");
+            if(type.equals("void")) err("Method should not return void");
+            if(mod.statik || current == null) err("Method should not be static");
+            if(mod.accessFlag != AccessFlag.ACC_PUBLIC) err("Method should be public");
         }
 
         TokenHandler parameterList = th.getInBracket();

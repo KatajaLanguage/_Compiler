@@ -14,13 +14,12 @@ import java.util.Set;
 public class CompilerUtil {
 
     public static final String[] PRIMITIVES = new String[]{"int", "double", "float", "short", "long", "boolean", "char", "byte"};
-    public static final Set<String> BOOL_OPERATORS = new HashSet<>();
     public static final Set<String> NUM_BOOL_OPERATORS = new HashSet<>();
     public static final Set<String> NUMBER_OPERATORS = new HashSet<>();
 
     static{
-        BOOL_OPERATORS.add("==");
-        BOOL_OPERATORS.add("!=");
+        NUM_BOOL_OPERATORS.add("==");
+        NUM_BOOL_OPERATORS.add("!=");
         NUM_BOOL_OPERATORS.add(">");
         NUM_BOOL_OPERATORS.add("<");
         NUM_BOOL_OPERATORS.add(">=");
@@ -153,9 +152,6 @@ public class CompilerUtil {
 
         if(operator.equals("=")) return type1.equals(type2) ? type1 : null;
 
-        if(BOOL_OPERATORS.contains(operator) && type1.equals(type2))
-            return "boolean";
-
         if(isPrimitive(type1)){
             if(!type1.equals(type2))
                 return null;
@@ -170,9 +166,13 @@ public class CompilerUtil {
 
             if(NUMBER_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : type1;
+        }else{
+            if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2)) || type2.equals("null")) return "boolean";
+
+            return getMethodReturnType(type1, operatorToIdentifier(operator)+"%"+type2, false, false);
         }
 
-        return ((operator.equals("==") || operator.equals("!=")) && (type1.equals(type2)) || type2.equals("null")) ? "boolean" : null;
+        return null;
     }
 
     public static String getMethodReturnType(String clazzName, String method, boolean statik, boolean allowPrivate){

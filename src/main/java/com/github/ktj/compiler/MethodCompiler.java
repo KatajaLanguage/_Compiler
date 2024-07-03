@@ -618,17 +618,21 @@ final class MethodCompiler {
                 }
                 break;
             default:
-                if(ast.op.equals("==")) code.add(Opcode.IF_ACMPEQ);
-                else code.add(Opcode.IF_ACMPNE);
-                int branchLocation = code.getSize();
-                code.addIndex(0);
-                code.addIconst(0);
-                code.addOpcode(Opcode.GOTO);
-                int endLocation = code.getSize();
-                code.addIndex(0);
-                code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
-                code.addIconst(1);
-                code.write16bit(endLocation, code.getSize() - endLocation + 1);
+                if(ast.op.equals("===") || ast.op.equals("!==")){
+                    if (ast.op.equals("===")) code.add(Opcode.IF_ACMPEQ);
+                    else code.add(Opcode.IF_ACMPNE);
+                    int branchLocation = code.getSize();
+                    code.addIndex(0);
+                    code.addIconst(0);
+                    code.addOpcode(Opcode.GOTO);
+                    int endLocation = code.getSize();
+                    code.addIndex(0);
+                    code.write16bit(branchLocation, code.getSize() - branchLocation + 1);
+                    code.addIconst(1);
+                    code.write16bit(endLocation, code.getSize() - endLocation + 1);
+                }else{
+                    code.addInvokevirtual(ast.right.type, CompilerUtil.operatorToIdentifier(ast.op), "("+CompilerUtil.toDesc(ast.arg.type)+")"+CompilerUtil.toDesc(ast.type));
+                }
                 break;
         }
     }
