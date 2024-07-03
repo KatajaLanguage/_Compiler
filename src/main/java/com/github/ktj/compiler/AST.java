@@ -110,4 +110,14 @@ abstract class AST {
     static final class Throw extends AST{
         Calc calc = null;
     }
+
+    static final class Switch extends AST{
+        SwitchBranch[] branches = null;
+        Calc calc = null;
+    }
+
+    static final class SwitchBranch extends AST{
+        Calc condition = null;
+        AST[] ast = null;
+    }
 }

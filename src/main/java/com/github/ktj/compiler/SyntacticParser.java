@@ -104,6 +104,9 @@ final class SyntacticParser {
             case "throw":
                 ast = parseThrow();
                 break;
+            case "switch":
+                ast = parseSwitch();
+                break;
             default:
                 th.last();
                 ast = parseStatement();
@@ -209,6 +212,46 @@ final class SyntacticParser {
             }
         }
 
+        return ast;
+    }
+
+    private AST.Switch parseSwitch(){
+        AST.Switch ast = new AST.Switch();
+
+        ast.calc = parseCalc();
+        ast.type = ast.calc.type;
+        th.assertToken("{");
+        th.assertNull();
+
+        ArrayList<AST.SwitchBranch> branches = new ArrayList<>();
+        while(hasNextLine()){
+            nextLine();
+
+            if(!th.isEmpty()){
+                if(th.isNext("}")) break;
+
+                AST.SwitchBranch branch = new AST.SwitchBranch();
+                if(th.assertToken("case", "default").equals("case")){
+                    branch.condition = parseCalc();
+
+                    if(!ast.type.equals(branch.condition.type)) throw new RuntimeException("Expected type "+ast.type+" got "+branch.condition.type);
+                }
+
+                if(th.assertToken("->", "{").equals("->")) branch.ast = new AST[]{parseNextStatement()};
+                else{
+                    branch.ast = parseContent();
+                    if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+                }
+
+                if(branch.ast == null) break;
+                branches.add(branch);
+            }
+        }
+
+        if(!th.current().equals("}")) throw new RuntimeException("Expected }");
+        if(branches.isEmpty()) throw new RuntimeException("Expected branches");
+
+        ast.branches = branches.toArray(new AST.SwitchBranch[0]);
         return ast;
     }
 

@@ -1,12 +1,11 @@
-class Test{
-
-    public boolean test(){
-        Test t = Test()
-        t = t | t
-        return t.equals(t)
+int test(int i){
+    switch i {
+        case 3 -> return 4
+        case 4 {
+            return 3
+        }
+        default -> return 7
     }
-
-    public Test |(Test t) = this
 }
 
 #-q -d -c src/test/kataja/Test.ktj
