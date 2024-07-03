@@ -138,12 +138,13 @@ public final class Compiler {
 
             time = duration.toMillis();
             if(time > 0){
-                System.out.print(" "+time+" milliseconds");
+                System.out.print(" "+time);
                 duration = duration.minusMillis(time);
+                System.out.print(","+String.valueOf(duration.getNano()).replaceAll("0+$", "")+" milliseconds");
+            }else{
+                time = duration.toNanos();
+                if(time > 0) System.out.print(" "+time+" nanoseconds");
             }
-
-            time = duration.toNanos();
-            if(time > 0) System.out.print(" "+time+" nanoseconds");
 
             System.out.println();
         }else System.out.println("\nprocess finished successfully");
