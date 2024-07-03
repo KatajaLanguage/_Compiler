@@ -140,8 +140,10 @@ public class CompilerUtil {
     }
 
     public static String getOperatorReturnType(String type, String operator){
-         if(type.equals("boolean") && operator.equals("!")) return "boolean";
-         if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
+        if(type.equals("boolean") && operator.equals("!")) return "boolean";
+        if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
+
+        if(!isPrimitive(type)) return getMethodReturnType(type, operatorToIdentifier(operator), false, false);
 
         return null;
     }
