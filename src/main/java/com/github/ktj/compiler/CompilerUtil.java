@@ -191,8 +191,15 @@ public class CompilerUtil {
                 }
 
                 return matches ? clazzName : null;
-            }
-            return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.containsKey(method) && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.statik == statik && (allowPrivate || ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.accessFlag != AccessFlag.ACC_PRIVATE)) ? ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).returnType : null;
+            }else if(Compiler.Instance().classes.get(clazzName) instanceof KtjInterface){
+                KtjInterface i = (KtjInterface) Compiler.Instance().classes.get(clazzName);
+                if(i.methods.containsKey(method)) return i.methods.get(method).modifier.statik == statik && (allowPrivate || i.methods.get(method).modifier.accessFlag == AccessFlag.ACC_PUBLIC) ? i.methods.get(method).returnType : null;
+
+                if(i instanceof KtjClass){
+                    String type = getMethodReturnType(((KtjClass) i).superclass, method, statik, false);
+                    if(type != null) return type;
+                }
+            }else return getMethodReturnType("java.lang.Object", method, statik, false);
         }else{
             try{
                 if(method.startsWith("<init>")){

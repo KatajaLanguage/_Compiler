@@ -1,8 +1,9 @@
 class Test{
 
-    public test(){
+    public boolean test(){
         Test t = Test()
         t = t | t
+        return t.equals(t)
     }
 
     public Test |(Test t) = this
