@@ -113,11 +113,12 @@ abstract class AST {
 
     static final class Switch extends AST{
         SwitchBranch[] branches = null;
+        SwitchBranch defauld = null;
         Calc calc = null;
     }
 
     static final class SwitchBranch extends AST{
-        Calc condition = null;
+        Value condition = null;
         AST[] ast = null;
     }
 }

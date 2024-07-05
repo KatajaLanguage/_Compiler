@@ -37,11 +37,155 @@ final class MethodCompiler {
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
+        else if(ast instanceof AST.Switch) compileSwitch((AST.Switch) ast);
         else if(ast instanceof AST.Load){
             compileCall((AST.Load) ast, true);
             if(!ast.type.equals("void"))
                 code.add(Opcode.POP);
         }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast, false);
+    }
+
+    /*
+    private void compileSwitch(AST.Switch ast){
+        compileCalc(ast.calc);
+        code.add(Opcode.LOOKUPSWITCH);
+        code.add(Opcode.NOP);
+        code.add(Opcode.NOP);
+        code.add(Opcode.NOP);
+        int defauld = code.getSize();
+        code.write32bit(code.length(), 0);
+        code.write32bit(code.getSize(), ast.branches.length);
+        int start = code.getSize() + 1;
+        for(int i = 0;i < ast.branches.length * 2;i++) code.write32bit(code.length(), 0);
+
+        ArrayList<Integer> ends = new ArrayList<>();
+        //branches
+        for(int i = 0;i < ast.branches.length;i++){
+            code.write32bit(start + ((64) * (i - 1)), parseSwitchValue(ast.branches[i].condition.token));
+            code.write32bit(start + ((64) * (i - 1)) + 32, code.getSize() + 1);
+            for(AST a:ast.branches[i].ast) compileAST(a);
+            code.add(Opcode.GOTO);
+            ends.add(code.getSize());
+        }
+        //default
+        code.write32bit(defauld, code.getSize() + 1);
+        if(ast.defauld != null) for(AST a:ast.defauld.ast) compileAST(a);
+
+        for(int end:ends) code.write(end, code.getSize() + 1);
+    }
+
+    private void compileSwitch(AST.Switch ast) {
+        compileCalc(ast.calc);
+        code.add(Opcode.LOOKUPSWITCH);
+
+        while (code.getSize() % 4 != 0) {
+            code.add(Opcode.NOP);
+        }
+
+        int defauld = code.getSize();
+        code.addGap(8);
+        code.write32bit(defauld, 0); // Placeholder for default offset
+        code.write32bit(defauld + 4, ast.branches.length); // Number of pairs
+
+        int start = code.getSize();
+
+        // Placeholder for key-offset pairs
+        for (int i = 0; i < ast.branches.length; i++) {
+            int size = code.getSize();
+            code.addGap(8);
+            code.write32bit(size, 0); // Placeholder for key
+            code.write32bit(size + 4, 0); // Placeholder for offset
+        }
+
+        ArrayList<Integer> ends = new ArrayList<>();
+
+        // branches
+        for (int i = 0; i < ast.branches.length; i++) {
+            int keyOffset = start + i * 8;
+            int caseOffset = code.getSize();
+
+            code.write32bit(keyOffset, parseSwitchValue(ast.branches[i].condition.token)); // Key
+            code.write32bit(keyOffset + 4, caseOffset - keyOffset + 4); // Offset to case block
+
+            for (AST a : ast.branches[i].ast) {
+                compileAST(a);
+            }
+
+            code.add(Opcode.GOTO);
+            ends.add(code.getSize()); // Placeholder for end of case
+            code.addIndex(0); // Placeholder for GOTO target
+        }
+
+        // default
+        code.write(defauld, code.getSize()); // Offset to default block
+        if (ast.defauld != null) {
+            for (AST a : ast.defauld.ast) {
+                compileAST(a);
+            }
+        }
+
+        int endOfSwitch = code.getSize();
+
+        // Fix up the GOTO targets
+        for (int end : ends) {
+            code.write(end, endOfSwitch - end);
+        }
+    }*/
+
+    private void compileSwitch(AST.Switch ast){
+        compileCalc(ast.calc);
+
+        int start = code.getSize();
+
+        code.add(Opcode.LOOKUPSWITCH);
+
+        while(code.getSize()%4 != 0) code.add(Opcode.NOP);
+
+        int defauld = code.getSize();
+        code.addGap(8);
+        code.write32bit(defauld, 0);
+        code.write32bit(defauld + 4, ast.branches.length);
+
+        //cases
+        for (int i = 0; i < ast.branches.length; i++) {
+            int size = code.getSize();
+            code.addGap(8);
+            code.write32bit(size, parseSwitchValue(ast.branches[i].condition.token));
+            code.write32bit(size + 4, 0);
+        }
+
+        ArrayList<Integer> ends = new ArrayList<>();
+
+        for (int i = 0; i < ast.branches.length; i++) {
+            int keyOffset = defauld + 8 + (i * 8);
+
+            code.write32bit(keyOffset, parseSwitchValue(ast.branches[i].condition.token));
+            code.write32bit(keyOffset + 4, code.getSize() - start);
+
+            for (AST a : ast.branches[i].ast) compileAST(a);
+
+            code.add(Opcode.GOTO);
+            ends.add(code.getSize());
+            code.addIndex(0);
+        }
+
+        //default
+        code.write32bit(defauld, code.getSize() - 1);
+
+        if(ast.defauld != null) for(AST a:ast.defauld.ast) compileAST(a);
+
+        for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
+    }
+
+    private int parseSwitchValue(Token token){
+        switch(token.t){
+            case SHORT:
+            case INTEGER:
+                return Integer.parseInt(token.s);
+            case CHAR:
+                return token.s.toCharArray()[0];
+        }
+        return 0;
     }
 
     private void compileThrow(AST.Throw ast){

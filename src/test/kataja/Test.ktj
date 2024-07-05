@@ -1,10 +1,10 @@
-int test(int i){
+test(int i){
     switch i {
-        case 3 -> return 4
+        case 3i -> i = 4i
         case 4 {
-            return 3
+            i = 3
         }
-        default -> return 7
+        default -> i = 7
     }
 }
 

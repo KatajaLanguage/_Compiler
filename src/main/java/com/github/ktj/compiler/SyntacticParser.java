@@ -223,6 +223,8 @@ final class SyntacticParser {
         th.assertToken("{");
         th.assertNull();
 
+        if(!(ast.type.equals("int") || ast.type.equals("short") || ast.type.equals("byte") || ast.type.equals("char") /*|| ast.type.equals("java.lang.String") ||/ CompilerUtil.isSuperClass(ast.type, "java.lang.Enum")*/)) throw new RuntimeException("illegal type "+ast.type);
+
         ArrayList<AST.SwitchBranch> branches = new ArrayList<>();
         while(hasNextLine()){
             nextLine();
@@ -232,9 +234,9 @@ final class SyntacticParser {
 
                 AST.SwitchBranch branch = new AST.SwitchBranch();
                 if(th.assertToken("case", "default").equals("case")){
-                    branch.condition = parseCalc();
+                    branch.condition = (AST.Value) parseValue();
 
-                    if(!ast.type.equals(branch.condition.type)) throw new RuntimeException("Expected type "+ast.type+" got "+branch.condition.type);
+                    if(branch.condition.token == null || !ast.type.equals(branch.condition.type)) throw new RuntimeException("Expected type "+ast.type+" got "+branch.condition.type);
                 }
 
                 if(th.assertToken("->", "{").equals("->")) branch.ast = new AST[]{parseNextStatement()};
@@ -243,8 +245,11 @@ final class SyntacticParser {
                     if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
                 }
 
-                if(branch.ast == null) break;
-                branches.add(branch);
+                if(branch.condition == null){
+                    if(ast.defauld != null) throw new RuntimeException("default branch is already defined");
+
+                    ast.defauld = branch;
+                }else branches.add(branch);
             }
         }
 
