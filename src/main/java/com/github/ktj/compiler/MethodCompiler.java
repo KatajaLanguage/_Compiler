@@ -144,23 +144,27 @@ final class MethodCompiler {
         int defauld = code.getSize();
         code.addGap(8);
         code.write32bit(defauld, 0);
-        code.write32bit(defauld + 4, ast.branches.length);
+        code.write32bit(defauld + 4, 0);
 
         //cases
-        for (int i = 0; i < ast.branches.length; i++) {
-            int size = code.getSize();
-            code.addGap(8);
-            code.write32bit(size, parseSwitchValue(ast.branches[i].condition.token));
-            code.write32bit(size + 4, 0);
+        for (int i = 0; i < ast.branches.length; i++){
+            for(int j = 0;j < ast.branches[i].conditions.length;j++) {
+                int size = code.getSize();
+                code.addGap(8);
+                code.write32bit(size, parseSwitchValue(ast.branches[i].conditions[j]));
+                code.write32bit(size + 4, 0);
+            }
         }
 
         ArrayList<Integer> ends = new ArrayList<>();
 
-        for (int i = 0; i < ast.branches.length; i++) {
-            int keyOffset = defauld + 8 + (i * 8);
-
-            code.write32bit(keyOffset, parseSwitchValue(ast.branches[i].condition.token));
-            code.write32bit(keyOffset + 4, code.getSize() - start);
+        int b = 0;
+        for (int i = 0; i < ast.branches.length; i++){
+            for(int j = 0;j < ast.branches[i].conditions.length;j++){
+                code.write32bit(defauld + 8 + (b * 8), parseSwitchValue(ast.branches[i].conditions[j]));
+                code.write32bit(defauld + 8 + (b * 8) + 4, code.getSize() - start);
+                b++;
+            }
 
             for (AST a : ast.branches[i].ast) compileAST(a);
 
@@ -168,6 +172,7 @@ final class MethodCompiler {
             ends.add(code.getSize());
             code.addIndex(0);
         }
+        code.write32bit(defauld + 4, b);
 
         //default
         code.write32bit(defauld, code.getSize() - 1);

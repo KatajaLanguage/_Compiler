@@ -234,9 +234,16 @@ final class SyntacticParser {
 
                 AST.SwitchBranch branch = new AST.SwitchBranch();
                 if(th.assertToken("case", "default").equals("case")){
-                    branch.condition = (AST.Value) parseValue();
+                    ArrayList<Token> conditions = new ArrayList<>();
 
-                    if(branch.condition.token == null || !ast.type.equals(branch.condition.type)) throw new RuntimeException("Expected type "+ast.type+" got "+branch.condition.type);
+                    do{
+                        Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR);
+                        conditions.add(t);
+
+                        if (!t.t.toString().equals(ast.type)) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
+                    }while(th.isNext(","));
+
+                    branch.conditions = conditions.toArray(new Token[0]);
                 }
 
                 if(th.assertToken("->", "{").equals("->")) branch.ast = new AST[]{parseNextStatement()};
@@ -245,7 +252,7 @@ final class SyntacticParser {
                     if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
                 }
 
-                if(branch.condition == null){
+                if(branch.conditions == null){
                     if(ast.defauld != null) throw new RuntimeException("default branch is already defined");
 
                     ast.defauld = branch;

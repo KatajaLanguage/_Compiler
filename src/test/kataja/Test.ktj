@@ -1,6 +1,6 @@
 test(int i){
     switch i {
-        case 3i -> i = 4i
+        case 3i, 5 -> i = 4i
         case 4 {
             i = 3
         }

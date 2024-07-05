@@ -118,7 +118,7 @@ abstract class AST {
     }
 
     static final class SwitchBranch extends AST{
-        Value condition = null;
+        Token[] conditions = null;
         AST[] ast = null;
     }
 }
