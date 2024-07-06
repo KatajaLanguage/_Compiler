@@ -1,5 +1,7 @@
 package com.github.ktj.compiler;
 
+import java.util.HashMap;
+
 abstract class AST {
 
     String type = null;
@@ -112,13 +114,9 @@ abstract class AST {
     }
 
     static final class Switch extends AST{
-        SwitchBranch[] branches = null;
-        SwitchBranch defauld = null;
+        HashMap<Token, Integer> values = new HashMap<>();
+        AST[][] branches = null;
+        AST[] defauld = null;
         Calc calc = null;
-    }
-
-    static final class SwitchBranch extends AST{
-        Token[] conditions = null;
-        AST[] ast = null;
     }
 }
