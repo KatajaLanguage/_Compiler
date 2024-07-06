@@ -49,12 +49,12 @@ final class MethodCompiler {
         compileCalc(ast.calc);
         if(!CompilerUtil.isPrimitive(ast.type)){
             if(ast.type.equals("java.lang.String")){
-                int pos = os.push("&temp", 1);
-                code.addAstore(pos);
-                code.addIconst(-1);
-                os.push("&temp", 1);
-                code.addIstore(pos + 1);
-                code.addAload(pos);
+                //int pos = os.push("&temp", 1);
+                //code.addAstore(pos);
+                //code.addIconst(-1);
+                //os.push("&temp", 1);
+                //code.addIstore(pos + 1);
+                //code.addAload(pos);
                 code.addInvokevirtual("java.lang.String", "hashCode", "()I");
             }else code.addInvokevirtual(ast.type, "ordinal", "()I");
         }
