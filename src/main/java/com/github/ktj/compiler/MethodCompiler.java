@@ -134,6 +134,7 @@ final class MethodCompiler {
 
     private void compileSwitch(AST.Switch ast){
         compileCalc(ast.calc);
+        if(!CompilerUtil.isPrimitive(ast.type)) code.addInvokevirtual(ast.type, "ordinal", "()I");
 
         int start = code.getSize();
 
@@ -151,7 +152,7 @@ final class MethodCompiler {
             for(int j = 0;j < ast.branches[i].conditions.length;j++) {
                 int size = code.getSize();
                 code.addGap(8);
-                code.write32bit(size, parseSwitchValue(ast.branches[i].conditions[j]));
+                code.write32bit(size, parseSwitchValue(ast.branches[i].conditions[j], ast.type));
                 code.write32bit(size + 4, 0);
             }
         }
@@ -161,34 +162,39 @@ final class MethodCompiler {
         int b = 0;
         for (int i = 0; i < ast.branches.length; i++){
             for(int j = 0;j < ast.branches[i].conditions.length;j++){
-                code.write32bit(defauld + 8 + (b * 8), parseSwitchValue(ast.branches[i].conditions[j]));
+                code.write32bit(defauld + 8 + (b * 8), parseSwitchValue(ast.branches[i].conditions[j], ast.type));
                 code.write32bit(defauld + 8 + (b * 8) + 4, code.getSize() - start);
                 b++;
             }
 
             for (AST a : ast.branches[i].ast) compileAST(a);
 
-            code.add(Opcode.GOTO);
-            ends.add(code.getSize());
-            code.addIndex(0);
+            if(ast.branches[i].ast.length == 0 || !(ast.branches[i].ast[ast.branches[i].ast.length - 1] instanceof AST.Return)){
+                code.add(Opcode.GOTO);
+                ends.add(code.getSize());
+                code.addIndex(0);
+            }
         }
         code.write32bit(defauld + 4, b);
 
         //default
-        code.write32bit(defauld, code.getSize() - 1);
+        code.write32bit(defauld, code.getSize() - start);
 
         if(ast.defauld != null) for(AST a:ast.defauld.ast) compileAST(a);
 
-        for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
+        if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
     }
 
-    private int parseSwitchValue(Token token){
+    private int parseSwitchValue(Token token, String type){
         switch(token.t){
             case SHORT:
             case INTEGER:
                 return Integer.parseInt(token.s);
             case CHAR:
                 return token.s.toCharArray()[0];
+            case IDENTIFIER:
+                int i = CompilerUtil.getEnumOrdinal(type, token.s);
+                return i;
         }
         return 0;
     }

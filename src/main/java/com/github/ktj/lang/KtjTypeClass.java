@@ -19,6 +19,18 @@ public final class KtjTypeClass extends Compilable{
         return false;
     }
 
+    public int ordinal(String value){
+        int result = 0;
+
+        do{
+            if(values[result].equals(value)) return result;
+
+            result++;
+        }while(result < values.length);
+
+        return -1;
+    }
+
     @Override
     public void validateTypes() {
 

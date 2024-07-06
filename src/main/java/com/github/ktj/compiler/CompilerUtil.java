@@ -236,6 +236,23 @@ public class CompilerUtil {
         return null;
     }
 
+    public static int getEnumOrdinal(String clazz, String value){
+        if(Compiler.Instance().classes.containsKey(clazz) && Compiler.Instance().classes.get(clazz) instanceof KtjTypeClass){
+            KtjTypeClass c = (KtjTypeClass) Compiler.Instance().classes.get(clazz);
+            return c.ordinal(value);
+        }
+        try{
+            Class<?> c = Class.forName(clazz);
+            if(c.isEnum()){
+                Object[] enumConstants = c.getEnumConstants();
+                for(Object enumConstant:enumConstants){
+                    if(enumConstant.toString().equals(value)) return ((Enum<?>) enumConstant).ordinal();
+                }
+            }
+        }catch(ClassNotFoundException ignored){}
+        return -1;
+    }
+
     public static String getFieldType(String clazzName, String field, boolean statik, boolean allowPrivate){
         if(clazzName.startsWith("[")){
             if(!field.equals("length")) return null;

@@ -223,7 +223,7 @@ final class SyntacticParser {
         th.assertToken("{");
         th.assertNull();
 
-        if(!(ast.type.equals("int") || ast.type.equals("short") || ast.type.equals("byte") || ast.type.equals("char") /*|| ast.type.equals("java.lang.String") ||/ CompilerUtil.isSuperClass(ast.type, "java.lang.Enum")*/)) throw new RuntimeException("illegal type "+ast.type);
+        if(!(ast.type.equals("int") || ast.type.equals("short") || ast.type.equals("byte") || ast.type.equals("char") || CompilerUtil.isSuperClass(ast.type, "java.lang.Enum") /*|| ast.type.equals("java.lang.String")*/)) throw new RuntimeException("illegal type "+ast.type);
 
         ArrayList<AST.SwitchBranch> branches = new ArrayList<>();
         while(hasNextLine()){
@@ -237,10 +237,10 @@ final class SyntacticParser {
                     ArrayList<Token> conditions = new ArrayList<>();
 
                     do{
-                        Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR);
+                        Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR, Token.Type.IDENTIFIER);
                         conditions.add(t);
 
-                        if (!t.t.toString().equals(ast.type)) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
+                        if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, false) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
                     }while(th.isNext(","));
 
                     branch.conditions = conditions.toArray(new Token[0]);
@@ -261,7 +261,6 @@ final class SyntacticParser {
         }
 
         if(!th.current().equals("}")) throw new RuntimeException("Expected }");
-        if(branches.isEmpty()) throw new RuntimeException("Expected branches");
 
         ast.branches = branches.toArray(new AST.SwitchBranch[0]);
         return ast;

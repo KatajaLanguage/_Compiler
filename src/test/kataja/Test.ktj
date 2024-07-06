@@ -1,10 +1,10 @@
-test(int i){
-    switch i {
-        case 3i, 5 -> i = 4i
-        case 4 {
-            i = 3
-        }
-        default -> i = 7
+type Test = A | B | C
+
+int test(Test t){
+    switch t {
+        case A -> return 1
+        case B, C -> return 2
+        default -> return 3
     }
 }
 
