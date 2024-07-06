@@ -191,8 +191,15 @@ public class CompilerUtil {
                 }
 
                 return matches ? clazzName : null;
-            }
-            return (Compiler.Instance().classes.get(clazzName) instanceof KtjInterface && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.containsKey(method) && ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.statik == statik && (allowPrivate || ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).modifier.accessFlag != AccessFlag.ACC_PRIVATE)) ? ((KtjInterface)(Compiler.Instance().classes.get(clazzName))).methods.get(method).returnType : null;
+            }else if(Compiler.Instance().classes.get(clazzName) instanceof KtjInterface){
+                KtjInterface i = (KtjInterface) Compiler.Instance().classes.get(clazzName);
+                if(i.methods.containsKey(method)) return i.methods.get(method).modifier.statik == statik && (allowPrivate || i.methods.get(method).modifier.accessFlag == AccessFlag.ACC_PUBLIC) ? i.methods.get(method).returnType : null;
+
+                if(i instanceof KtjClass){
+                    String type = getMethodReturnType(((KtjClass) i).superclass, method, statik, false);
+                    if(type != null) return type;
+                }
+            }else return getMethodReturnType("java.lang.Object", method, statik, false);
         }else{
             try{
                 if(method.startsWith("<init>")){
@@ -227,6 +234,23 @@ public class CompilerUtil {
             }catch(ClassNotFoundException ignored){}
         }
         return null;
+    }
+
+    public static int getEnumOrdinal(String clazz, String value){
+        if(Compiler.Instance().classes.containsKey(clazz) && Compiler.Instance().classes.get(clazz) instanceof KtjTypeClass){
+            KtjTypeClass c = (KtjTypeClass) Compiler.Instance().classes.get(clazz);
+            return c.ordinal(value);
+        }
+        try{
+            Class<?> c = Class.forName(clazz);
+            if(c.isEnum()){
+                Object[] enumConstants = c.getEnumConstants();
+                for(Object enumConstant:enumConstants){
+                    if(enumConstant.toString().equals(value)) return ((Enum<?>) enumConstant).ordinal();
+                }
+            }
+        }catch(ClassNotFoundException ignored){}
+        return -1;
     }
 
     public static String getFieldType(String clazzName, String field, boolean statik, boolean allowPrivate){

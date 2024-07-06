@@ -104,6 +104,9 @@ final class SyntacticParser {
             case "throw":
                 ast = parseThrow();
                 break;
+            case "switch":
+                ast = parseSwitch();
+                break;
             default:
                 th.last();
                 ast = parseStatement();
@@ -208,6 +211,54 @@ final class SyntacticParser {
                 if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
             }
         }
+
+        return ast;
+    }
+
+    private AST.Switch parseSwitch(){
+        AST.Switch ast = new AST.Switch();
+
+        ast.calc = parseCalc();
+        ast.type = ast.calc.type;
+        th.assertToken("{");
+        th.assertNull();
+
+        if(!(ast.type.equals("int") || ast.type.equals("short") || ast.type.equals("byte") || ast.type.equals("char") || CompilerUtil.isSuperClass(ast.type, "java.lang.Enum") || ast.type.equals("java.lang.String"))) throw new RuntimeException("illegal type "+ast.type);
+
+        ArrayList<AST[]> branches = new ArrayList<>();
+        while(hasNextLine()){
+            nextLine();
+
+            if(!th.isEmpty()){
+                if(th.isNext("}")) break;
+
+                boolean defauld = false;
+
+                if(th.assertToken("case", "default").equals("case")){
+                    do{
+                        Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR, Token.Type.IDENTIFIER, Token.Type.STRING);
+                        ast.values.put(t, branches.size());
+
+                        if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, false) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
+                    }while(th.isNext(","));
+                }else defauld = true;
+
+                if(th.assertToken("->", "{").equals("->")) branches.add(new AST[]{parseNextStatement()});
+                else{
+                    branches.add(parseContent());
+                    if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+                }
+
+                if(defauld){
+                    if(ast.defauld != null) throw new RuntimeException("default is already defined");
+                    ast.defauld = branches.get(branches.size() - 1);
+                    branches.remove(branches.size() - 1);
+                }
+            }
+        }
+
+        ast.branches = branches.toArray(new AST[0][0]);
+        if(!th.current().equals("}")) throw new RuntimeException("Expected }");
 
         return ast;
     }

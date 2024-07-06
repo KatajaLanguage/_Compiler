@@ -37,11 +37,90 @@ final class MethodCompiler {
         else if(ast instanceof AST.If) compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
+        else if(ast instanceof AST.Switch) compileSwitch((AST.Switch) ast);
         else if(ast instanceof AST.Load){
             compileCall((AST.Load) ast, true);
             if(!ast.type.equals("void"))
                 code.add(Opcode.POP);
         }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast, false);
+    }
+
+    private void compileSwitch(AST.Switch ast){
+        compileCalc(ast.calc);
+        if(!CompilerUtil.isPrimitive(ast.type)){
+            if(ast.type.equals("java.lang.String")){
+                //int pos = os.push("&temp", 1);
+                //code.addAstore(pos);
+                //code.addIconst(-1);
+                //os.push("&temp", 1);
+                //code.addIstore(pos + 1);
+                //code.addAload(pos);
+                code.addInvokevirtual("java.lang.String", "hashCode", "()I");
+            }else code.addInvokevirtual(ast.type, "ordinal", "()I");
+        }
+
+        int start = code.getSize();
+
+        code.add(Opcode.LOOKUPSWITCH);
+
+        while(code.getSize()%4 != 0) code.add(Opcode.NOP);
+
+        int defauld = code.getSize();
+        code.addGap(8);
+        code.write32bit(defauld, 0);
+        code.write32bit(defauld + 4, ast.values.size());
+
+        //cases
+        for(Token t:ast.values.keySet()){
+            int size = code.getSize();
+            code.addGap(8);
+            code.write32bit(size, parseSwitchValue(t, ast.type));
+            code.write32bit(size + 4, 0);
+        }
+
+        ArrayList<Integer> ends = new ArrayList<>();
+        ArrayList<Integer> starts = new ArrayList<>();
+
+        for(AST[] asts:ast.branches){
+            starts.add(code.getSize());
+
+            for (AST a : asts) compileAST(a);
+
+            if(asts.length == 0 || !(asts[asts.length - 1] instanceof AST.Return)){
+                code.add(Opcode.GOTO);
+                ends.add(code.getSize());
+                code.addIndex(0);
+            }
+        }
+
+        int i = 1;
+        for(Token t:ast.values.keySet()){
+            code.write32bit(defauld + 4 + (i * 8), starts.get(ast.values.get(t)) - start);
+            i++;
+        }
+
+        //default
+        code.write32bit(defauld, code.getSize() - start);
+
+        if(ast.defauld != null) for(AST a:ast.defauld) compileAST(a);
+
+        if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
+    }
+
+    private int parseSwitchValue(Token token, String type){
+        switch(token.t){
+            case SHORT:
+            case INTEGER:
+                return Integer.parseInt(token.s);
+            case CHAR:
+                return token.s.toCharArray()[0];
+            case IDENTIFIER:
+                int i = CompilerUtil.getEnumOrdinal(type, token.s);
+                return i;
+            case STRING:
+                return token.s.hashCode();
+        }
+        return 0;
     }
 
     private void compileThrow(AST.Throw ast){

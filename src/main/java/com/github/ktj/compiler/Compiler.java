@@ -103,26 +103,10 @@ public final class Compiler {
 
         for(ClassFile clazz:compiledClasses) writeFile(clazz);
 
-        printDebug("compiling finished successfully");
-
-        if(execute) execute();
-
         if(debug){
-            System.out.print("\nprocess finished successfully in");
+            System.out.print("\nCompiling finished successfully in");
 
             Duration duration = Duration.ofNanos(System.nanoTime() - time);
-
-            time = duration.toDays();
-            if(time > 0){
-                System.out.print(" "+time+" days");
-                duration = duration.minusDays(time);
-            }
-
-            time = duration.toHours();
-            if(time > 0){
-                System.out.print(" "+time+" hours");
-                duration = duration.minusHours(time);
-            }
 
             time = duration.toMinutes();
             if(time > 0){
@@ -138,15 +122,20 @@ public final class Compiler {
 
             time = duration.toMillis();
             if(time > 0){
-                System.out.print(" "+time+" milliseconds");
+                System.out.print(" "+time);
                 duration = duration.minusMillis(time);
+                System.out.print(","+String.valueOf(duration.getNano()).replaceAll("0+$", "")+" milliseconds");
+            }else{
+                time = duration.toNanos();
+                if(time > 0) System.out.print(" "+time+" nanoseconds");
             }
 
-            time = duration.toNanos();
-            if(time > 0) System.out.print(" "+time+" nanoseconds");
-
             System.out.println();
-        }else System.out.println("\nprocess finished successfully");
+        }else printDebug("compiling finished successfully");
+
+        if(execute) execute();
+
+        System.out.println("\nprocess finished successfully");
     }
 
     String getExtension(String filename) {
