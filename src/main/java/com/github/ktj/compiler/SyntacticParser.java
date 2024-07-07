@@ -534,8 +534,6 @@ final class SyntacticParser {
                 else throw new RuntimeException("illegal argument "+th.current());
             case OPERATOR:
                 if(th.current().equals("-") && (th.isNext(Token.Type.INTEGER) || th.isNext(Token.Type.DOUBLE) || th.isNext(Token.Type.LONG) || th.isNext(Token.Type.SHORT) || th.isNext(Token.Type.FLOAT))){
-                    th.assertToken(Token.Type.INTEGER, Token.Type.DOUBLE, Token.Type.LONG, Token.Type.SHORT, Token.Type.FLOAT);
-
                     ast.token = new Token("-"+th.current().s, th.current().t);
                     ast.type = th.current().t.toString();
                     break;

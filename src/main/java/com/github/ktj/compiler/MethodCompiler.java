@@ -266,7 +266,7 @@ final class MethodCompiler {
 
             if(call.clazz.startsWith("[")){
                 if(call.call.equals("<init>")){
-                    if(call.clazz.startsWith("[[")) code.addMultiNewarray(call.clazz, call.clazz.lastIndexOf("[") + 1);
+                    if(call.clazz.startsWith("[[")) code.addMultiNewarray(CompilerUtil.toDesc(call.clazz), call.clazz.lastIndexOf("[") + 1);
                     else code.addAnewarray(call.clazz.substring(1));
                 }else{
                     switch(call.clazz){

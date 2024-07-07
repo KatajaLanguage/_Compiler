@@ -26,12 +26,16 @@ public abstract class Compilable {
 
     public abstract void validateTypes();
 
+    public void validateUses(){
+        for(String clazz: uses.values()) if(!CompilerUtil.classExist(clazz)) throw new RuntimeException("Unable to find "+clazz);
+    }
+
     public String validateType(String type, boolean errorAt) throws RuntimeException{
         if(type.startsWith("[")) return "["+validateType(type.substring(1), errorAt);
 
         if(CompilerUtil.isPrimitive(type)) return type;
 
-        if(!uses.containsKey(type) || !CompilerUtil.classExist(uses.get(type))) throw new RuntimeException("Unknown Type "+type+(errorAt?" at "+file+":"+line:""));
+        if(!uses.containsKey(type)) throw new RuntimeException("Unknown Type "+type+(errorAt?" at "+file+":"+line:""));
 
         return uses.get(type);
     }

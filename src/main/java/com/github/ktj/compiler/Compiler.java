@@ -80,6 +80,7 @@ public final class Compiler {
 
         for(String name:classes.keySet()){
             try {
+                classes.get(name).validateUses();
                 classes.get(name).validateTypes();
 
                 if(classes.get(name) instanceof KtjClass) ((KtjClass) classes.get(name)).validateInterfaces();
