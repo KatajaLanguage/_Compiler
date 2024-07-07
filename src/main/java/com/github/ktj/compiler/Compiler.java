@@ -61,22 +61,26 @@ public final class Compiler {
         printDebug("debug set successfully");
     }
 
-    public void compile(String file, boolean execute, boolean clearOutFolder) throws IllegalArgumentException{
+    public void compile(boolean clearOutFolder, boolean execute, String... files) throws IllegalArgumentException{
         long time = System.nanoTime();
 
         compiledClasses = new ArrayList<>();
 
-        File f = new File(file);
+        for(String file:files) {
+            File f = new File(file);
 
-        if(!f.exists()) throw new IllegalArgumentException("Unable not find " + f.getAbsolutePath());
+            if (!f.exists()) throw new IllegalArgumentException("Unable not find " + f.getAbsolutePath());
 
-        if(f.isDirectory()){
-            for(File folderEntry:f.listFiles()){
-                if(!folderEntry.isDirectory() && getExtension(folderEntry.getName()).equals("ktj")) classes.putAll(parser.parseFile(folderEntry));
-            }
-        }else if(getExtension(f.getName()).equals("ktj")) {
-            classes.putAll(parser.parseFile(f));
-        }else throw new IllegalArgumentException("Expected kataja (.ktj) File, got ."+getExtension(f.getName())+" file");
+            if (f.isDirectory()) {
+                for (File folderEntry : f.listFiles()) {
+                    if (!folderEntry.isDirectory() && getExtension(folderEntry.getName()).equals("ktj"))
+                        classes.putAll(parser.parseFile(folderEntry));
+                }
+            } else if (getExtension(f.getName()).equals("ktj")) {
+                classes.putAll(parser.parseFile(f));
+            } else
+                throw new IllegalArgumentException("Expected kataja (.ktj) File, got ." + getExtension(f.getName()) + " file");
+        }
 
         for(String name:classes.keySet()){
             try {
@@ -134,7 +138,7 @@ public final class Compiler {
             System.out.println();
         }else printDebug("compiling finished successfully");
 
-        if(execute) execute();
+        if(execute) execute(files[files.length - 1]);
 
         System.out.println("\nprocess finished successfully");
     }
@@ -159,12 +163,15 @@ public final class Compiler {
         }else if(debug) printDebug("out Folder validated successfully");
     }
 
-    private void execute(){
+    private void execute(String file){
         System.out.println();
         String main = null;
 
+        if(file.endsWith(".ktj")) file = file.substring(0, file.length() - 4);
+        file = file.replace("/", ".").replace("\\", ".");
+
         for(String clazzName:classes.keySet()){
-            if(classes.get(clazzName) instanceof KtjClass && ((KtjClass)(classes.get(clazzName))).methods.containsKey("main%[java.lang.String") && ((KtjClass)(classes.get(clazzName))).methods.get("main%[java.lang.String").modifier.statik && ((KtjClass)(classes.get(clazzName))).methods.get("main%[java.lang.String").modifier.accessFlag == AccessFlag.ACC_PUBLIC){
+            if(clazzName.startsWith(file)&& classes.get(clazzName) instanceof KtjClass && ((KtjClass)(classes.get(clazzName))).methods.containsKey("main%[java.lang.String") && ((KtjClass)(classes.get(clazzName))).methods.get("main%[java.lang.String").modifier.statik && ((KtjClass)(classes.get(clazzName))).methods.get("main%[java.lang.String").modifier.accessFlag == AccessFlag.ACC_PUBLIC){
                 if(main != null) throw new RuntimeException("main is defined multiple times");
                 main = clazzName;
             }

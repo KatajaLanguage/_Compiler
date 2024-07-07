@@ -37,6 +37,10 @@ final class Parser {
             throw new IllegalArgumentException("Illegal argument " + file.getPath());
         }
 
+        uses.put("Object", "java.lang.Object");
+        uses.put("String", "java.lang.String");
+        statik.superclass = "Object";
+
         while(sc.hasNextLine()){
             nextLine();
 
@@ -68,17 +72,14 @@ final class Parser {
             }
         }
 
-        if(!statik.isEmpty()){
-            if(classes.isEmpty()) uses.put("_"+name, path.replace("/", ".")+"."+file);
-            classes.put(classes.isEmpty() ? name : "_"+name, statik);
-        }
+        if(!statik.isEmpty()) classes.put(classes.isEmpty() ? name : "_"+name, statik);
 
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
             String name = classes.keySet().toArray(new String[0])[0];
             Compilable clazz = classes.remove(name);
             classes.put(CompilerUtil.validateClassName((path.isEmpty() ? "" : path+".")+name), clazz);
 
-            if(uses.containsKey(name)) err("."+name+" is already defined");
+            if(uses.containsKey(name)) err(name+" is already defined");
             uses.put(name, CompilerUtil.validateClassName((path.isEmpty() ? "" : path+".")+name));
         }else{
             HashMap<String, Compilable> help = new HashMap<>();
@@ -87,7 +88,7 @@ final class Parser {
                 help.put(CompilerUtil.validateClassName((path.isEmpty() ? "" : path+".")+name+"."+clazz), classes.get(clazz));
 
                 path = CompilerUtil.validateClassName(path);
-                if(uses.containsKey(clazz)) err("."+clazz+" is already defined");
+                if(uses.containsKey(clazz)) err(clazz+" is already defined");
                 uses.put(clazz, (path.isEmpty() ? "" : path+".")+name+"."+clazz);
             }
 
@@ -107,16 +108,16 @@ final class Parser {
 
             while (th.hasNext()){
                 if(th.assertToken("/", "as").equals("as")){
-                    if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s)) err(th.current()+" is already defined");
-                    uses.put(th.current().s, path.toString());
+                    addUse(th.assertToken(Token.Type.IDENTIFIER).s, path.toString());
+                    th.assertNull();
+                    return;
                 }else{
                     current = th.assertToken(Token.Type.IDENTIFIER).s;
                     path.append("/").append(current);
                 }
             }
 
-            if(uses.containsKey(current)) err(current+" is already defined");
-            uses.put(current, path.toString().replace("/", "."));
+            addUse(current, path.toString().replace("/", "."));
         }else{
             ArrayList<String> classes = new ArrayList<>();
             classes.add(current);
@@ -131,16 +132,17 @@ final class Parser {
             while (th.hasNext()){
                 if(th.assertToken("/", "as").equals("as")){
                     if(classes.size() != 1) err("illegal argument");
-                    if(uses.containsKey(th.assertToken(Token.Type.IDENTIFIER).s)) err(th.current()+" is already defined");
-                    uses.put(th.current().s, path.toString().replace("/", ".")+"."+classes.get(0));
+                    addUse(th.assertToken(Token.Type.IDENTIFIER).s, path.toString().replace("/", ".")+"."+classes.get(0));
                 }else path.append("/").append(th.assertToken(Token.Type.IDENTIFIER).s);
             }
 
-            for(String clazz:classes){
-                if(uses.containsKey(clazz)) err(clazz+" is already defined");
-                uses.put(clazz, path.toString().replace("/", ".")+"."+clazz);
-            }
+            for(String clazz:classes) addUse(clazz, path.toString().replace("/", ".")+"."+clazz);
         }
+    }
+
+    private void addUse(String name, String path){
+        if(uses.containsKey(name)) err(name+" is already defined");
+        uses.put(name, path);
     }
 
     private void parseMain(){
@@ -151,8 +153,7 @@ final class Parser {
 
             Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
             mod.statik = true;
-            addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, getFileName(), line));
-            uses.put("_String", "java.lang.String");
+            addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[String", "args")}, uses, getFileName(), line));
             return;
         }
 
@@ -183,8 +184,7 @@ final class Parser {
 
         Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
         mod.statik = true;
-        addMethod("main%[_String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[_String", "args")}, uses, getFileName(), _line));
-        uses.put("_String", "java.lang.String");
+        addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[String", "args")}, uses, getFileName(), _line));
     }
 
     private void parseModifier(String clazzName){

@@ -112,7 +112,7 @@ public class KtjClass extends KtjInterface{
                 System.arraycopy(interfaces, 0, help, 1, interfaces.length);
 
                 interfaces = help;
-                superclass = null;
+                superclass = "java.lang.Object";
             }
         }else superclass = "java.lang.Object";
     }
