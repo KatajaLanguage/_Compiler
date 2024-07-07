@@ -193,7 +193,7 @@ public class CompilerUtil {
                 return matches ? clazzName : null;
             }else if(Compiler.Instance().classes.get(clazzName) instanceof KtjInterface){
                 KtjInterface i = (KtjInterface) Compiler.Instance().classes.get(clazzName);
-                if(i.methods.containsKey(method)) return i.methods.get(method).modifier.statik == statik && (allowPrivate || i.methods.get(method).modifier.accessFlag == AccessFlag.ACC_PUBLIC) ? i.methods.get(method).returnType : null;
+                if(i.methods.containsKey(method) && i.methods.get(method).modifier.statik == statik) return (allowPrivate || (i.methods.get(method).modifier.accessFlag == AccessFlag.ACC_PUBLIC)) ? i.methods.get(method).returnType : null;
 
                 if(i instanceof KtjClass){
                     String type = getMethodReturnType(((KtjClass) i).superclass, method, statik, false);
@@ -274,8 +274,7 @@ public class CompilerUtil {
         }else{
             try{
                 Field f = Class.forName(clazzName).getField(field);
-                if(((f.getModifiers() & AccessFlag.STATIC) != 0 && !statik) || ((f.getModifiers() & AccessFlag.STATIC) == 0 && statik) || ((f.getModifiers() & AccessFlag.PRIVATE) != 0 && !allowPrivate)) return null;
-                return f.getType().toString().split(" ")[1];
+                if((((f.getModifiers() & AccessFlag.STATIC) != 0) == statik) && (((f.getModifiers() & AccessFlag.PUBLIC) != 0) || allowPrivate)) return f.getType().getName();
             }catch(Exception ignored){}
         }
 
@@ -326,6 +325,7 @@ public class CompilerUtil {
         if(isPrimitive(clazz) || isPrimitive(superClass)) return false;
         if(clazz.equals(superClass)) return true;
         if(clazz.equals("java.lang.Object")) return false;
+        if(superClass.equals("java.lang.Object")) return true;
 
         if(Compiler.Instance().classes.containsKey(clazz)){
             Compilable c = Compiler.Instance().classes.get(clazz);

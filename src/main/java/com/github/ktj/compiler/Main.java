@@ -103,20 +103,11 @@ public final class Main {
                     if(args.length > i){
                         System.out.println("illegal argument(s)");
                     }else{
-                        for (int j = 0; j < compile.size(); j++) {
-                            try {
-                                c.compile(compile.get(j), false, j == 0);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        if (execute != null) {
-                            try {
-                                c.compile(execute, true, compile.isEmpty());
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                        try{
+                            if(execute != null) compile.add(execute);
+                            c.compile(true, execute != null, compile.toArray(new String[0]));
+                        }catch(Exception e){
+                            e.printStackTrace();
                         }
                     }
 
