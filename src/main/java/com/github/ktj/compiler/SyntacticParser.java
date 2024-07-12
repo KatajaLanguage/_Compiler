@@ -626,7 +626,7 @@ final class SyntacticParser {
                 for (AST.Calc calc:args) desc.append("%").append(calc.type);
 
                 if (CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), false, ast.call.clazz.equals(clazzName)) == null)
-                    throw new RuntimeException("static Method "+desc+" is not defined for class "+ast.call.clazz);
+                    throw new RuntimeException("Method "+desc+" is not defined for class "+ast.call.clazz);
 
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
                 ast.call.type = method.uses.get(call);
