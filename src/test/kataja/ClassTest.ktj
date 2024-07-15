@@ -1,6 +1,6 @@
-use src/test/kataja/InterfaceTest/Test
+use java/lang/Comparable
 
-public final class ArrayTest extends Test{
+public final class ArrayTest extends String, Comparable{
 
     private int[] intArray = int[5]
 

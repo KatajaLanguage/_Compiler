@@ -1,7 +1,4 @@
-use java/lang/String
+#use java/lang/String
+#use String from java/lang
 
 public data TestA = (int i, String s)
-
-public data TestB = (const int i, String s)
-
-public const data TestC = (int i, String s)

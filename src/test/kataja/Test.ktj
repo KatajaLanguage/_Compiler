@@ -1,3 +1,6 @@
-use java/lang/String as String
-use test/test as String
-use a, String from java/lang
+test(){
+    String test = "abc"
+    String a = test
+}
+
+# -q -d -c src/test/kataja/Test.ktj

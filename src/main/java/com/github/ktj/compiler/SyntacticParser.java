@@ -10,6 +10,7 @@ final class SyntacticParser {
     private static final class Scope{
         public final Scope last;
         private final HashMap<String, String> vars = new HashMap<>();
+        private final ArrayList<String> constants = new ArrayList<>();
 
         Scope(Scope current){
             last = current;
@@ -18,7 +19,7 @@ final class SyntacticParser {
         Scope(String type, KtjMethod method){
             last = null;
             vars.put("this", type);
-            vars.put("null", "java.lang.method");
+            vars.put("null", "java.lang.Object");
             for(int i = 0;i < method.parameter.length;i++){
                 if(vars.containsKey(method.parameter[i].name)) throw new RuntimeException(method.parameter[i].name+" is already defined at "+method.file+":"+method.line);
                 vars.put(method.parameter[i].name, method.parameter[i].type);
@@ -32,9 +33,15 @@ final class SyntacticParser {
             return last == null ? null : last.getType(name);
         }
 
-        void add(String name, String type){
+        boolean isConst(String name){
+            return constants.contains(name);
+        }
+
+        void add(String name, String type, boolean constant){
             if(!vars.containsKey(name))
                 vars.put(name, type);
+            if(constant)
+                constants.add(name);
         }
     }
 
@@ -281,6 +288,9 @@ final class SyntacticParser {
     private AST parseStatement(){
         if(!th.isNext(Token.Type.IDENTIFIER)) throw new RuntimeException("illegal argument");
 
+        boolean constant = th.current().equals("const");
+        if(constant) th.assertToken(Token.Type.IDENTIFIER);
+
         int i = 1;
 
         while(th.isNext("[")){
@@ -313,7 +323,7 @@ final class SyntacticParser {
             }
             if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
 
-            scope.add(name, type);
+            scope.add(name, type, constant);
 
             AST.VarAssignment ast = new AST.VarAssignment();
 
@@ -326,6 +336,8 @@ final class SyntacticParser {
 
             return ast;
         }else{
+            if(constant) throw new RuntimeException("illegal argument");
+
             for(int j = 0;j < i;j++) th.last();
             if(th.isValid() && th.current().equals(Token.Type.IDENTIFIER)) th.last();
             AST.Load load = parseCall();
@@ -337,6 +349,7 @@ final class SyntacticParser {
                 AST.Calc calc = parseCalc();
                 assertEndOfStatement();
 
+                if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
                 if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
 
                 AST.VarAssignment ast = new AST.VarAssignment();
