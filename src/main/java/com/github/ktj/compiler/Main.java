@@ -13,9 +13,9 @@ public final class Main {
         Scanner sc = new Scanner(System.in);
         boolean quit = false;
 
-        while (!quit){
-            Compiler c = Compiler.NewInstance();
+        Compiler c = Compiler.NewInstance();
 
+        while (!quit){
             System.out.print("> ");
             while(!sc.hasNextLine());
             args = sc.nextLine().split(" ");
@@ -104,11 +104,13 @@ public final class Main {
                         System.out.println("illegal argument(s)");
                     }else{
                         try{
-                            if(execute != null) compile.add(execute);
-                            c.compile(true, execute != null, compile.toArray(new String[0]));
+                            c.compile(true, compile.toArray(new String[0]));
+                            if(execute != null) c.execute(execute);
                         }catch(Exception e){
                             e.printStackTrace();
                         }
+
+                        System.out.println("\nprocess finished successfully");
                     }
 
                     if(shell != null) System.setIn(shell);

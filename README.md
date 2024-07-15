@@ -13,11 +13,11 @@ Every Argument has to be a combination of the arguments described below (Note th
 - ``-d`` enables debug information
 - ``-o String`` set the output folder to the given path
 - ``-c String...`` compiles the files or folders with the given paths
-- ``-e String`` compiles the file or folder with the given path and executes the main method
+- ``-e String`` executes the main method defined in that file or folder
 - ``-i String`` sets the input to the given File
 
 ### Example:
 
-````-q -d -e src/test/kataja/HelloWorld.ktj````
+````-q -d -c src/test/kataja/HelloWorld.ktj -e src/test/kataja/HelloWorld.ktj````
 
 This Command will enable debug, compile and execute the HelloWorld file in the test folder of the Compiler and the application will be quit after the execution has finished

@@ -2,14 +2,15 @@ package com.github.ktj.lang;
 
 import com.github.ktj.bytecode.AccessFlag;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class KtjInterface extends Compilable{
 
     public HashMap<String, KtjMethod> methods;
 
-    public KtjInterface(Modifier modifier, HashMap<String, String> uses, String file, int line){
-        super(modifier, uses, file, line);
+    public KtjInterface(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        super(modifier, uses, statics, file, line);
         methods = new HashMap<>();
     }
 

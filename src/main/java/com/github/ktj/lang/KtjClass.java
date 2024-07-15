@@ -5,6 +5,7 @@ import com.github.ktj.compiler.Compiler;
 import com.github.ktj.compiler.CompilerUtil;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -14,8 +15,8 @@ public class KtjClass extends KtjInterface{
     public String[] interfaces = new String[0];
     public String superclass = null;
 
-    public KtjClass(Modifier modifier, HashMap<String, String> uses, String file, int line){
-        super(modifier, uses, file, line);
+    public KtjClass(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        super(modifier, uses, statics, file, line);
         fields = new HashMap<>();
     }
 
@@ -57,7 +58,7 @@ public class KtjClass extends KtjInterface{
         }
 
         if(!initExist){
-            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), "void", "", new KtjMethod.Parameter[0], uses, file, Integer.MIN_VALUE));
+            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), "void", "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
         }
     }
 

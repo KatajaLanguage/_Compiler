@@ -20,8 +20,8 @@ public class KtjMethod extends Compilable{
     public String returnType;
     public final String code;
 
-    public KtjMethod(Modifier modifier, String returnType, String code, Parameter[] parameter, HashMap<String, String> uses, String file, int line){
-        super(modifier, uses, file, line);
+    public KtjMethod(Modifier modifier, String returnType, String code, Parameter[] parameter, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        super(modifier, uses, statics, file, line);
         this.parameter = parameter;
         this.returnType = returnType;
         this.code = code;

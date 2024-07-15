@@ -4,6 +4,7 @@ import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
+import com.github.ktj.lang.Modifier;
 import javassist.bytecode.*;
 
 import java.util.ArrayList;
@@ -949,7 +950,10 @@ final class MethodCompiler {
 
         Bytecode bytecode = new Bytecode(cp);
 
-        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(null, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.file, Integer.MIN_VALUE), cp);
+        Modifier mod = new Modifier(AccessFlag.ACC_PRIVATE);
+        mod.statik = true;
+
+        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(mod, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.statics, clazz.file, Integer.MIN_VALUE), cp);
 
         mInfo.setCodeAttribute(bytecode.toCodeAttribute());
 

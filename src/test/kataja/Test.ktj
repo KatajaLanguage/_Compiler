@@ -1,6 +1,9 @@
-test(){
-    String test = "abc"
-    String a = test
+public class A{
+    protected testA(){}
+}
+
+public class B extends A{
+    public testB() -> A().testA()
 }
 
 # -q -d -c src/test/kataja/Test.ktj
