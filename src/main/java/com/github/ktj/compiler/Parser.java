@@ -153,7 +153,7 @@ final class Parser {
 
             Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
             mod.statik = true;
-            addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[String", "args")}, uses, getFileName(), line));
+            addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, getFileName(), line));
             return;
         }
 
@@ -184,7 +184,7 @@ final class Parser {
 
         Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
         mod.statik = true;
-        addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter("[String", "args")}, uses, getFileName(), _line));
+        addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, getFileName(), _line));
     }
 
     private void parseModifier(String clazzName){
@@ -464,7 +464,8 @@ final class Parser {
         int _line = line;
 
         while(parameterList.hasNext()){
-            String pType = parameterList.assertToken(Token.Type.IDENTIFIER).s;
+            boolean constant = parameterList.assertToken(Token.Type.IDENTIFIER).equals("const");
+            String pType = constant ? parameterList.assertToken(Token.Type.IDENTIFIER).s : parameterList.current().s;
             String pName = parameterList.assertToken(Token.Type.IDENTIFIER, "[").s;
 
             while(pName.equals("[")){
@@ -475,7 +476,7 @@ final class Parser {
 
             for(KtjMethod.Parameter p:parameter) if(pName.equals(p.name)) err("Method "+pName+" is already defined");
 
-            parameter.add(new KtjMethod.Parameter(pType, pName));
+            parameter.add(new KtjMethod.Parameter(constant, pType, pName));
 
             if(parameterList.hasNext()){
                 parameterList.assertToken(",");

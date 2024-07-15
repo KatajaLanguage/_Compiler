@@ -309,7 +309,7 @@ final class MethodCompiler {
             compileCalc(ast.calc);
             if(dup) code.add(Opcode.DUP);
 
-            int where = os.isEmpty() ? 0 : os.get(ast.load.name);
+            int where = os.get(ast.load.name);
 
             if(where == -1) {
                 where = os.push(ast.load.name, ast.load.type.equals("double") || ast.load.type.equals("long") ? 2 : 1);

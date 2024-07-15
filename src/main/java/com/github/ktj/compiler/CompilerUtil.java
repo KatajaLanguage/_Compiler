@@ -193,7 +193,7 @@ public class CompilerUtil {
                 return matches ? clazzName : null;
             }else if(Compiler.Instance().classes.get(clazzName) instanceof KtjInterface){
                 KtjInterface i = (KtjInterface) Compiler.Instance().classes.get(clazzName);
-                if(i.methods.containsKey(method) && i.methods.get(method).modifier.statik == statik) return (allowPrivate || (i.methods.get(method).modifier.accessFlag == AccessFlag.ACC_PUBLIC)) ? i.methods.get(method).returnType : null;
+                if(i.methods.containsKey(method) && (i.methods.get(method).modifier.statik == statik)) return (allowPrivate || (i.methods.get(method).modifier.accessFlag == AccessFlag.ACC_PUBLIC)) ? i.methods.get(method).returnType : null;
 
                 if(i instanceof KtjClass){
                     String type = getMethodReturnType(((KtjClass) i).superclass, method, statik, false);

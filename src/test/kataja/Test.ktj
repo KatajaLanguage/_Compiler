@@ -1,11 +1,6 @@
-use java/lang/String
-
-int test(String t){
-    switch t {
-        case " " -> return 1
-        case "B", "C 3" -> return 2
-        default -> return 3
-    }
+test(){
+    String test = "abc"
+    String a = test
 }
 
-#-q -d -c src/test/kataja/Test.ktj
+# -q -d -c src/test/kataja/Test.ktj
