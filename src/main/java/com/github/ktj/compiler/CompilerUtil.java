@@ -190,7 +190,7 @@ public class CompilerUtil {
         if(type.equals("boolean") && operator.equals("!")) return "boolean";
         if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
 
-        if(!isPrimitive(type)) return getMethodReturnType(type, operatorToIdentifier(operator), false, false);
+        if(!isPrimitive(type)) return getMethodReturnType(type, operatorToIdentifier(operator), false, type);
 
         return null;
     }
@@ -217,13 +217,13 @@ public class CompilerUtil {
         }else{
             if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2)) || type2.equals("null")) return "boolean";
 
-            return getMethodReturnType(type1, operatorToIdentifier(operator)+"%"+type2, false, false);
+            return getMethodReturnType(type1, operatorToIdentifier(operator)+"%"+type2, false, type1);
         }
 
         return null;
     }
 
-    public static String getMethodReturnType(String clazzName, String method, boolean statik, boolean allowPrivate){
+    public static String getMethodReturnType(String clazzName, String method, boolean statik, String callingClazz){
         if(Compiler.Instance().classes.containsKey(clazzName)){
             if(Compiler.Instance().classes.get(clazzName) instanceof KtjDataClass){
                 KtjDataClass clazz = (KtjDataClass) Compiler.Instance().classes.get(clazzName);
@@ -241,13 +241,13 @@ public class CompilerUtil {
                 return matches ? clazzName : null;
             }else if(Compiler.Instance().classes.get(clazzName) instanceof KtjInterface){
                 KtjInterface i = (KtjInterface) Compiler.Instance().classes.get(clazzName);
-                if(i.methods.containsKey(method) && (i.methods.get(method).modifier.statik == statik)) return (allowPrivate || (i.methods.get(method).modifier.accessFlag == AccessFlag.ACC_PUBLIC)) ? i.methods.get(method).returnType : null;
+                if(i.methods.containsKey(method) && (i.methods.get(method).modifier.statik == statik))
+                    return canAccess(callingClazz, clazzName, i.methods.get(method).modifier.accessFlag) ? i.methods.get(method).returnType : null;
 
                 if(i instanceof KtjClass){
-                    String type = getMethodReturnType(((KtjClass) i).superclass, method, statik, false);
-                    if(type != null) return type;
+                    return getMethodReturnType(((KtjClass) i).superclass, method, statik, callingClazz);
                 }
-            }else return getMethodReturnType("java.lang.Object", method, statik, false);
+            }else return getMethodReturnType("java.lang.Object", method, statik, callingClazz);
         }else{
             try{
                 if(method.startsWith("<init>")){
@@ -260,7 +260,7 @@ public class CompilerUtil {
                                     break;
                                 }
                             }
-                            if(matches) return clazzName;
+                            if(matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers()))) return clazzName;
                         }
                     }
                 }else{
@@ -274,7 +274,7 @@ public class CompilerUtil {
                                     break;
                                 }
                             }
-                            if (matches)
+                            if (matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())))
                                 return m.getReturnType().toString().contains(" ") ? m.getReturnType().toString().split(" ")[1] : m.getReturnType().toString();
                         }
                     }
@@ -301,7 +301,7 @@ public class CompilerUtil {
         return -1;
     }
 
-    public static String getFieldType(String clazzName, String field, boolean statik, boolean allowPrivate){
+    public static String getFieldType(String clazzName, String field, boolean statik, String callingClazz){
         if(clazzName.startsWith("[")){
             if(!field.equals("length")) return null;
             return "int";
@@ -311,8 +311,8 @@ public class CompilerUtil {
 
         if(compilable != null) {
             if(compilable instanceof KtjClass){
-                if (((KtjClass)(compilable)).fields.containsKey(field) && ((KtjClass)(compilable)).fields.get(field).modifier.statik == statik && (allowPrivate || ((KtjClass)(compilable)).fields.get(field).modifier.accessFlag != AccessFlag.ACC_PRIVATE))
-                    return ((KtjClass)(compilable)).fields.get(field).type;
+                if (((KtjClass)(compilable)).fields.containsKey(field) && ((KtjClass)(compilable)).fields.get(field).modifier.statik == statik)
+                    return canAccess(callingClazz, clazzName, ((KtjClass)(compilable)).fields.get(field).modifier.accessFlag) ? ((KtjClass)(compilable)).fields.get(field).type : null;
             }else if(compilable instanceof KtjTypeClass){
                 if (((KtjTypeClass)(compilable)).hasValue(field) && statik) return clazzName;
             }else if(compilable instanceof KtjDataClass){
@@ -322,7 +322,7 @@ public class CompilerUtil {
         }else{
             try{
                 Field f = Class.forName(clazzName).getField(field);
-                if((((f.getModifiers() & AccessFlag.STATIC) != 0) == statik) && (((f.getModifiers() & AccessFlag.PUBLIC) != 0) || allowPrivate)) return f.getType().getName();
+                if((((f.getModifiers() & AccessFlag.STATIC) != 0) == statik) && canAccess(callingClazz, clazzName, getAccessFlag(f.getModifiers()))) return f.getType().getName();
             }catch(Exception ignored){}
         }
 
@@ -354,6 +354,23 @@ public class CompilerUtil {
         return false;
     }
 
+    private static boolean canAccess(String type1, String type2, AccessFlag flag){
+        if(flag == AccessFlag.ACC_PUBLIC) return true;
+        if(flag == AccessFlag.ACC_PRIVATE) return type1.equals(type2);
+        if(flag == AccessFlag.ACC_PROTECTED) return isSuperClass(type1, type2);
+
+        String pakage1 = type1.substring(0, type1.lastIndexOf('.'));
+        String pakage2 = type2.substring(0, type2.lastIndexOf('.'));
+        return pakage1.equals(pakage2);
+    }
+
+    private static AccessFlag getAccessFlag(int flag){
+        if((flag & AccessFlag.PUBLIC) != 0) return AccessFlag.ACC_PUBLIC;
+        if((flag & AccessFlag.PRIVATE) != 0) return AccessFlag.ACC_PRIVATE;
+        if((flag & AccessFlag.PROTECTED) != 0) return AccessFlag.ACC_PROTECTED;
+        else return AccessFlag.ACC_PACKAGE_PRIVATE;
+    }
+
     public static boolean isFinal(String clazz){
         Compilable compilable = Compiler.Instance().classes.get(clazz);
 
@@ -379,8 +396,7 @@ public class CompilerUtil {
             Compilable c = Compiler.Instance().classes.get(clazz);
 
             if(c instanceof KtjInterface && !(c instanceof KtjClass)) return false;
-            else if(c instanceof KtjDataClass) return superClass.equals("java.lang.Object");
-            else if(c instanceof KtjTypeClass) return superClass.equals("java.lang.Enum") || superClass.equals("java.lang.Object");
+            else if(c instanceof KtjTypeClass) return superClass.equals("java.lang.Enum");
             else if(c instanceof KtjClass){
                 if(((KtjClass) c).superclass != null && ((KtjClass) c).superclass.equals(superClass)) return true;
                 for(String i:((KtjClass) c).interfaces) if(i.equals(superClass)) return true;

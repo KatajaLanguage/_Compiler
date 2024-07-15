@@ -85,7 +85,10 @@ public final class Compiler {
                 classes.get(name).validateUses();
                 classes.get(name).validateTypes();
 
-                if(classes.get(name) instanceof KtjClass) ((KtjClass) classes.get(name)).validateInterfaces();
+                if(classes.get(name) instanceof KtjClass){
+                    ((KtjClass) classes.get(name)).validateInterfaces();
+                    ((KtjClass) classes.get(name)).validateInit();
+                }
             }catch(RuntimeException e){
                 RuntimeException exception = new RuntimeException(e+" in Class "+name);
                 exception.setStackTrace(e.getStackTrace());

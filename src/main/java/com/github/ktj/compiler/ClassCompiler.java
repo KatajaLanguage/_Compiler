@@ -177,7 +177,6 @@ final class ClassCompiler {
         //cf.addAttribute(new AttributeInfo());
 
         //Methods
-        clazz.validateInit();
         for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc));
 
         //<clinit>

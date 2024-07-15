@@ -249,7 +249,7 @@ final class SyntacticParser {
                         Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR, Token.Type.IDENTIFIER, Token.Type.STRING);
                         ast.values.put(t, branches.size());
 
-                        if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, false) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
+                        if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, clazzName) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
                     }while(th.isNext(","));
                 }else defauld = true;
 
@@ -657,7 +657,7 @@ final class SyntacticParser {
 
                 for (AST.Calc calc:args) desc.append("%").append(calc.type);
 
-                if (CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), false, ast.call.clazz.equals(clazzName)) == null)
+                if (CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), false, clazzName) == null)
                     throw new RuntimeException("Method "+desc+" is not defined for class "+ast.call.clazz);
 
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
@@ -685,7 +685,7 @@ final class SyntacticParser {
 
                     for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, ast.call.clazz.equals(clazzName));
+                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, clazzName);
                     ast.call.type = ast.type;
 
                     if (ast.type == null)
@@ -696,7 +696,7 @@ final class SyntacticParser {
                     ast.call.call = call;
                 }else{
                     ast.call.call = call;
-                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, ast.call.clazz.equals(clazzName));
+                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
 
                     if(ast.call.type == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
 
@@ -727,10 +727,10 @@ final class SyntacticParser {
 
                 for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, true);
+                ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, clazzName);
 
                 if(ast.type == null){
-                    ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, true);
+                    ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, clazzName);
                     ast.call.statik = true;
                 }
 
@@ -738,7 +738,7 @@ final class SyntacticParser {
                     ast.call.clazz = getClazzFromMethod(desc.toString());
                     if(ast.call.clazz == null)
                         throw new RuntimeException("Method " + desc + " is not defined for class " + clazzName);
-                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, false);
+                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, clazzName);
                     ast.call.statik = true;
                 }
 
@@ -749,10 +749,10 @@ final class SyntacticParser {
                 ast.call.clazz = clazzName;
 
                 ast.call.call = call;
-                ast.call.type = CompilerUtil.getFieldType(clazzName, call, false, true);
+                ast.call.type = CompilerUtil.getFieldType(clazzName, call, false, clazzName);
 
                 if(ast.call.type == null){
-                    ast.call.type = CompilerUtil.getFieldType(clazzName, call, true, true);
+                    ast.call.type = CompilerUtil.getFieldType(clazzName, call, true, clazzName);
                     ast.call.statik = true;
                 }
 
@@ -760,7 +760,7 @@ final class SyntacticParser {
                     ast.call.clazz = getClazzFromField(call);
                     if(ast.call.clazz == null)
                         throw new RuntimeException("Field " + call + " is not defined for class " + clazzName);
-                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, false);
+                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
                     ast.call.statik = true;
                 }
 
@@ -820,12 +820,12 @@ final class SyntacticParser {
 
             call.argTypes = args.toArray(new AST.Calc[0]);
             call.call = name;
-            call.type = CompilerUtil.getMethodReturnType(call.clazz, desc.toString(), false, call.clazz.equals(clazzName));
+            call.type = CompilerUtil.getMethodReturnType(call.clazz, desc.toString(), false, clazzName);
 
             if(call.type == null) throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
         }else{
             call.call = name;
-            call.type = CompilerUtil.getFieldType(call.clazz, name, false, call.clazz.equals(clazzName));
+            call.type = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
 
             if(call.type == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
         }
@@ -850,7 +850,7 @@ final class SyntacticParser {
 
     private String getClazzFromMethod(String method){
         for(String name:this.method.statics){
-            String type = CompilerUtil.getMethodReturnType(this.method.uses.get(name), method, true, false);
+            String type = CompilerUtil.getMethodReturnType(this.method.uses.get(name), method, true, clazzName);
             if(type != null) return this.method.uses.get(name);
         }
         return null;
@@ -858,7 +858,7 @@ final class SyntacticParser {
 
     private String getClazzFromField(String field){
         for(String name:method.statics){
-            String type = CompilerUtil.getFieldType(method.uses.get(name), field, true, false);
+            String type = CompilerUtil.getFieldType(method.uses.get(name), field, true, clazzName);
             if(type != null) return method.uses.get(name);
         }
         return null;
@@ -867,11 +867,7 @@ final class SyntacticParser {
     private void setUpTypeValues(){
         typeValues = new HashMap<>();
 
-        for(String clazz:method.uses.values()){
-            if(CompilerUtil.isType(clazz)){
-                for(String type:CompilerUtil.getTypes(clazz)) if(!typeValues.containsKey(type)) typeValues.put(type, clazz);
-            }
-        }
+        for(String clazz:method.uses.values()) if(CompilerUtil.isType(clazz)) for(String type:CompilerUtil.getTypes(clazz)) if(!typeValues.containsKey(type)) typeValues.put(type, clazz);
     }
 
     private void assertEndOfStatement(){

@@ -1,9 +1,9 @@
-type Test = a | b
-
-main {
-    Test t = a
-
-    if t === b -> t = b
+public class A{
+    protected testA(){}
 }
 
-# -q -d -e src/test/kataja/Test.ktj
+public class B extends A{
+    public testB() -> A().testA()
+}
+
+# -q -d -c src/test/kataja/Test.ktj
