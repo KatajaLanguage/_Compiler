@@ -11,6 +11,7 @@ final class Parser {
 
     private HashMap<String, Compilable> classes;
     private HashMap<String, String> uses;
+    private ArrayList<String> statics;
     private Scanner sc;
     private TokenHandler th;
     private String path;
@@ -28,8 +29,9 @@ final class Parser {
             name = file.getName().substring(0, file.getName().length() - 4);
             classes = new HashMap<>();
             uses = new HashMap<>();
+            statics = new ArrayList<>();
             sc = new Scanner(file);
-            statik = new KtjClass(new Modifier(AccessFlag.ACC_PUBLIC), uses, getFileName(), -1);
+            statik = new KtjClass(new Modifier(AccessFlag.ACC_PUBLIC), uses, statics, getFileName(), -1);
             line = 0;
         }catch(FileNotFoundException ignored){
             throw new IllegalArgumentException("Unable to find "+file.getPath());
@@ -153,7 +155,7 @@ final class Parser {
 
             Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
             mod.statik = true;
-            addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, getFileName(), line));
+            addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), line));
             return;
         }
 
@@ -184,7 +186,7 @@ final class Parser {
 
         Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
         mod.statik = true;
-        addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, getFileName(), _line));
+        addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), _line));
     }
 
     private void parseModifier(String clazzName){
@@ -270,7 +272,7 @@ final class Parser {
 
         if(classes.containsKey(name)) err("Class "+name+" is already defined");
 
-        KtjClass clazz = new KtjClass(modifier, uses, getFileName(), line);
+        KtjClass clazz = new KtjClass(modifier, uses, statics, getFileName(), line);
         current = clazz;
 
         if(th.isNext("extends")){
@@ -315,7 +317,7 @@ final class Parser {
         if(!modifier.isValidForData()) err("illegal modifier");
 
         String name = parseName();
-        KtjDataClass clazz = new KtjDataClass(modifier, uses, getFileName(), line);
+        KtjDataClass clazz = new KtjDataClass(modifier, uses, statics, getFileName(), line);
 
         boolean constant = modifier.constant;
         modifier.constant = false;
@@ -363,7 +365,7 @@ final class Parser {
             if(!types.contains(type)) types.add(type);
         }
 
-        classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0]), uses, getFileName(), line));
+        classes.put(name, new KtjTypeClass(modifier, types.toArray(new String[0]), uses, statics, getFileName(), line));
     }
 
     private void parseInterface(Modifier modifier){
@@ -373,7 +375,7 @@ final class Parser {
 
         th.assertToken("{");
 
-        KtjInterface clazz = new KtjInterface(modifier, uses, getFileName(), line);
+        KtjInterface clazz = new KtjInterface(modifier, uses, statics, getFileName(), line);
         current = clazz;
 
         while (sc.hasNextLine()){
@@ -441,9 +443,9 @@ final class Parser {
 
         if(current == null){
             mod.statik = true;
-            if(statik.addField(name, new KtjField(mod, type, initValue, uses, getFileName(), line))) err("field is already defined");
+            if(statik.addField(name, new KtjField(mod, type, initValue, uses, statics, getFileName(), line))) err("field is already defined");
         }else if(current instanceof KtjClass){
-            if(((KtjClass) current).addField(name, new KtjField(mod, type, initValue, uses, path+"\\"+name, line))) err("field is already defined");
+            if(((KtjClass) current).addField(name, new KtjField(mod, type, initValue, uses, statics, path+"\\"+name, line))) err("field is already defined");
         }else throw new RuntimeException("illegal argument");
     }
 
@@ -489,7 +491,7 @@ final class Parser {
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, statics, getFileName(), _line));
         }else if(th.isNext("{")){
             StringBuilder code = new StringBuilder();
             int i = 1;
@@ -514,7 +516,7 @@ final class Parser {
             if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
             if(name.equals("->")) throw new RuntimeException("illegal method name");
 
-            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }else if(th.isNext(":")){
             StringBuilder sb = new StringBuilder();
             boolean last = false;
@@ -528,13 +530,13 @@ final class Parser {
                     StringBuilder arg = new StringBuilder();
                     if(ib.isEmpty()) err("Expected arguments");
 
-                    for(int i = 0;i < parameter.size();i++){
-                        ib.assertToken(parameter.get(i).name);
-                        if(!ib.isNext(",") && ib.hasNext()){
-                            if(!arg.toString().isEmpty()) arg.append("&&");
-                            arg.append(parameter.get(i).name);
-                            while(!ib.isNext(",") && ib.hasNext()){
-                                if(ib.isNext("(")) arg.append(ib.getInBracket().toStringNonMarked());
+                    for (KtjMethod.Parameter value : parameter) {
+                        ib.assertToken(value.name);
+                        if (!ib.isNext(",") && ib.hasNext()) {
+                            if (!arg.toString().isEmpty()) arg.append("&&");
+                            arg.append(value.name);
+                            while (!ib.isNext(",") && ib.hasNext()) {
+                                if (ib.isNext("(")) arg.append(ib.getInBracket().toStringNonMarked());
                                 else arg.append(ib.next().s);
                             }
                         }
@@ -597,7 +599,7 @@ final class Parser {
             if(sb.toString().isEmpty()) err("Expected ( got nothing");
             if(!last) err("Expected default");
 
-            addMethod(desc.toString(), new KtjMethod(mod, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }else{
             StringBuilder code = new StringBuilder();
 
@@ -605,7 +607,7 @@ final class Parser {
 
             while(th.hasNext()) code.append(" ").append(th.next());
 
-            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }
     }
 
@@ -627,7 +629,7 @@ final class Parser {
     private String getFileName(){
         StringBuilder sb = new StringBuilder();
 
-        if(!path.equals("")) sb.append(path).append("\\");
+        if(!path.isEmpty()) sb.append(path).append("\\");
         sb.append(name);
 
         return sb.toString();

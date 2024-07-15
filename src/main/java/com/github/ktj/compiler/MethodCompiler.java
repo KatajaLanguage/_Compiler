@@ -949,7 +949,7 @@ final class MethodCompiler {
 
         Bytecode bytecode = new Bytecode(cp);
 
-        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(null, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.file, Integer.MIN_VALUE), cp);
+        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(null, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.statics, clazz.file, Integer.MIN_VALUE), cp);
 
         mInfo.setCodeAttribute(bytecode.toCodeAttribute());
 
