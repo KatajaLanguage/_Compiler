@@ -1,9 +1,9 @@
-use $java/lang/System
+type Test = a | b
 
-main -> test()
+main {
+    Test t = a
 
-const String helloWorld = "Hello World!"
-
-public test() -> out.println(helloWorld)
+    if t === b -> t = b
+}
 
 # -q -d -e src/test/kataja/Test.ktj

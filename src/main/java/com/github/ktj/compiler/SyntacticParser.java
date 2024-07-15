@@ -46,6 +46,7 @@ final class SyntacticParser {
         }
     }
 
+    private HashMap<String, String> typeValues;
     private TokenHandler th;
     private Compilable clazz;
     private KtjMethod method;
@@ -64,6 +65,7 @@ final class SyntacticParser {
         this.code = code.split("\n");
         index = -1;
 
+        setUpTypeValues();
         ArrayList<AST> ast = new ArrayList<>();
 
         if(this.code.length == 0) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
@@ -534,6 +536,22 @@ final class SyntacticParser {
                     ast.token = th.current();
                     ast.type = "null";
                 }else{
+                    if(typeValues.containsKey(th.current().s)){
+                        if(th.isNext("(") || th.isNext(".")) th.last();
+                        else{
+                            String value = th.current().s;
+                            String clazz = typeValues.get(th.current().s);
+                            ast.type = clazz;
+                            ast.load = new AST.Load();
+                            ast.load.type = clazz;
+                            ast.load.call = new AST.Call();
+                            ast.load.call.type = clazz;
+                            ast.load.call.call = value;
+                            ast.load.call.clazz = clazz;
+                            ast.load.call.statik = true;
+                            break;
+                        }
+                    }
                     th.last();
                     ast.load = parseCall();
                     ast.type = ast.load.type;
@@ -844,6 +862,16 @@ final class SyntacticParser {
             if(type != null) return method.uses.get(name);
         }
         return null;
+    }
+
+    private void setUpTypeValues(){
+        typeValues = new HashMap<>();
+
+        for(String clazz:method.uses.values()){
+            if(CompilerUtil.isType(clazz)){
+                for(String type:CompilerUtil.getTypes(clazz)) if(!typeValues.containsKey(type)) typeValues.put(type, clazz);
+            }
+        }
     }
 
     private void assertEndOfStatement(){
