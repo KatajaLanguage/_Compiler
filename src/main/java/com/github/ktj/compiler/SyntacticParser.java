@@ -599,7 +599,7 @@ final class SyntacticParser {
         calcs.add(calc);
 
         while(th.assertToken(",", ".", "}").equals(",")){
-            if(th.isNext("{")) throw new RuntimeException("illegal argument");
+            //if(th.isNext("{")) throw new RuntimeException("illegal argument");
             calc = parseCalc();
             calcs.add(calc);
             if(!calc.type.equals(type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);

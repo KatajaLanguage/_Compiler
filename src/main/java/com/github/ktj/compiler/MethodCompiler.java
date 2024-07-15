@@ -870,7 +870,7 @@ final class MethodCompiler {
                     break;
             }
             code.addNewarray(atype, length);
-        }else code.addAnewarray(ast.type.substring(1));
+        }else code.addAnewarray(CompilerUtil.toDesc(ast.type.substring(1)));
 
         for(int i = 0;i < length;i++){
             code.add(Opcode.DUP);
