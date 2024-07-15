@@ -31,6 +31,7 @@ public abstract class Compilable {
 
     public void validateUses(){
         for(String clazz: uses.values()) if(!CompilerUtil.classExist(clazz)) throw new RuntimeException("Unable to find "+clazz);
+        for(String clazz: statics) if(!CompilerUtil.isClass(uses.get(clazz))) throw new RuntimeException("Can't static use "+clazz);
     }
 
     public String validateType(String type, boolean errorAt) throws RuntimeException{

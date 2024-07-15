@@ -101,7 +101,10 @@ final class Parser {
     }
 
     private void parseUse(){
-        String current = th.assertToken(Token.Type.IDENTIFIER).s;
+        String current = th.assertToken(Token.Type.IDENTIFIER, "$").s;
+
+        if(current.equals("$"))
+            current += th.assertToken(Token.Type.IDENTIFIER).s;
 
         if(th.assertToken("/", "from", ",").equals("/")){
             StringBuilder path = new StringBuilder(current);
@@ -114,18 +117,23 @@ final class Parser {
                     th.assertNull();
                     return;
                 }else{
-                    current = th.assertToken(Token.Type.IDENTIFIER).s;
+                    current = (current.startsWith("$") ? "$" : "") + th.assertToken(Token.Type.IDENTIFIER).s;
                     path.append("/").append(current);
                 }
             }
 
-            addUse(current, path.toString().replace("/", "."));
+            addUse(current.split("/")[current.split("/").length - 1], path.toString().replace("/", "."));
         }else{
             ArrayList<String> classes = new ArrayList<>();
             classes.add(current);
 
             while(th.current().equals(",")){
-                classes.add(th.assertToken(Token.Type.IDENTIFIER).s);
+                current = th.assertToken(Token.Type.IDENTIFIER, "$").s;
+
+                if(current.equals("$"))
+                    current += th.assertToken(Token.Type.IDENTIFIER).s;
+
+                classes.add(current);
                 th.assertToken(",", "from");
             }
 
@@ -143,6 +151,16 @@ final class Parser {
     }
 
     private void addUse(String name, String path){
+        if(path.contains("$")){
+            StringBuilder sb = new StringBuilder();
+
+            for(String s:path.split("\\$")) sb.append(s);
+
+            path = sb.toString();
+        }
+
+        if(name.contains("$")) statics.add(name = name.substring(1));
+
         if(uses.containsKey(name)) err(name+" is already defined");
         uses.put(name, path);
     }

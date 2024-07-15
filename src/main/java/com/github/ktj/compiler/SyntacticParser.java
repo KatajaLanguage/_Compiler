@@ -716,11 +716,15 @@ final class SyntacticParser {
                     ast.call.statik = true;
                 }
 
+                if(ast.call.type == null){
+                    ast.call.clazz = getClazzFromMethod(desc.toString());
+                    if(ast.call.clazz == null)
+                        throw new RuntimeException("Method " + desc + " is not defined for class " + clazzName);
+                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, false);
+                    ast.call.statik = true;
+                }
+
                 ast.call.type = ast.type;
-
-                if (ast.type == null)
-                    throw new RuntimeException("static Method " + desc + " is not defined for class " + ast.call.clazz);
-
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
             }else{
                 ast.call = new AST.Call();
@@ -734,7 +738,13 @@ final class SyntacticParser {
                     ast.call.statik = true;
                 }
 
-                if(ast.call.type == null) throw new RuntimeException("Field "+call+" is not defined for class "+ ast.call.clazz);
+                if(ast.call.type == null){
+                    ast.call.clazz = getClazzFromField(call);
+                    if(ast.call.clazz == null)
+                        throw new RuntimeException("Field " + call + " is not defined for class " + clazzName);
+                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, false);
+                    ast.call.statik = true;
+                }
 
                 ast.type = ast.call.type;
             }
@@ -818,6 +828,22 @@ final class SyntacticParser {
         if(th.isNext(".")) call = parseCallArg(call, call.type);
 
         return call;
+    }
+
+    private String getClazzFromMethod(String method){
+        for(String name:this.method.statics){
+            String type = CompilerUtil.getMethodReturnType(this.method.uses.get(name), method, true, false);
+            if(type != null) return this.method.uses.get(name);
+        }
+        return null;
+    }
+
+    private String getClazzFromField(String field){
+        for(String name:method.statics){
+            String type = CompilerUtil.getFieldType(method.uses.get(name), field, true, false);
+            if(type != null) return method.uses.get(name);
+        }
+        return null;
     }
 
     private void assertEndOfStatement(){

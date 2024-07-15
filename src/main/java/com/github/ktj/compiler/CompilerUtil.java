@@ -138,6 +138,54 @@ public class CompilerUtil {
         return false;
     }
 
+    public static boolean isClass(String name){
+        Compilable c = Compiler.Instance().classes.get(name);
+
+        if(c != null){
+            return c instanceof KtjClass;
+        }else{
+            try {
+                return !Class.forName(name).isEnum() && !Class.forName(name).isInterface();
+            }catch(ClassNotFoundException ignored){}
+        }
+
+        return false;
+    }
+
+    public static boolean isType(String name){
+        Compilable c = Compiler.Instance().classes.get(name);
+
+        if(c != null){
+            return c instanceof KtjTypeClass;
+        }else{
+            try {
+                return Class.forName(name).isEnum();
+            }catch(ClassNotFoundException ignored){}
+        }
+
+        return false;
+    }
+
+    public static String[] getTypes(String name){
+        Compilable c = Compiler.Instance().classes.get(name);
+
+        if(c != null){
+            assert c instanceof KtjTypeClass;
+            return ((KtjTypeClass) c).values;
+        }else{
+            try{
+                Class<?> clazz = Class.forName(name);
+                assert clazz.isEnum();
+                Enum<?>[] values = (Enum<?>[]) clazz.getEnumConstants();
+                ArrayList<String> result = new ArrayList<>();
+                for(Enum<?> e:values) result.add(e.name());
+                return result.toArray(new String[0]);
+            }catch(ClassNotFoundException ignored){}
+        }
+
+        return new String[0];
+    }
+
     public static String getOperatorReturnType(String type, String operator){
         if(type.equals("boolean") && operator.equals("!")) return "boolean";
         if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
