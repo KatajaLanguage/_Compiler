@@ -1,9 +1,5 @@
-public class A{
-    protected testA(){}
-}
-
-public class B extends A{
-    public testB() -> A().testA()
+main{
+    int[] i = {5,4 ..-6}
 }
 
 # -q -d -c src/test/kataja/Test.ktj

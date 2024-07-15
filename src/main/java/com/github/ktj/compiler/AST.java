@@ -38,6 +38,10 @@ abstract class AST {
             op = null;
             arg = null;
         }
+
+        public boolean isSingleValue(){
+            return left == null && right == null && op == null && arg instanceof AST.Value && ((Value) arg).op == null && ((Value) arg).token != null;
+        }
     }
 
     static class CalcArg extends AST{}
