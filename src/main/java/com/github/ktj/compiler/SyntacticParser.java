@@ -23,6 +23,7 @@ final class SyntacticParser {
             for(int i = 0;i < method.parameter.length;i++){
                 if(vars.containsKey(method.parameter[i].name)) throw new RuntimeException(method.parameter[i].name+" is already defined at "+method.file+":"+method.line);
                 vars.put(method.parameter[i].name, method.parameter[i].type);
+                if(method.parameter[i].constant) constants.add(method.parameter[i].name);
             }
         }
 

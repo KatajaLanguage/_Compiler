@@ -6,9 +6,11 @@ import java.util.HashMap;
 public class KtjMethod extends Compilable{
 
     public static class Parameter{
-        public String name, type;
+        public final String name, type;
+        public final boolean constant;
 
-        public Parameter(String type, String name){
+        public Parameter(boolean constant, String type, String name){
+            this.constant = constant;
             this.name = name;
             this.type = type;
         }
@@ -30,7 +32,7 @@ public class KtjMethod extends Compilable{
         if(!returnType.equals("void")) returnType = validateType(returnType, true);
 
         ArrayList<Parameter> help = new ArrayList<>();
-        for(Parameter p:parameter) help.add(new Parameter(validateType(p.type, true), p.name));
+        for(Parameter p:parameter) help.add(new Parameter(p.constant, validateType(p.type, true), p.name));
         parameter = help.toArray(new Parameter[0]);
     }
 
