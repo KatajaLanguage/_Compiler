@@ -2,6 +2,8 @@ use $java/lang/System
 
 main -> test()
 
-test() -> System.out.println("Hello World!")
+const String helloWorld = "Hello World!"
+
+public test() -> out.println(helloWorld)
 
 # -q -d -e src/test/kataja/Test.ktj

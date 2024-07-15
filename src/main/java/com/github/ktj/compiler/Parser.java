@@ -74,7 +74,10 @@ final class Parser {
             }
         }
 
-        if(!statik.isEmpty()) classes.put(classes.isEmpty() ? name : "_"+name, statik);
+        if(!statik.isEmpty()){
+            statics.add(classes.isEmpty() ? name : "_"+name);
+            classes.put(classes.isEmpty() ? name : "_"+name, statik);
+        }
 
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
             String name = classes.keySet().toArray(new String[0])[0];
