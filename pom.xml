@@ -6,7 +6,7 @@
 
     <groupId>com.github.ktj</groupId>
     <artifactId>KatajaCompiler</artifactId>
-    <version>0.8.7</version>
+    <version>0.8.8</version>
     <packaging>jar</packaging>
 
     <dependencies>

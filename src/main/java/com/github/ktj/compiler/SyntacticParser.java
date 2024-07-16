@@ -597,11 +597,95 @@ final class SyntacticParser {
         String type = calc.type;
         calcs.add(calc);
 
-        while(th.assertToken(",", "}").equals(",")){
-            if(th.isNext("{")) throw new RuntimeException("illegal argument");
+        while(th.assertToken(",", ".", "}").equals(",")){
+            //if(th.isNext("{")) throw new RuntimeException("illegal argument");
             calc = parseCalc();
             calcs.add(calc);
             if(!calc.type.equals(type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+        }
+
+        if(th.current().equals(".")){
+            th.assertToken(".");
+            if(calcs.size() != 2) throw new RuntimeException("Illegal number of arguments");
+            calc = parseCalc();
+            calcs.add(calc);
+            if(!calc.type.equals(type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+            for(AST.Calc c:calcs) if(!c.isSingleValue()) throw new RuntimeException("illegal argument");
+            switch(type){
+                case "int":
+                case "short":
+                    int current = Integer.parseInt(((AST.Value)(calcs.get(0).arg)).token.s);
+                    int step = Integer.parseInt(((AST.Value)(calcs.get(1).arg)).token.s) - current;
+                    int end = Integer.parseInt(((AST.Value)(calcs.get(2).arg)).token.s);
+                    boolean increase = current < end;
+                    if(step == 0 || increase != (step > 0)) throw new RuntimeException("illegal argument");
+                    calcs = new ArrayList<>();
+                    while(increase ? current <= end : current >= end){
+                        calc = new AST.Calc();
+                        calc.arg = new AST.Value();
+                        calc.type = type;
+                        calc.arg.type = type;
+                        ((AST.Value)(calc.arg)).token = new Token(String.valueOf(current), Token.Type.value(type));
+                        calcs.add(calc);
+                        current += step;
+                    }
+                    break;
+                case "long":
+                    long currentL = Long.parseLong(((AST.Value)(calcs.get(0).arg)).token.s);
+                    long stepL = Long.parseLong(((AST.Value)(calcs.get(1).arg)).token.s) - currentL;
+                    long endL = Long.parseLong(((AST.Value)(calcs.get(2).arg)).token.s);
+                    boolean increaseL = currentL < endL;
+                    if(stepL == 0 || increaseL != (stepL > 0)) throw new RuntimeException("illegal argument");
+                    calcs = new ArrayList<>();
+                    while(increaseL ? currentL <= endL : currentL >= endL){
+                        calc = new AST.Calc();
+                        calc.arg = new AST.Value();
+                        calc.type = type;
+                        calc.arg.type = type;
+                        ((AST.Value)(calc.arg)).token = new Token(String.valueOf(currentL), Token.Type.LONG);
+                        calcs.add(calc);
+                        currentL += stepL;
+                    }
+                    break;
+                case "double":
+                    double currentD = Double.parseDouble(((AST.Value)(calcs.get(0).arg)).token.s);
+                    double stepD = Double.parseDouble(((AST.Value)(calcs.get(1).arg)).token.s) - currentD;
+                    double endD = Double.parseDouble(((AST.Value)(calcs.get(2).arg)).token.s);
+                    boolean increaseD = currentD < endD;
+                    if(stepD == 0 || increaseD != (stepD > 0)) throw new RuntimeException("illegal argument");
+                    calcs = new ArrayList<>();
+                    while(increaseD ? currentD <= endD : currentD >= endD){
+                        calc = new AST.Calc();
+                        calc.arg = new AST.Value();
+                        calc.type = type;
+                        calc.arg.type = type;
+                        ((AST.Value)(calc.arg)).token = new Token(String.valueOf(currentD), Token.Type.DOUBLE);
+                        calcs.add(calc);
+                        currentD += stepD;
+                    }
+                    break;
+                case "float":
+                    float currentF = Float.parseFloat(((AST.Value)(calcs.get(0).arg)).token.s);
+                    float stepF = Float.parseFloat(((AST.Value)(calcs.get(1).arg)).token.s) - currentF;
+                    float endF = Float.parseFloat(((AST.Value)(calcs.get(2).arg)).token.s);
+                    boolean increaseF = currentF < endF;
+                    if(stepF == 0 || increaseF != (stepF > 0)) throw new RuntimeException("illegal argument");
+                    calcs = new ArrayList<>();
+                    while(increaseF ? currentF <= endF : currentF >= endF){
+                        calc = new AST.Calc();
+                        calc.arg = new AST.Value();
+                        calc.type = type;
+                        calc.arg.type = type;
+                        ((AST.Value)(calc.arg)).token = new Token(String.valueOf(currentF), Token.Type.FLOAT);
+                        calcs.add(calc);
+                        currentF += stepF;
+                    }
+                    break;
+                default:
+                    throw new RuntimeException("expected number got "+type);
+            }
+
+            th.assertToken("}");
         }
 
         AST.ArrayCreation ast = new AST.ArrayCreation();
@@ -657,11 +741,12 @@ final class SyntacticParser {
 
                 for (AST.Calc calc:args) desc.append("%").append(calc.type);
 
-                if (CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), false, clazzName) == null)
+                ast.call.type = CompilerUtil.getMethod(ast.call.clazz, false, desc.toString(), clazzName);
+                if(ast.call.type == null)
                     throw new RuntimeException("Method "+desc+" is not defined for class "+ast.call.clazz);
 
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
-                ast.call.type = method.uses.get(call);
+                ast.call.call = "<init>";
                 ast.type = ast.call.type;
             }else{
                 if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
@@ -685,12 +770,12 @@ final class SyntacticParser {
 
                     for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, clazzName);
+                    ast.call.type = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
+
+                    if(ast.call.type == null) throw new RuntimeException("Method "+desc+" is not defined for Class "+ast.call.clazz);
+
+                    ast.type = ast.call.type;
                     ast.call.type = ast.type;
-
-                    if (ast.type == null)
-                        throw new RuntimeException("static Method " + desc + " is not defined for class " + ast.call.clazz);
-
                     ast.call.statik = true;
                     ast.call.argTypes = args.toArray(new AST.Calc[0]);
                     ast.call.call = call;
@@ -727,10 +812,10 @@ final class SyntacticParser {
 
                 for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), false, clazzName);
+                ast.call.type = CompilerUtil.getMethod(ast.call.clazz, false, desc.toString(), clazzName);
 
-                if(ast.type == null){
-                    ast.type = CompilerUtil.getMethodReturnType(clazzName, desc.toString(), true, clazzName);
+                if(ast.call.type == null){
+                    ast.call.type = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
                     ast.call.statik = true;
                 }
 
@@ -738,10 +823,12 @@ final class SyntacticParser {
                     ast.call.clazz = getClazzFromMethod(desc.toString());
                     if(ast.call.clazz == null)
                         throw new RuntimeException("Method " + desc + " is not defined for class " + clazzName);
-                    ast.type = CompilerUtil.getMethodReturnType(ast.call.clazz, desc.toString(), true, clazzName);
+                    ast.call.type = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
                     ast.call.statik = true;
                 }
 
+                if(method == null) throw new RuntimeException("Method "+desc+" is not defined for Class "+ast.call.clazz);
+                ast.type = ast.call.type;
                 ast.call.type = ast.type;
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
             }else{
@@ -820,9 +907,9 @@ final class SyntacticParser {
 
             call.argTypes = args.toArray(new AST.Calc[0]);
             call.call = name;
-            call.type = CompilerUtil.getMethodReturnType(call.clazz, desc.toString(), false, clazzName);
-
-            if(call.type == null) throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
+            call.type = CompilerUtil.getMethod(call.clazz, false, desc.toString(), clazzName);
+            if(call.type == null)
+                throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
         }else{
             call.call = name;
             call.type = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
@@ -850,8 +937,7 @@ final class SyntacticParser {
 
     private String getClazzFromMethod(String method){
         for(String name:this.method.statics){
-            String type = CompilerUtil.getMethodReturnType(this.method.uses.get(name), method, true, clazzName);
-            if(type != null) return this.method.uses.get(name);
+            if(CompilerUtil.getMethod(this.method.uses.get(name), true, method, clazzName) != null) return this.method.uses.get(name);
         }
         return null;
     }

@@ -7,7 +7,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -190,7 +189,9 @@ public class CompilerUtil {
         if(type.equals("boolean") && operator.equals("!")) return "boolean";
         if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
 
-        if(!isPrimitive(type)) return getMethodReturnType(type, operatorToIdentifier(operator), false, type);
+        if(!isPrimitive(type)){
+            return getMethod(type, false, operatorToIdentifier(operator), type);
+        }
 
         return null;
     }
@@ -216,72 +217,107 @@ public class CompilerUtil {
                 return type1.equals("boolean") ? null : type1;
         }else{
             if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2)) || type2.equals("null")) return "boolean";
-
-            return getMethodReturnType(type1, operatorToIdentifier(operator)+"%"+type2, false, type1);
+            return getMethod(type1, false, operatorToIdentifier(operator)+"%"+type2, type1);
         }
 
         return null;
     }
 
-    public static String getMethodReturnType(String clazzName, String method, boolean statik, String callingClazz){
+    public static String getMethod(String clazzName, boolean statik, String method, String callingClazz){
         if(Compiler.Instance().classes.containsKey(clazzName)){
-            if(Compiler.Instance().classes.get(clazzName) instanceof KtjDataClass){
-                KtjDataClass clazz = (KtjDataClass) Compiler.Instance().classes.get(clazzName);
+            Compilable compilable = Compiler.Instance().classes.get(clazzName);
+            if(compilable instanceof KtjDataClass){
+                if(method.equals("init") || statik || method.split("%").length - 1 != ((KtjDataClass) compilable).fields.size()) return null;
+
+                String[] parameters = method.split("%");
+                KtjField[] fields = ((KtjDataClass) compilable).fields.values().toArray(new KtjField[0]);
                 boolean matches = true;
 
-                if(!method.startsWith("<init>") || ((method.split("%").length - 1) != clazz.fields.size())) return null;
-
-                for (int i = 0; i < clazz.fields.size(); i++){
-                    if (!method.split("%")[i + 1].equals(clazz.fields.get(clazz.fields.keySet().toArray(new String[0])[i]).type) && !isSuperClass(method.split("%")[i + 1], clazz.fields.get(clazz.fields.keySet().toArray(new String[0])[i]).type)) {
+                for (int i = 0; i < fields.length; i++){
+                    if(!isSuperClass(parameters[i + 1], fields[i].type)){
                         matches = false;
                         break;
                     }
                 }
 
-                return matches ? clazzName : null;
-            }else if(Compiler.Instance().classes.get(clazzName) instanceof KtjInterface){
-                KtjInterface i = (KtjInterface) Compiler.Instance().classes.get(clazzName);
-                if(i.methods.containsKey(method) && (i.methods.get(method).modifier.statik == statik))
-                    return canAccess(callingClazz, clazzName, i.methods.get(method).modifier.accessFlag) ? i.methods.get(method).returnType : null;
-
-                if(i instanceof KtjClass){
-                    return getMethodReturnType(((KtjClass) i).superclass, method, statik, callingClazz);
+                if(matches){
+                    return "<init>";
                 }
-            }else return getMethodReturnType("java.lang.Object", method, statik, callingClazz);
+            }else if(compilable instanceof KtjTypeClass){
+                return getMethod("java.lang.Enum", statik, method, callingClazz);
+            }else if(compilable instanceof KtjInterface){
+                String methodName = method.split("%")[0];
+                for(String mName:((KtjInterface) compilable).methods.keySet()){
+                    if((mName.startsWith(methodName+"%") || mName.equals(methodName)) && (method.split("%").length - 1) == ((KtjInterface) compilable).methods.get(mName).parameter.length){
+                        String[] parameters = method.split("%");
+                        KtjMethod.Parameter[] parameter = ((KtjInterface) compilable).methods.get(mName).parameter;
+                        boolean matches = true;
+
+                        for (int i = 0; i < parameter.length; i++){
+                            if(!isSuperClass(parameters[i + 1], parameter[i].type)){
+                                matches = false;
+                                break;
+                            }
+                        }
+
+                        if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && (((KtjInterface) compilable).methods.get(mName).modifier.statik == statik)){
+                            return ((KtjInterface) compilable).methods.get(mName).returnType;
+                        }
+                    }
+                }
+
+                if(compilable instanceof KtjClass) return getMethod(((KtjClass) compilable).superclass, statik, method, callingClazz);
+            }
         }else{
             try{
-                if(method.startsWith("<init>")){
-                    for (Constructor<?> m : Class.forName(clazzName).getConstructors()) {
-                        if(method.split("%").length - 1 == m.getParameterTypes().length){
+                Class<?> clazz = Class.forName(clazzName);
+                String methodName = method.split("%")[0];
+                String[] parameters = method.split("%");
+                if(methodName.equals("<init>")){
+                    if(statik) return null;
+                    for(Constructor<?> constructor:clazz.getConstructors()){
+                        if(constructor.getParameterCount() == parameters.length - 1) {
                             boolean matches = true;
-                            for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getTypeName()) && !isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))) {
+                            for (int i = 0; i < constructor.getParameterCount(); i++) {
+                                if (!isSuperClass(parameters[i + 1], adjustType(constructor.getParameterTypes()[i].getTypeName()))) {
                                     matches = false;
                                     break;
                                 }
                             }
-                            if(matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers()))) return clazzName;
+                            if (matches && canAccess(callingClazz, clazzName, getAccessFlag(constructor.getModifiers()))) {
+                                return "<init>";
+                            }
                         }
                     }
                 }else{
-                    for (Method m : Class.forName(clazzName).getMethods()) {
-                        if (m.getName().equals(method.split("%")[0]) && method.split("%").length - 1 == m.getParameterTypes().length) {
-                            if(((m.getModifiers() & AccessFlag.STATIC) == 0) == statik) return null;
+                    for(Method m:clazz.getMethods()){
+                        if(m.getName().equals(methodName) && m.getParameterCount() == parameters.length - 1) {
                             boolean matches = true;
-                            for (int i = 0; i < m.getParameterTypes().length; i++) {
-                                if (!method.split("%")[i + 1].equals(m.getParameterTypes()[i].getTypeName()) && !isSuperClass(method.split("%")[i + 1], (m.getParameterTypes()[i].getTypeName()))){
+                            for (int i = 0; i < m.getParameterCount(); i++) {
+                                if (!isSuperClass(parameters[i + 1], adjustType(m.getParameterTypes()[i].getTypeName()))) {
                                     matches = false;
                                     break;
                                 }
                             }
-                            if (matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())))
-                                return m.getReturnType().toString().contains(" ") ? m.getReturnType().toString().split(" ")[1] : m.getReturnType().toString();
+                            if (matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())) && ((m.getModifiers() & AccessFlag.STATIC) != 0) == statik) {
+                                return m.getReturnType().getName();
+                            }
                         }
                     }
                 }
+
+                if(!clazzName.equals("java.lang.Object")) return getMethod(clazz.getSuperclass().getName(), statik, method, callingClazz);
             }catch(ClassNotFoundException ignored){}
         }
         return null;
+    }
+
+    private static String adjustType(String type){
+        if(!type.contains("[")) return type;
+
+        String result = type.split("\\[")[0];
+        for(int i=0;i<type.split("\\[").length - 1;i++)  result = "["+result;
+        return result;
     }
 
     public static int getEnumOrdinal(String clazz, String value){
