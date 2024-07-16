@@ -870,7 +870,15 @@ final class MethodCompiler {
                     break;
             }
             code.addNewarray(atype, length);
-        }else code.addAnewarray(CompilerUtil.toDesc(ast.type.substring(1)));
+        }else{
+            AST.Calc calc = new AST.Calc();
+            calc.type = "int";
+            calc.arg = new AST.Value();
+            calc.arg.type = "int";
+            ((AST.Value)(calc.arg)).token = new Token(String.valueOf(length), Token.Type.INTEGER);
+            compileCalc(calc);
+            code.addAnewarray(CompilerUtil.toDesc(ast.type.substring(1)));
+        }
 
         for(int i = 0;i < length;i++){
             code.add(Opcode.DUP);
