@@ -1,7 +1,8 @@
 use $java/lang/System
+use $java/util/Arrays
 
 main{
-    int[][] a = {{1,2 ..5}, {5,4 ..1}}
+    out.println(toString({1,2 ..5}))
 }
 
 # -q -d -c src/test/kataja/Test.ktj
