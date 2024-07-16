@@ -190,8 +190,7 @@ public class CompilerUtil {
         if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
 
         if(!isPrimitive(type)){
-            String[] method = getMethod(type, false, operatorToIdentifier(operator), type);
-            return method == null ? null : method[0];
+            return getMethod(type, false, operatorToIdentifier(operator), type);
         }
 
         return null;
@@ -218,16 +217,13 @@ public class CompilerUtil {
                 return type1.equals("boolean") ? null : type1;
         }else{
             if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2)) || type2.equals("null")) return "boolean";
-
-            String[] method = getMethod(type1, false, operatorToIdentifier(operator)+"%"+type2, type1);
-
-            return method == null ? null : method[0];
+            return getMethod(type1, false, operatorToIdentifier(operator)+"%"+type2, type1);
         }
 
         return null;
     }
 
-    public static String[] getMethod(String clazzName, boolean statik, String method, String callingClazz){
+    public static String getMethod(String clazzName, boolean statik, String method, String callingClazz){
         if(Compiler.Instance().classes.containsKey(clazzName)){
             Compilable compilable = Compiler.Instance().classes.get(clazzName);
             if(compilable instanceof KtjDataClass){
@@ -238,16 +234,14 @@ public class CompilerUtil {
                 boolean matches = true;
 
                 for (int i = 0; i < fields.length; i++){
-                    if(!typeMatches(parameters[i + 1], fields[i].type)){
+                    if(!isSuperClass(parameters[i + 1], fields[i].type)){
                         matches = false;
                         break;
                     }
                 }
 
                 if(matches){
-                    StringBuilder sb = new StringBuilder("<init>");
-                    for(KtjField field:fields) sb.append("%").append(field.type);
-                    return new String[]{clazzName, sb.toString()};
+                    return "<init>";
                 }
             }else if(compilable instanceof KtjTypeClass){
                 return getMethod("java.lang.Enum", statik, method, callingClazz);
@@ -260,16 +254,14 @@ public class CompilerUtil {
                         boolean matches = true;
 
                         for (int i = 0; i < parameter.length; i++){
-                            if(!typeMatches(parameters[i + 1], parameter[i].type)){
+                            if(!isSuperClass(parameters[i + 1], parameter[i].type)){
                                 matches = false;
                                 break;
                             }
                         }
 
-                        if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && ((KtjInterface) compilable).methods.get(mName).modifier.statik == statik){
-                            StringBuilder sb = new StringBuilder("<init>");
-                            for(KtjMethod.Parameter p:parameter) sb.append("%").append(p.type);
-                            return new String[]{clazzName, sb.toString()};
+                        if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && (((KtjInterface) compilable).methods.get(mName).modifier.statik == statik)){
+                            return ((KtjInterface) compilable).methods.get(mName).returnType;
                         }
                     }
                 }
@@ -284,50 +276,48 @@ public class CompilerUtil {
                 if(methodName.equals("<init>")){
                     if(statik) return null;
                     for(Constructor<?> constructor:clazz.getConstructors()){
-                        boolean matches = true;
-                        for(int i = 0; i < constructor.getParameterCount(); i++){
-                            if(!typeMatches(parameters[i + 1], constructor.getParameterTypes()[i].getTypeName())){
-                                matches = false;
-                                break;
+                        if(constructor.getParameterCount() == parameters.length - 1) {
+                            boolean matches = true;
+                            for (int i = 0; i < constructor.getParameterCount(); i++) {
+                                if (!isSuperClass(parameters[i + 1], adjustType(constructor.getParameterTypes()[i].getTypeName()))) {
+                                    matches = false;
+                                    break;
+                                }
                             }
-                        }
-                        if(matches && canAccess(callingClazz, clazzName, getAccessFlag(constructor.getModifiers()))){
-                            StringBuilder sb = new StringBuilder("<init>");
-                            for(int i = 0; i < constructor.getParameterCount(); i++){
-                                sb.append("%").append(constructor.getParameterTypes()[i].getTypeName());
+                            if (matches && canAccess(callingClazz, clazzName, getAccessFlag(constructor.getModifiers()))) {
+                                return "<init>";
                             }
-                            return new String[]{clazzName, sb.toString()};
                         }
                     }
                 }else{
                     for(Method m:clazz.getMethods()){
-                        boolean matches = true;
-                        for(int i = 0; i < m.getParameterCount(); i++){
-                            if(!typeMatches(parameters[i + 1], m.getParameterTypes()[i].getTypeName())){
-                                matches = false;
-                                break;
+                        if(m.getName().equals(methodName) && m.getParameterCount() == parameters.length - 1) {
+                            boolean matches = true;
+                            for (int i = 0; i < m.getParameterCount(); i++) {
+                                if (!isSuperClass(parameters[i + 1], adjustType(m.getParameterTypes()[i].getTypeName()))) {
+                                    matches = false;
+                                    break;
+                                }
                             }
-                        }
-                        if(matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())) && ((m.getModifiers() & AccessFlag.STATIC) != 0) == statik){
-                            StringBuilder sb = new StringBuilder(methodName);
-                            for(int i = 0; i < m.getParameterCount(); i++){
-                                sb.append("%").append(m.getParameterTypes()[i].getTypeName());
+                            if (matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())) && ((m.getModifiers() & AccessFlag.STATIC) != 0) == statik) {
+                                return m.getReturnType().getName();
                             }
-                            return new String[]{clazzName, sb.toString()};
                         }
                     }
                 }
 
-                return getMethod(clazz.getSuperclass().getName(), statik, method, callingClazz);
+                if(!clazzName.equals("java.lang.Object")) return getMethod(clazz.getSuperclass().getName(), statik, method, callingClazz);
             }catch(ClassNotFoundException ignored){}
         }
         return null;
     }
 
-    private static boolean typeMatches(String type1, String type2){
-        if(type1.equals(type2)) return true;
+    private static String adjustType(String type){
+        if(!type.contains("[")) return type;
 
-        return isSuperClass(type1, type2);
+        String result = type.split("\\[")[0];
+        for(int i=0;i<type.split("\\[").length - 1;i++)  result = "["+result;
+        return result;
     }
 
     public static int getEnumOrdinal(String clazz, String value){
