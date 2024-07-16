@@ -1,8 +1,6 @@
-use $System from java/lang
+use $java/lang/System
 use $java/util/Arrays
 
-main{
-    out.println(toString({1,2 ..5}))
-}
+main -> out.println(toString({1.0,1.2 ..2.0}))
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
