@@ -44,6 +44,7 @@ final class MethodCompiler {
             if(!ast.type.equals("void"))
                 code.add(Opcode.POP);
         }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast, false);
+        else if(ast instanceof AST.Calc) compileCalc((AST.Calc) ast);
 
         return new ArrayList<>();
     }

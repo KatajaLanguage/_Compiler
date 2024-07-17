@@ -1,9 +1,10 @@
 use $java/lang/System
 
 main {
-    _i = "test"
-    i = "abc"
-    #while i < 10 -> i += 2
+    _i = 0
+    while i < 10 {
+        i += 2
+    }
 }
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

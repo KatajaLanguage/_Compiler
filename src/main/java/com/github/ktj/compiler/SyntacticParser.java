@@ -101,7 +101,7 @@ final class SyntacticParser {
 
         AST ast;
 
-        switch(th.assertToken("_", Token.Type.IDENTIFIER).s){
+        switch(th.assertToken("_", Token.Type.IDENTIFIER, Token.Type.OPERATOR).s){
             case "while":
                 ast = parseWhile();
                 break;
@@ -310,10 +310,10 @@ final class SyntacticParser {
     }
 
     private AST parseStatement(){
-        if(!th.isNext(Token.Type.IDENTIFIER) && !th.isNext("_")) throw new RuntimeException("illegal argument");
+        if(!th.isNext(Token.Type.IDENTIFIER) && !th.isNext("_") && !th.isNext(Token.Type.OPERATOR)) throw new RuntimeException("illegal argument");
 
         boolean constant = th.current().equals("const");
-        if(constant) th.assertToken(Token.Type.IDENTIFIER, "_");
+        if(constant) th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "_");
 
         if(th.current().equals("_")){
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
@@ -334,7 +334,11 @@ final class SyntacticParser {
 
             return ast;
         }else{
-            if(th.isNext("=") || th.isNext(".") || th.isNext("(")){
+            if(th.current().equals(Token.Type.OPERATOR)){
+                if(constant) throw new RuntimeException("illegal argument");
+                th.last();
+                return parseAssignment();
+            }else if (th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
                 if(constant) throw new RuntimeException("illegal argument");
                 th.last();
                 th.last();
@@ -389,12 +393,13 @@ final class SyntacticParser {
     }
 
     private AST parseAssignment(){
-        AST.Load load = parseCall();
+        int i = th.getIndex();
+        if(i > -1 && th.current().equals(Token.Type.OPERATOR)) return parseCalc();
 
+        AST.Load load = parseCall();
         if(load.finaly) assertEndOfStatement();
 
-        if (th.hasNext()){
-            th.assertToken("=");
+        if(th.isNext("=")){
             AST.Calc calc = parseCalc();
             assertEndOfStatement();
 
@@ -407,7 +412,12 @@ final class SyntacticParser {
             ast.type = ast.calc.type;
 
             return ast;
-        }else return load;
+        }else if(th.hasNext()){
+            th.setIndex(i);
+            return parseCalc();
+        }
+
+        return load;
     }
 
     private AST.Calc parseCalc(){
@@ -470,6 +480,35 @@ final class SyntacticParser {
 
             if(ast.op.equals("=")){
                 ast.left = parseCalc();
+            }else if(ast.op.contains("=") && CompilerUtil.isPrimitive(ast.right.type)){
+                String op = ast.op.substring(0, 1);
+                ast.op = "=";
+                AST.Calc left = new AST.Calc();
+                left.arg = ast.right.arg;
+                left.type = ast.type;
+                left.setRight();
+                left.op = op;
+                left.type = ast.type;
+                left.left = parseCalc();
+                ast.left = left;
+
+                /*
+                left.arg = arg;
+                            left.type = arg.type;
+                            left.setRight();
+                            left.op = "=";
+                            left.type = arg.type;
+                            left.left = new AST.Calc();
+                            left.left.type = left.type;
+                            left.left.op = op;
+                            AST.Value value = new AST.Value();
+                            value.token = new Token("1", Token.Type.value(left.type));
+                            value.type = left.type;
+                            left.left.arg = value;
+                            left.left.right = new AST.Calc();
+                            left.left.right.type = left.type;
+                            left.left.right.arg = arg;
+                 */
             }else if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
                 AST.Value value = new AST.Value();
 

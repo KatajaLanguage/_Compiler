@@ -27,6 +27,10 @@ public class CompilerUtil {
         NUMBER_OPERATORS.add("-");
         NUMBER_OPERATORS.add("*");
         NUMBER_OPERATORS.add("/");
+        NUMBER_OPERATORS.add("+=");
+        NUMBER_OPERATORS.add("-=");
+        NUMBER_OPERATORS.add("*=");
+        NUMBER_OPERATORS.add("/=");
     }
 
     public static String operatorToIdentifier(String operator){
