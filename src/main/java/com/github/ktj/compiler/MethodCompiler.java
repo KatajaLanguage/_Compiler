@@ -130,8 +130,7 @@ final class MethodCompiler {
             case CHAR:
                 return token.s.toCharArray()[0];
             case IDENTIFIER:
-                int i = CompilerUtil.getEnumOrdinal(type, token.s);
-                return i;
+                return CompilerUtil.getEnumOrdinal(type, token.s);
             case STRING:
                 return token.s.hashCode();
         }

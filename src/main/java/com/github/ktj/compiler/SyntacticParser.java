@@ -101,7 +101,7 @@ final class SyntacticParser {
 
         AST ast;
 
-        switch(th.assertToken(Token.Type.IDENTIFIER).s){
+        switch(th.assertToken("_", Token.Type.IDENTIFIER).s){
             case "while":
                 ast = parseWhile();
                 break;
@@ -310,23 +310,49 @@ final class SyntacticParser {
     }
 
     private AST parseStatement(){
-        if(!th.isNext(Token.Type.IDENTIFIER)) throw new RuntimeException("illegal argument");
+        if(!th.isNext(Token.Type.IDENTIFIER) && !th.isNext("_")) throw new RuntimeException("illegal argument");
 
         boolean constant = th.current().equals("const");
-        if(constant) th.assertToken(Token.Type.IDENTIFIER);
+        if(constant) th.assertToken(Token.Type.IDENTIFIER, "_");
 
-        int i = 1;
+        if(th.current().equals("_")){
+            String name = th.assertToken(Token.Type.IDENTIFIER).s;
+            th.assertToken("=");
+            AST.Calc calc = parseCalc();
+            assertEndOfStatement();
 
-        while(th.isNext("[")){
-            i++;
-            if(th.isNext("]")) i++;
-            else break;
-        }
+            if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
+            scope.add(name, calc.type, constant);
 
-        if(th.isNext(Token.Type.IDENTIFIER) && i % 2 != 0){
-            for(int j = 0;j <= i;j++) th.last();
+            AST.VarAssignment ast = new AST.VarAssignment();
+            ast.calc = calc;
+            ast.type = calc.type;
+            ast.load = new AST.Load();
+            ast.load.type = ast.type;
+            ast.load.name = name;
+            ast.load.clazz = ast.type;
 
-            String type = th.assertToken(Token.Type.IDENTIFIER).s;
+            return ast;
+        }else{
+            if(th.isNext("=") || th.isNext(".") || th.isNext("(")){
+                if(constant) throw new RuntimeException("illegal argument");
+                th.last();
+                th.last();
+                return parseAssignment();
+            }
+
+            int i = th.getIndex();
+            while(th.isNext("[")){
+                if(!th.isNext("]")){
+                    if(constant) throw new RuntimeException("illegal argument");
+                    th.setIndex(i);
+                    th.last();
+                    return parseAssignment();
+                }
+            }
+
+            th.setIndex(i);
+            String type = th.current().s;
 
             while(th.isNext("[")){
                 th.assertToken("]");
@@ -359,31 +385,29 @@ final class SyntacticParser {
             ast.load.clazz = type;
 
             return ast;
-        }else{
-            if(constant) throw new RuntimeException("illegal argument");
-
-            for(int j = 0;j < i;j++) th.last();
-            if(th.isValid() && th.current().equals(Token.Type.IDENTIFIER)) th.last();
-            AST.Load load = parseCall();
-
-            if(load.finaly) assertEndOfStatement();
-
-            if (th.hasNext()) {
-                th.assertToken("=");
-                AST.Calc calc = parseCalc();
-                assertEndOfStatement();
-
-                if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
-                if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
-
-                AST.VarAssignment ast = new AST.VarAssignment();
-                ast.calc = calc;
-                ast.load = load;
-                ast.type = ast.calc.type;
-
-                return ast;
-            } else return load;
         }
+    }
+
+    private AST parseAssignment(){
+        AST.Load load = parseCall();
+
+        if(load.finaly) assertEndOfStatement();
+
+        if (th.hasNext()){
+            th.assertToken("=");
+            AST.Calc calc = parseCalc();
+            assertEndOfStatement();
+
+            if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
+            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
+
+            AST.VarAssignment ast = new AST.VarAssignment();
+            ast.calc = calc;
+            ast.load = load;
+            ast.type = ast.calc.type;
+
+            return ast;
+        }else return load;
     }
 
     private AST.Calc parseCalc(){
