@@ -273,6 +273,22 @@ final class SyntacticParser {
         return ast;
     }
 
+    private AST.For parseFor(){
+        AST.For ast = new AST.For();
+        ast.variable = th.assertToken(Token.Type.IDENTIFIER).s;
+        if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
+        th.assertToken("in");
+        ast.load = parseCall();
+        if(!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable")) throw new RuntimeException("Expected type java.lang.Iterable got "+ast.load.type);
+
+        if(th.assertToken("{", "->").equals("->")){
+            ast.ast = new AST[]{parseNextStatement()};
+        }else ast.ast = parseContent();
+        assertEndOfStatement();
+
+        return ast;
+    }
+
     private AST[] parseContent(){
         scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();

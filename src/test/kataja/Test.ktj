@@ -1,6 +1,5 @@
 use $java/lang/System
-use $java/util/Arrays
 
-main -> out.println(toString({1.0,1.2 ..2.0}))
+main -> for i in {1,2 ..3} -> out.println(i)
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
