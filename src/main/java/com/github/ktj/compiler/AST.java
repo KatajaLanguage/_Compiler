@@ -129,4 +129,6 @@ abstract class AST {
         Load load = null;
         AST[] ast = null;
     }
+
+    static class Break extends AST{}
 }

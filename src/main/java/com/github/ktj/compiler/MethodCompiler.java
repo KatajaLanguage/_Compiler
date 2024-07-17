@@ -33,9 +33,9 @@ final class MethodCompiler {
         for (AST value : ast) compileAST(value);
     }
 
-    private void compileAST(AST ast){
+    private ArrayList<Integer> compileAST(AST ast){
         if(ast instanceof AST.While) compileWhile((AST.While) ast);
-        else if(ast instanceof AST.If) compileIf((AST.If) ast);
+        else if(ast instanceof AST.If) return compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
         else if(ast instanceof AST.Switch) compileSwitch((AST.Switch) ast);
@@ -44,6 +44,8 @@ final class MethodCompiler {
             if(!ast.type.equals("void"))
                 code.add(Opcode.POP);
         }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast, false);
+
+        return new ArrayList<>();
     }
 
     private void compileSwitch(AST.Switch ast){
@@ -85,7 +87,13 @@ final class MethodCompiler {
         for(AST[] asts:ast.branches){
             starts.add(code.getSize());
 
-            for (AST a : asts) compileAST(a);
+            for(AST a : asts){
+                if(a instanceof AST.Break){
+                    code.add(Opcode.GOTO);
+                    ends.add(code.getSize());
+                    code.addIndex(0);
+                }else ends.addAll(compileAST(a));
+            }
 
             if(asts.length == 0 || !(asts[asts.length - 1] instanceof AST.Return)){
                 code.add(Opcode.GOTO);
@@ -103,7 +111,13 @@ final class MethodCompiler {
         //default
         code.write32bit(defauld, code.getSize() - start);
 
-        if(ast.defauld != null) for(AST a:ast.defauld) compileAST(a);
+        if(ast.defauld != null) for(AST a:ast.defauld){
+            if(a instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                ends.add(code.getSize());
+                code.addIndex(0);
+            }else ends.addAll(compileAST(a));
+        }
 
         if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
     }
@@ -159,24 +173,32 @@ final class MethodCompiler {
     }
 
     private void compileWhile(AST.While ast){
+        ArrayList<Integer> breaks = new ArrayList<>();
+
         os.newScope();
         int start = code.getSize();
         compileCalc(ast.condition);
         code.addOpcode(Opcode.IFEQ);
-        int branch = code.getSize();
+        breaks.add(code.getSize());
         code.addIndex(0);
 
-        for(AST statement: ast.ast)
-            compileAST(statement);
+        for(AST statement: ast.ast){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
 
         code.addOpcode(Opcode.GOTO);
         code.addIndex(-(code.getSize() - start) + 1);
-        code.write16bit(branch, code.getSize() - branch + 1);
+        for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
         os.clearScope(code);
     }
 
-    private void compileIf(AST.If ast){
+    private ArrayList<Integer> compileIf(AST.If ast){
         ArrayList<Integer> gotos = new ArrayList<>();
+        ArrayList<Integer> breaks = new ArrayList<>();
         int branch = 0;
 
         while (ast != null){
@@ -188,8 +210,13 @@ final class MethodCompiler {
                 code.addIndex(0);
             }
 
-            for(AST statement:ast.ast)
-                compileAST(statement);
+            for(AST statement:ast.ast) {
+                if(statement instanceof AST.Break){
+                    code.add(Opcode.GOTO);
+                    breaks.add(code.getSize());
+                    code.addIndex(0);
+                }else breaks.addAll(compileAST(statement));
+            }
 
             if(ast.elif != null){
                 code.addOpcode(Opcode.GOTO);
@@ -206,6 +233,8 @@ final class MethodCompiler {
 
         for(int i:gotos)
             code.write16bit(i, code.getSize() - i + 1);
+
+        return breaks;
     }
 
     private void compileCall(AST.Load ast, boolean all){

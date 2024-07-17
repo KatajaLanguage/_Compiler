@@ -1,5 +1,11 @@
 use $java/lang/System
 
-main -> for i in {1,2 ..3} -> out.println(i)
+main {
+    int i = 3
+    while i < 10 {
+        i = i + 2
+        if i == 5 -> break
+    }
+}
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

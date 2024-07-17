@@ -74,7 +74,7 @@ final class SyntacticParser {
 
         while(hasNextStatement()){
             try {
-                AST e = parseNextStatement();
+                AST e = parseNextStatement(false);
                 if(e != null) ast.add(e);
                 else if(th.isNext("}")) throw new RuntimeException("Illegal argument");
             }catch(RuntimeException e){
@@ -89,7 +89,7 @@ final class SyntacticParser {
         return ast.toArray(new AST[0]);
     }
 
-    private AST parseNextStatement(){
+    private AST parseNextStatement(boolean inLoop){
         if(!hasNextStatement()) return null;
 
         while((!th.hasNext() || th.isEmpty()) && hasNextLine()) nextLine();
@@ -106,7 +106,12 @@ final class SyntacticParser {
                 ast = parseWhile();
                 break;
             case "if":
-                ast = parseIf();
+                ast = parseIf(inLoop);
+                break;
+            case "break":
+                if(!inLoop) throw new RuntimeException("Nothing to break");
+                assertEndOfStatement();
+                ast = new AST.Break();
                 break;
             case "return":
                 ast = parseReturn();
@@ -162,20 +167,20 @@ final class SyntacticParser {
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
         if(th.assertToken("{", "->").equals("->")){
-            ast.ast = new AST[]{parseNextStatement()};
-        }else ast.ast = parseContent();
+            ast.ast = new AST[]{parseNextStatement(true)};
+        }else ast.ast = parseContent(true);
 
         return ast;
     }
 
-    private AST.If parseIf(){
+    private AST.If parseIf(boolean inLoop){
         AST.If ast = new AST.If();
 
         th.assertHasNext();
         ast.condition = parseCalc();
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
         if(th.assertToken("->", "{").equals("->")){
-            ast.ast = new AST[]{parseNextStatement()};
+            ast.ast = new AST[]{parseNextStatement(inLoop)};
 
             if(!th.hasNext() && hasNextLine()){
                 int index = th.getIndex();
@@ -187,7 +192,7 @@ final class SyntacticParser {
                 }
             }
         }else{
-            ast.ast = parseContent();
+            ast.ast = parseContent(inLoop);
             if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
         }
 
@@ -205,7 +210,7 @@ final class SyntacticParser {
             }else end = true;
 
             if(th.current().equals("->")){
-                current.ast = new AST[]{parseNextStatement()};
+                current.ast = new AST[]{parseNextStatement(inLoop)};
 
                 if(!th.hasNext() && hasNextLine()){
                     int index = th.getIndex();
@@ -217,7 +222,7 @@ final class SyntacticParser {
                     }
                 }
             }else if(th.current().equals("{")){
-                current.ast = parseContent();
+                current.ast = parseContent(inLoop);
                 if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
             }
         }
@@ -253,9 +258,9 @@ final class SyntacticParser {
                     }while(th.isNext(","));
                 }else defauld = true;
 
-                if(th.assertToken("->", "{").equals("->")) branches.add(new AST[]{parseNextStatement()});
+                if(th.assertToken("->", "{").equals("->")) branches.add(new AST[]{parseNextStatement(true)});
                 else{
-                    branches.add(parseContent());
+                    branches.add(parseContent(true));
                     if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
                 }
 
@@ -282,19 +287,19 @@ final class SyntacticParser {
         if(!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable")) throw new RuntimeException("Expected type java.lang.Iterable got "+ast.load.type);
 
         if(th.assertToken("{", "->").equals("->")){
-            ast.ast = new AST[]{parseNextStatement()};
-        }else ast.ast = parseContent();
+            ast.ast = new AST[]{parseNextStatement(true)};
+        }else ast.ast = parseContent(true);
         assertEndOfStatement();
 
         return ast;
     }
 
-    private AST[] parseContent(){
+    private AST[] parseContent(boolean inLoop){
         scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();
 
         while(!th.isNext("}")){
-            AST current = parseNextStatement();
+            AST current = parseNextStatement(inLoop);
             if(current != null) astList.add(current);
         }
 
