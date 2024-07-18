@@ -1,10 +1,10 @@
 use java/lang/RuntimeException
 
-main{
-    try{
-        throw RuntimeException()
-    }catch(RuntimeException e){
-        throw e
+object Test{
+    int i = 5
+
+    test(){
+
     }
 }
 

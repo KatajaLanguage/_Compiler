@@ -413,7 +413,12 @@ public class CompilerUtil {
     }
 
     public static boolean canAccess(String type1, String type2){
-        return canAccess(type1, type2, Compiler.Instance().classes.get(type2).modifier.accessFlag);
+        if(Compiler.Instance().classes.containsKey(type2)) return canAccess(type1, type2, Compiler.Instance().classes.get(type2).modifier.accessFlag);
+        try{
+            return canAccess(type1, type2, getAccessFlag(Class.forName(type2).getModifiers()));
+        }catch(ClassNotFoundException e){
+            throw new RuntimeException("unable to find "+type2);
+        }
     }
 
     public static boolean isFinal(String clazz){

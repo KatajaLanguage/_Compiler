@@ -27,6 +27,10 @@ public final class Modifier {
         return !(finaly || constant || abstrakt || synchronised || statik);
     }
 
+    public boolean isValidForObject(){
+        return !(abstrakt || synchronised || statik || constant);
+    }
+
     public boolean isValidForType(){
         return !(abstrakt || synchronised || statik);
     }
