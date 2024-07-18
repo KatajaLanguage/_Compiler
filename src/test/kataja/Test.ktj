@@ -1,6 +1,6 @@
 use java/lang/RuntimeException
 
-main {
+main{
     try{
         throw RuntimeException()
     }catch(RuntimeException e){

@@ -3,6 +3,7 @@ package com.github.ktj.lang;
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.compiler.Compiler;
 import com.github.ktj.compiler.CompilerUtil;
+import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,8 +30,11 @@ public abstract class Compilable {
 
     public abstract void validateTypes();
 
-    public void validateUses(){
-        for(String clazz: uses.values()) if(!CompilerUtil.classExist(clazz)) throw new RuntimeException("Unable to find "+clazz);
+    public void validateUses(String type){
+        for(String clazz: uses.values()){
+            if(!CompilerUtil.classExist(clazz)) throw new RuntimeException("Unable to find "+clazz);
+            if(!CompilerUtil.canAccess(type, clazz)) throw new RuntimeException("Class "+clazz+" is outside of scope");
+        }
         for(String clazz: statics) if(!CompilerUtil.isClass(uses.get(clazz))) throw new RuntimeException("Can't static use "+clazz);
     }
 

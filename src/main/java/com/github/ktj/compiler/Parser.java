@@ -291,6 +291,7 @@ final class Parser {
     private void parseClass(Modifier modifier){
         String name = th.assertToken(Token.Type.IDENTIFIER).s;
 
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(classes.containsKey(name)) err("Class "+name+" is already defined");
 
         KtjClass clazz = new KtjClass(modifier, uses, statics, getFileName(), line);
@@ -335,6 +336,7 @@ final class Parser {
     }
 
     private void parseData(Modifier modifier){
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(!modifier.isValidForData()) err("illegal modifier");
 
         String name = parseName();
@@ -370,6 +372,7 @@ final class Parser {
     }
 
     private void parseType(Modifier modifier){
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(!modifier.isValidForType()) err("illegal modifier");
 
         String name = parseName();
@@ -390,6 +393,7 @@ final class Parser {
     }
 
     private void parseInterface(Modifier modifier){
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(!modifier.isValidForInterface()) err("illegal modifier");
 
         String name = parseName();

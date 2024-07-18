@@ -412,6 +412,10 @@ public class CompilerUtil {
         else return AccessFlag.ACC_PACKAGE_PRIVATE;
     }
 
+    public static boolean canAccess(String type1, String type2){
+        return canAccess(type1, type2, Compiler.Instance().classes.get(type2).modifier.accessFlag);
+    }
+
     public static boolean isFinal(String clazz){
         Compilable compilable = Compiler.Instance().classes.get(clazz);
 
