@@ -102,6 +102,9 @@ final class SyntacticParser {
         AST ast;
 
         switch(th.assertToken("_", Token.Type.IDENTIFIER, Token.Type.OPERATOR).s){
+            case "for":
+                ast = parseFor();
+                break;
             case "while":
                 ast = parseWhile();
                 break;

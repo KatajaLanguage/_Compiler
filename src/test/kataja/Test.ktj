@@ -1,11 +1,8 @@
-use java/lang/RuntimeException
+use java/util/ArrayList
 
-object Test{
-    int i = 5
-
-    test(){
-
+main {
+    _list = ArrayList()
+    for e in list {
     }
 }
-
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

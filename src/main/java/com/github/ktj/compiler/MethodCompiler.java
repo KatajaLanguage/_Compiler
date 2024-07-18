@@ -35,6 +35,7 @@ final class MethodCompiler {
 
     private ArrayList<Integer> compileAST(AST ast){
         if(ast instanceof AST.While) compileWhile((AST.While) ast);
+        else if(ast instanceof AST.For) compileFor((AST.For) ast);
         else if(ast instanceof AST.If) return compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
@@ -205,6 +206,39 @@ final class MethodCompiler {
                 code.add(Opcode.ARETURN);
                 break;
         }
+    }
+
+    private void compileFor(AST.For ast){
+        ArrayList<Integer> breaks = new ArrayList<>();
+
+        compileCall(ast.load, true);
+        code.addInvokevirtual(ast.load.type, "iterator", "()Ljava.util.Iterator;");
+        int where = os.push("&i", 1);
+        os.push(ast.variable, 1);
+        os.newScope();
+        code.addAstore(where);
+        int loop = code.getSize();
+        code.addAload(where);
+        code.addInvokeinterface("java.util.Iterator", "hasNext", "()Z", 1);
+        code.add(Opcode.IFEQ);
+        breaks.add(code.getSize());
+        code.addIndex(0);
+        code.addAload(where);
+        code.addInvokeinterface("java.util.Iterator", "next", "()Ljava/lang/Object;", 1);
+        code.addAstore(where + 1);
+
+        for(AST statement: ast.ast){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
+
+        code.add(Opcode.GOTO);
+        code.addIndex(-(code.getSize() - loop) + 1);
+        for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
+        os.clearScope(code);
     }
 
     private void compileWhile(AST.While ast){
