@@ -1,11 +1,6 @@
-use java/lang/RuntimeException
+int[] i = {1, 2 ..5}
 
-object Test{
-    int i = 5
-
-    test(){
-
-    }
+main {
+    _j = i[3]
 }
-
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

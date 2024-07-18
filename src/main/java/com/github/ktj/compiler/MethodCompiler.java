@@ -35,6 +35,7 @@ final class MethodCompiler {
 
     private ArrayList<Integer> compileAST(AST ast){
         if(ast instanceof AST.While) compileWhile((AST.While) ast);
+        else if(ast instanceof AST.For) compileFor((AST.For) ast);
         else if(ast instanceof AST.If) return compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
@@ -207,6 +208,39 @@ final class MethodCompiler {
         }
     }
 
+    private void compileFor(AST.For ast){
+        ArrayList<Integer> breaks = new ArrayList<>();
+
+        compileCall(ast.load, true);
+        code.addInvokevirtual(ast.load.type, "iterator", "()Ljava.util.Iterator;");
+        int where = os.push("&i", 1);
+        os.push(ast.variable, 1);
+        os.newScope();
+        code.addAstore(where);
+        int loop = code.getSize();
+        code.addAload(where);
+        code.addInvokeinterface("java.util.Iterator", "hasNext", "()Z", 1);
+        code.add(Opcode.IFEQ);
+        breaks.add(code.getSize());
+        code.addIndex(0);
+        code.addAload(where);
+        code.addInvokeinterface("java.util.Iterator", "next", "()Ljava/lang/Object;", 1);
+        code.addAstore(where + 1);
+
+        for(AST statement: ast.ast){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
+
+        code.add(Opcode.GOTO);
+        code.addIndex(-(code.getSize() - loop) + 1);
+        for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
+        os.clearScope(code);
+    }
+
     private void compileWhile(AST.While ast){
         ArrayList<Integer> breaks = new ArrayList<>();
 
@@ -317,20 +351,20 @@ final class MethodCompiler {
 
         if(call.argTypes == null) {
             if(call.clazz.startsWith("[")) code.add(Opcode.ARRAYLENGTH);
-            else if (call.statik) code.addGetstatic(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+            else if (call.statik) code.addGetstatic(call.clazz, call.name, CompilerUtil.toDesc(call.type));
             else {
                 if (first && call.clazz.equals(clazzName)) code.addAload(0);
-                code.addGetfield(call.clazz, call.call, CompilerUtil.toDesc(call.type));
+                code.addGetfield(call.clazz, call.name, CompilerUtil.toDesc(call.type));
             }
         }else{
-            if(!call.statik && first && call.clazz.equals(clazzName) && !call.call.equals("<init>")) code.addAload(0);
+            if(!call.statik && first && call.clazz.equals(clazzName) && !call.name.equals("<init>")) code.addAload(0);
 
-            if(!call.call.equals("<init>") || call.type.startsWith("[")){
+            if(!call.name.equals("<init>") || call.type.startsWith("[")){
                 for(AST.Calc calc:call.argTypes) compileCalc(calc, false);
             }
 
             if(call.clazz.startsWith("[")){
-                if(call.call.equals("<init>")){
+                if(call.name.equals("<init>")){
                     if(call.clazz.startsWith("[[")) code.addMultiNewarray(CompilerUtil.toDesc(call.clazz), call.clazz.lastIndexOf("[") + 1);
                     else code.addAnewarray(call.clazz.substring(1));
                 }else{
@@ -356,13 +390,13 @@ final class MethodCompiler {
                             break;
                     }
                 }
-            }else if(call.call.equals("<init>")){
+            }else if(call.name.equals("<init>")){
                 code.addNew(call.clazz);
                 code.add(Opcode.DUP);
                 for(AST.Calc calc:call.argTypes) compileCalc(calc, false);
-                code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));
-            }else if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
-            else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
+                code.addInvokespecial(call.clazz, "<init>", CompilerUtil.signatureToDesc(call.signature, "void"));
+            }else if(call.statik) code.addInvokestatic(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
+            else code.addInvokevirtual(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
         }
     }
 
@@ -430,11 +464,11 @@ final class MethodCompiler {
             }else if(ast.load.call.statik){
                 compileCalc(ast.calc, false);
                 if(dup) code.add(Opcode.DUP);
-                code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+                code.addPutstatic(ast.load.call.clazz, ast.load.call.name, CompilerUtil.toDesc(ast.load.call.type));
             }else{
                 compileCalc(ast.calc, false);
                 if(dup) code.add(Opcode.DUP);
-                code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
+                code.addPutfield(ast.load.call.clazz, ast.load.call.name, CompilerUtil.toDesc(ast.load.call.type));
             }
         }
     }

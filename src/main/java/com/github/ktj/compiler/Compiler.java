@@ -4,6 +4,7 @@ import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
+import javassist.NotFoundException;
 import javassist.bytecode.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;

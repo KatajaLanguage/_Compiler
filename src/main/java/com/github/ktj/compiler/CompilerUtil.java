@@ -106,11 +106,9 @@ public class CompilerUtil {
         return desc.toString();
     }
 
-    public static String toDesc(String returnType, AST.Calc[] args){
+    public static String signatureToDesc(String methodSignature, String returnType){
         StringBuilder sb = new StringBuilder("(");
-
-        for(AST.Calc calc:args) sb.append(toDesc(calc.type));
-
+        for(String arg:methodSignature.split("%")) sb.append(toDesc(arg));
         sb.append(")").append(toDesc(returnType));
         return sb.toString();
     }
@@ -190,9 +188,9 @@ public class CompilerUtil {
         return new String[0];
     }
 
-    public static String getOperatorReturnType(String type, String operator){
-        if(type.equals("boolean") && operator.equals("!")) return "boolean";
-        if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return type;
+    public static String[] getOperatorReturnType(String type, String operator){
+        if(type.equals("boolean") && operator.equals("!")) return new String[]{"boolean"};
+        if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return new String[]{type};
 
         if(!isPrimitive(type)){
             return getMethod(type, false, operatorToIdentifier(operator), type);
@@ -201,38 +199,38 @@ public class CompilerUtil {
         return null;
     }
 
-    public static String getOperatorReturnType(String type1, String type2, String operator){
+    public static String[] getOperatorReturnType(String type1, String type2, String operator){
         if(type1.equals("null")) return null;
 
-        if(operator.equals("=")) return type1.equals(type2) ? type1 : null;
+        if(operator.equals("=")) return type1.equals(type2) ?new String[]{type1, operator} : null;
 
         if(isPrimitive(type1)){
             if(!type1.equals(type2))
                 return null;
 
             if(type1.equals("boolean") && (operator.equals("&&") || operator.equals("||")))
-                return "boolean";
+                return new String[]{"boolean", operator};
 
             if((type1.equals("double") || type1.equals("float")) && (operator.equals("&") || operator.equals("|") || operator.equals("<<") || operator.equals(">>") || operator.equals("^"))) return null;
 
             if(NUM_BOOL_OPERATORS.contains(operator))
-                return type1.equals("boolean") ? null : "boolean";
+                return type1.equals("boolean") ? null : new String[]{"boolean", operator};
 
             if(NUMBER_OPERATORS.contains(operator))
-                return type1.equals("boolean") ? null : type1;
+                return type1.equals("boolean") ? null : new String[]{type1, operator};
         }else{
-            if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2)) || type2.equals("null")) return "boolean";
+            if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2)) || type2.equals("null")) return new String[]{"boolean", operator};
             return getMethod(type1, false, operatorToIdentifier(operator)+"%"+type2, type1);
         }
 
         return null;
     }
 
-    public static String getMethod(String clazzName, boolean statik, String method, String callingClazz){
+    public static String[] getMethod(String clazzName, boolean statik, String method, String callingClazz){
         if(Compiler.Instance().classes.containsKey(clazzName)){
             Compilable compilable = Compiler.Instance().classes.get(clazzName);
             if(compilable instanceof KtjDataClass){
-                if(method.equals("init") || statik || method.split("%").length - 1 != ((KtjDataClass) compilable).fields.size()) return null;
+                if(!method.equals("<init>") || statik || method.split("%").length - 1 != ((KtjDataClass) compilable).fields.size()) return null;
 
                 String[] parameters = method.split("%");
                 KtjField[] fields = ((KtjDataClass) compilable).fields.values().toArray(new KtjField[0]);
@@ -246,7 +244,9 @@ public class CompilerUtil {
                 }
 
                 if(matches){
-                    return clazzName;
+                    StringBuilder sb = new StringBuilder();
+                    for(KtjField field:((KtjDataClass) compilable).fields.values()) sb.append(sb.length() == 0 ? "":"%").append(field.type);
+                    return new String[]{clazzName, sb.toString()};
                 }
             }else if(compilable instanceof KtjTypeClass){
                 return getMethod("java.lang.Enum", statik, method, callingClazz);
@@ -266,7 +266,7 @@ public class CompilerUtil {
                         }
 
                         if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && (((KtjInterface) compilable).methods.get(mName).modifier.statik == statik)){
-                            return ((KtjInterface) compilable).methods.get(mName).returnType;
+                            return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.split("%", 2)[1]};
                         }
                     }
                 }
@@ -290,7 +290,9 @@ public class CompilerUtil {
                                 }
                             }
                             if (matches && canAccess(callingClazz, clazzName, getAccessFlag(constructor.getModifiers()))) {
-                                return clazzName;
+                                StringBuilder sb = new StringBuilder();
+                                for(Class<?> field:constructor.getParameterTypes()) sb.append(sb.length() == 0 ? "":"%").append(adjustType(field.getTypeName()));
+                                return new String[]{clazzName, sb.toString()};
                             }
                         }
                     }
@@ -305,7 +307,9 @@ public class CompilerUtil {
                                 }
                             }
                             if (matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())) && ((m.getModifiers() & AccessFlag.STATIC) != 0) == statik) {
-                                return m.getReturnType().getName();
+                                StringBuilder sb = new StringBuilder();
+                                for(Class<?> field:m.getParameterTypes()) sb.append(sb.length() == 0 ? "":"%").append(adjustType(field.getTypeName()));
+                                return new String[]{m.getReturnType().getName(), sb.toString()};
                             }
                         }
                     }

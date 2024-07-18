@@ -71,7 +71,8 @@ abstract class AST {
     static class Call extends AST{
         boolean statik = false;
         String clazz = null;
-        String call = null;
+        String name = null;
+        String signature = null;
         Call prev = null;
         Calc[] argTypes = null;
 
@@ -79,15 +80,17 @@ abstract class AST {
             Call help = prev;
             prev = new Call();
             prev.prev = help;
-            prev.call = call;
+            prev.name = name;
             prev.type = type;
             prev.clazz = clazz;
             prev.statik = statik;
             prev.argTypes = argTypes;
+            prev.signature = signature;
 
             statik = false;
             clazz = null;
-            call = null;
+            name = null;
+            signature = null;
             argTypes = null;
             type = null;
         }
