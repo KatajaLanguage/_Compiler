@@ -17,7 +17,7 @@ final class Parser {
     private String path;
     private String name;
     private Compilable current = null;
-    private KtjClass statik;
+    private KtjObject statik;
     private int line;
 
     public HashMap<String, Compilable> parseFile(File file) throws IllegalArgumentException{
@@ -31,7 +31,7 @@ final class Parser {
             uses = new HashMap<>();
             statics = new ArrayList<>();
             sc = new Scanner(file);
-            statik = new KtjClass(new Modifier(AccessFlag.ACC_PUBLIC), uses, statics, getFileName(), -1);
+            statik = new KtjObject(new Modifier(AccessFlag.ACC_PUBLIC), uses, statics, getFileName(), -1);
             line = 0;
         }catch(FileNotFoundException ignored){
             throw new IllegalArgumentException("Unable to find "+file.getPath());
@@ -280,6 +280,9 @@ final class Parser {
                 case "type":
                     parseType(mod);
                     break;
+                case "object":
+                    parseObject(mod);
+                    break;
                 default:
                     th.last();
                     parseMethodAndField(mod, null);
@@ -291,6 +294,7 @@ final class Parser {
     private void parseClass(Modifier modifier){
         String name = th.assertToken(Token.Type.IDENTIFIER).s;
 
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(classes.containsKey(name)) err("Class "+name+" is already defined");
 
         KtjClass clazz = new KtjClass(modifier, uses, statics, getFileName(), line);
@@ -334,7 +338,40 @@ final class Parser {
         err("Expected '}'");
     }
 
+    private void parseObject(Modifier modifier){
+        String name = th.assertToken(Token.Type.IDENTIFIER).s;
+
+        modifier.finaly = true;
+        if(!modifier.isValidForObject()) throw new RuntimeException("Illegal modifier");
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
+        if(classes.containsKey(name)) err("Class "+name+" is already defined");
+
+        KtjObject clazz = new KtjObject(modifier, uses, statics, getFileName(), line);
+        current = clazz;
+
+        th.assertToken("{");
+        th.assertNull();
+
+        while (sc.hasNextLine()){
+            nextLine();
+
+            if(!th.isEmpty()){
+                if (th.next().s.equals("}")) {
+                    current = null;
+                    th.assertNull();
+                    classes.put(name, clazz);
+                    return;
+                } else {
+                    parseModifier(name);
+                }
+            }
+        }
+
+        err("Expected '}'");
+    }
+
     private void parseData(Modifier modifier){
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(!modifier.isValidForData()) err("illegal modifier");
 
         String name = parseName();
@@ -370,6 +407,7 @@ final class Parser {
     }
 
     private void parseType(Modifier modifier){
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(!modifier.isValidForType()) err("illegal modifier");
 
         String name = parseName();
@@ -390,6 +428,7 @@ final class Parser {
     }
 
     private void parseInterface(Modifier modifier){
+        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(!modifier.isValidForInterface()) err("illegal modifier");
 
         String name = parseName();
@@ -465,6 +504,9 @@ final class Parser {
         if(current == null){
             mod.statik = true;
             if(statik.addField(name, new KtjField(mod, type, initValue, uses, statics, getFileName(), line))) err("field is already defined");
+        }else if(current instanceof KtjObject){
+            mod.statik = true;
+            if(((KtjClass) current).addField(name, new KtjField(mod, type, initValue, uses, statics, path+"\\"+name, line))) err("field is already defined");
         }else if(current instanceof KtjClass){
             if(((KtjClass) current).addField(name, new KtjField(mod, type, initValue, uses, statics, path+"\\"+name, line))) err("field is already defined");
         }else throw new RuntimeException("illegal argument");
@@ -639,7 +681,12 @@ final class Parser {
             return;
         }
 
-        if (current instanceof KtjClass) {
+        if(current instanceof KtjObject){
+            method.modifier.statik = true;
+            if(method.isAbstract()) throw new RuntimeException("method should not be abstract");
+            if(desc.startsWith("<init>")) throw new RuntimeException("illegal method name");
+            if (((KtjObject) current).addMethod(desc, method)) err("method is already defined");
+        }else if (current instanceof KtjClass) {
             if (((KtjClass) current).addMethod(desc, method)) err("method is already defined");
         } else if (current instanceof KtjInterface) {
             if(!method.isAbstract()) err("expected abstract Method");

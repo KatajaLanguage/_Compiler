@@ -246,7 +246,7 @@ public class CompilerUtil {
                 }
 
                 if(matches){
-                    return "<init>";
+                    return clazzName;
                 }
             }else if(compilable instanceof KtjTypeClass){
                 return getMethod("java.lang.Enum", statik, method, callingClazz);
@@ -290,7 +290,7 @@ public class CompilerUtil {
                                 }
                             }
                             if (matches && canAccess(callingClazz, clazzName, getAccessFlag(constructor.getModifiers()))) {
-                                return "<init>";
+                                return clazzName;
                             }
                         }
                     }
@@ -410,6 +410,15 @@ public class CompilerUtil {
         if((flag & AccessFlag.PRIVATE) != 0) return AccessFlag.ACC_PRIVATE;
         if((flag & AccessFlag.PROTECTED) != 0) return AccessFlag.ACC_PROTECTED;
         else return AccessFlag.ACC_PACKAGE_PRIVATE;
+    }
+
+    public static boolean canAccess(String type1, String type2){
+        if(Compiler.Instance().classes.containsKey(type2)) return canAccess(type1, type2, Compiler.Instance().classes.get(type2).modifier.accessFlag);
+        try{
+            return canAccess(type1, type2, getAccessFlag(Class.forName(type2).getModifiers()));
+        }catch(ClassNotFoundException e){
+            throw new RuntimeException("unable to find "+type2);
+        }
     }
 
     public static boolean isFinal(String clazz){
