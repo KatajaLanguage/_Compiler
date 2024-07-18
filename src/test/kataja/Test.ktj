@@ -1,9 +1,10 @@
-use $java/lang/System
+use java/lang/RuntimeException
 
 main {
-    _i = 0
-    while i < 10 {
-        i %= 2
+    try{
+        throw RuntimeException()
+    }catch(RuntimeException e){
+        throw e
     }
 }
 

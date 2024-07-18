@@ -122,6 +122,9 @@ final class SyntacticParser {
             case "switch":
                 ast = parseSwitch();
                 break;
+            case "try":
+                ast = parseTry(inLoop);
+                break;
             default:
                 th.last();
                 ast = parseStatement();
@@ -139,7 +142,7 @@ final class SyntacticParser {
 
         ast.calc = parseCalc();
 
-        if(!CompilerUtil.isSuperClass(ast.calc.type, "java.lang.Throwable")) throw new RuntimeException();
+        if(!CompilerUtil.isSuperClass(ast.calc.type, "java.lang.Throwable")) throw new RuntimeException("Expected type java.lang.Throwable got "+ast.calc.type);
 
         return ast;
     }
@@ -291,6 +294,36 @@ final class SyntacticParser {
         }else ast.ast = parseContent(true);
         assertEndOfStatement();
 
+        return ast;
+    }
+
+    private AST.TryCatch parseTry(boolean inLoop){
+        AST.TryCatch ast = new AST.TryCatch();
+
+        if(th.assertToken("->", "{").equals("->")) ast.tryAST = new AST[]{parseNextStatement(inLoop)};
+        else{
+            ast.tryAST = parseContent(inLoop);
+            if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+        }
+
+        th.assertToken("catch");
+        th.assertToken("(");
+        ast.type = th.assertToken(Token.Type.IDENTIFIER).s;
+        if(!method.uses.containsKey(ast.type)) throw new RuntimeException("Unknown type "+ast.type);
+        ast.type = method.uses.get(ast.type);
+        if(!CompilerUtil.isSuperClass(ast.type, "java.lang.Exception")) throw new RuntimeException("Expected type java.lang.Exception got "+ast.type);
+        ast.variable = th.assertToken(Token.Type.IDENTIFIER).s;
+        if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
+        scope.add(ast.variable, ast.type, false);
+        th.assertToken(")");
+
+        if(th.assertToken("->", "{").equals("->")) ast.catchAST = new AST[]{parseNextStatement(inLoop)};
+        else{
+            ast.catchAST = parseContent(inLoop);
+            if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+        }
+
+        assertEndOfStatement();
         return ast;
     }
 

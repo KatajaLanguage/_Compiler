@@ -131,4 +131,10 @@ abstract class AST {
     }
 
     static class Break extends AST{}
+
+    static class TryCatch extends AST{
+        AST[] tryAST = null;
+        AST[] catchAST = null;
+        String variable = null;
+    }
 }

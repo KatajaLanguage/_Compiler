@@ -38,6 +38,7 @@ final class MethodCompiler {
         else if(ast instanceof AST.If) return compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
+        else if(ast instanceof AST.TryCatch) return compileTryCatch((AST.TryCatch) ast);
         else if(ast instanceof AST.Switch) compileSwitch((AST.Switch) ast);
         else if(ast instanceof AST.Load){
             compileCall((AST.Load) ast, true);
@@ -141,6 +142,36 @@ final class MethodCompiler {
     private void compileThrow(AST.Throw ast){
         compileCalc(ast.calc, false);
         code.add(Opcode.ATHROW);
+    }
+
+    private ArrayList<Integer> compileTryCatch(AST.TryCatch ast){
+        ArrayList<Integer> breaks = new ArrayList<>();
+
+        int start = code.getSize();
+        os.newScope();
+        for(AST statement: ast.tryAST){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
+        os.clearScope(code);
+        int end = code.getSize();
+
+        os.newScope();
+        code.addAstore(os.push(ast.variable, 1));
+        for(AST statement: ast.catchAST){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
+        os.clearScope(code);
+
+        code.addExceptionHandler(start, end, end, ast.type);
+        return breaks;
     }
 
     private void compileReturn(AST.Return ast){

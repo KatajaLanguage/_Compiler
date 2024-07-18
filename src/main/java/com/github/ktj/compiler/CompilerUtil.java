@@ -246,7 +246,7 @@ public class CompilerUtil {
                 }
 
                 if(matches){
-                    return "<init>";
+                    return clazzName;
                 }
             }else if(compilable instanceof KtjTypeClass){
                 return getMethod("java.lang.Enum", statik, method, callingClazz);
@@ -290,7 +290,7 @@ public class CompilerUtil {
                                 }
                             }
                             if (matches && canAccess(callingClazz, clazzName, getAccessFlag(constructor.getModifiers()))) {
-                                return "<init>";
+                                return clazzName;
                             }
                         }
                     }
