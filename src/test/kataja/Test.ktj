@@ -3,7 +3,7 @@ use $java/lang/System
 main {
     _i = 0
     while i < 10 {
-        i += 2
+        i %= 2
     }
 }
 
