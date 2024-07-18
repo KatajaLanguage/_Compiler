@@ -1,7 +1,6 @@
-use java/util/ArrayList
+int[] i = {1, 2 ..5}
 
-main -> test("test")
-
-void test(Object o){
+main {
+    _j = i[3]
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
