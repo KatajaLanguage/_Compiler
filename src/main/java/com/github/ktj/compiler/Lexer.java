@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-final class Lexer {
+public final class Lexer {
 
-    public static TokenHandler lex(String line){
+    static TokenHandler lex(String line){
         List<Token> tokens = new ArrayList<>();
         char[] chars = line.trim().toCharArray();
         StringBuilder value;
@@ -126,7 +126,7 @@ final class Lexer {
         return new TokenHandler(tokens);
     }
 
-    static boolean isOperator(char c){
+    public static boolean isOperator(char c){
         return String.valueOf(c).matches("[-+*/!=<>%&|^~]");
     }
 }

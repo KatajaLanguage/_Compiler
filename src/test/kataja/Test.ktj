@@ -1,8 +1,7 @@
 use java/util/ArrayList
 
-main {
-    _list = ArrayList()
-    for e in list {
-    }
+main -> test("test")
+
+void test(Object o){
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

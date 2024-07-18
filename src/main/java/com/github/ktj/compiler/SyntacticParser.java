@@ -581,7 +581,10 @@ final class SyntacticParser {
                 if(th.isNext("(")){
                     ast.left = parseCalc();
                     th.assertToken(")");
-                    ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                    String[] methodSpecs = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                    if(methodSpecs == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.left.type);
+                    ast.type = methodSpecs[0];
+                    ast.op = methodSpecs[1];
                 }else{
                     AST.CalcArg arg = parseValue();
 
@@ -607,7 +610,7 @@ final class SyntacticParser {
                             left.left.right.arg = arg;
 
                             ast.left = left;
-                            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                            ast.type = arg.type;
                         }else{
                             ((AST.Value) arg).op = null;
                             AST.Calc left = new AST.Calc();
@@ -625,11 +628,14 @@ final class SyntacticParser {
                             left.right.arg = arg;
 
                             ast.left = left;
-                            ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                            ast.type = "boolean";
                         }
                     }else{
                         ast.arg = arg;
-                        ast.type = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+                        String[] methodSpecs = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
+                        if(methodSpecs == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);
+                        ast.type = methodSpecs[0];
+                        ast.op = methodSpecs[1];
                     }
                 }
             }
@@ -689,7 +695,7 @@ final class SyntacticParser {
                             ast.load.type = clazz;
                             ast.load.call = new AST.Call();
                             ast.load.call.type = clazz;
-                            ast.load.call.call = value;
+                            ast.load.call.name = value;
                             ast.load.call.clazz = clazz;
                             ast.load.call.statik = true;
                             break;
@@ -719,9 +725,10 @@ final class SyntacticParser {
                     if(arg instanceof AST.Cast) throw new RuntimeException("Expected value");
 
                     ((AST.Value) arg).op = op;
-                    String type = CompilerUtil.getOperatorReturnType(arg.type, op);
-                    if(type == null) throw new RuntimeException("Operator "+op+" is not defined for "+arg.type);
-                    arg.type = type;
+                    String[] methodsSpecs = CompilerUtil.getOperatorReturnType(arg.type, op);
+                    if(methodsSpecs == null) throw new RuntimeException("Operator "+op+" is not defined for "+arg.type);
+                    arg.type = methodsSpecs[0];
+                    ((AST.Value) arg).op = methodsSpecs[1];
 
                     return arg;
                 }
@@ -849,7 +856,7 @@ final class SyntacticParser {
                 th.last();
 
                 ast.call.clazz = CompilerUtil.isPrimitive(call) ? call : method.uses.get(call);
-                ast.call.call = "<init>";
+                ast.call.name = "<init>";
 
                 ArrayList<AST.Calc> args = new ArrayList<>();
 
@@ -869,7 +876,7 @@ final class SyntacticParser {
                 if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
 
                 ast.call.clazz = method.uses.get(call);
-                ast.call.call = "<init>";
+                ast.call.name = "<init>";
 
                 StringBuilder desc = new StringBuilder("<init>");
                 ArrayList<AST.Calc> args = new ArrayList<>();
@@ -884,12 +891,13 @@ final class SyntacticParser {
 
                 for (AST.Calc calc:args) desc.append("%").append(calc.type);
 
-                ast.call.type = CompilerUtil.getMethod(ast.call.clazz, false, desc.toString(), clazzName);
-                if(ast.call.type == null)
+                String[] methodSpecs = CompilerUtil.getMethod(ast.call.clazz, false, desc.toString(), clazzName);
+                if(methodSpecs == null)
                     throw new RuntimeException("Method "+desc+" is not defined for class "+ast.call.clazz);
 
+                ast.call.type = methodSpecs[0];
+                ast.call.signature = methodSpecs[1];
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
-                ast.call.call = "<init>";
                 ast.type = ast.call.type;
             }else{
                 if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
@@ -913,17 +921,18 @@ final class SyntacticParser {
 
                     for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                    ast.call.type = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
+                    String[] methodSpecs = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
+                    if(methodSpecs == null)
+                        throw new RuntimeException("Static Method "+desc+" is not defined for class "+ast.call.clazz);
 
-                    if(ast.call.type == null) throw new RuntimeException("Method "+desc+" is not defined for Class "+ast.call.clazz);
-
+                    ast.call.name = call;
+                    ast.call.type = methodSpecs[0];
+                    ast.call.signature = methodSpecs[1];
                     ast.type = ast.call.type;
-                    ast.call.type = ast.type;
                     ast.call.statik = true;
                     ast.call.argTypes = args.toArray(new AST.Calc[0]);
-                    ast.call.call = call;
                 }else{
-                    ast.call.call = call;
+                    ast.call.name = call;
                     ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
 
                     if(ast.call.type == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
@@ -940,7 +949,7 @@ final class SyntacticParser {
             }else if(th.isNext("(")){
                 ast.call = new AST.Call();
                 ast.call.clazz = clazzName;
-                ast.call.call = call;
+                ast.call.name = call;
 
                 StringBuilder desc = new StringBuilder(call);
                 ArrayList<AST.Calc> args = new ArrayList<>();
@@ -955,30 +964,32 @@ final class SyntacticParser {
 
                 for (AST.Calc calc : args) desc.append("%").append(calc.type);
 
-                ast.call.type = CompilerUtil.getMethod(ast.call.clazz, false, desc.toString(), clazzName);
+                String[] methodSpecs = CompilerUtil.getMethod(ast.call.clazz, false, desc.toString(), clazzName);
 
-                if(ast.call.type == null){
-                    ast.call.type = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
+                if(methodSpecs == null){
+                    methodSpecs = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
                     ast.call.statik = true;
                 }
 
-                if(ast.call.type == null){
+                if(methodSpecs == null){
                     ast.call.clazz = getClazzFromMethod(desc.toString());
                     if(ast.call.clazz == null)
                         throw new RuntimeException("Method " + desc + " is not defined for class " + clazzName);
-                    ast.call.type = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
+                    methodSpecs = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
                     ast.call.statik = true;
                 }
 
-                if(method == null) throw new RuntimeException("Method "+desc+" is not defined for Class "+ast.call.clazz);
-                ast.type = ast.call.type;
-                ast.call.type = ast.type;
+                if(methodSpecs == null) throw new RuntimeException("Method "+desc+" is not defined for Class "+ast.call.clazz);
+
+                ast.call.type = methodSpecs[0];
+                ast.call.signature = methodSpecs[1];
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
+                ast.type = ast.call.type;
             }else{
                 ast.call = new AST.Call();
                 ast.call.clazz = clazzName;
 
-                ast.call.call = call;
+                ast.call.name = call;
                 ast.call.type = CompilerUtil.getFieldType(clazzName, call, false, clazzName);
 
                 if(ast.call.type == null){
@@ -1011,7 +1022,7 @@ final class SyntacticParser {
 
                 ast.call.type = ast.call.clazz.substring(1);
                 ast.call.argTypes = new AST.Calc[]{parseCalc()};
-                ast.call.call = "";
+                ast.call.name = "";
                 th.assertToken("]");
 
                 if(!ast.call.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+ast.call.argTypes[0].type);
@@ -1049,12 +1060,16 @@ final class SyntacticParser {
             for (AST.Calc calc:args) desc.append("%").append(calc.type);
 
             call.argTypes = args.toArray(new AST.Calc[0]);
-            call.call = name;
-            call.type = CompilerUtil.getMethod(call.clazz, false, desc.toString(), clazzName);
-            if(call.type == null)
+
+            String[] methodSpecs = CompilerUtil.getMethod(name, false, desc.toString(), clazzName);
+            if(methodSpecs == null)
                 throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
+
+            call.name = name;
+            call.type = methodSpecs[0];
+            call.signature = methodSpecs[1];
         }else{
-            call.call = name;
+            call.name = name;
             call.type = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
 
             if(call.type == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
@@ -1067,7 +1082,7 @@ final class SyntacticParser {
             call.clazz = call.prev.type;
             call.type = call.clazz.substring(1);
             call.argTypes = new AST.Calc[]{parseCalc()};
-            call.call = "";
+            call.name = "";
             th.assertToken("]");
 
             if(!call.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+call.argTypes[0].type);
