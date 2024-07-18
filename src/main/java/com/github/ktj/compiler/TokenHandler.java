@@ -219,6 +219,6 @@ final class TokenHandler {
     public void setIndex(int i){
         index = i;
 
-        if(!isValid()) throw new RuntimeException("Invalid index "+i+" for length "+tokens.length);
+        if(index < -1 || index >= tokens.length) throw new RuntimeException("Invalid index "+i+" for length "+tokens.length);
     }
 }

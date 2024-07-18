@@ -27,6 +27,11 @@ public class CompilerUtil {
         NUMBER_OPERATORS.add("-");
         NUMBER_OPERATORS.add("*");
         NUMBER_OPERATORS.add("/");
+        NUMBER_OPERATORS.add("+=");
+        NUMBER_OPERATORS.add("-=");
+        NUMBER_OPERATORS.add("*=");
+        NUMBER_OPERATORS.add("/=");
+        NUMBER_OPERATORS.add("%=");
     }
 
     public static String operatorToIdentifier(String operator){
@@ -423,8 +428,8 @@ public class CompilerUtil {
     }
 
     public static boolean isSuperClass(String clazz, String superClass){
-        if(isPrimitive(clazz) || isPrimitive(superClass)) return false;
         if(clazz.equals(superClass)) return true;
+        if(isPrimitive(clazz) || isPrimitive(superClass)) return false;
         if(clazz.equals("java.lang.Object")) return false;
         if(superClass.equals("java.lang.Object")) return true;
 

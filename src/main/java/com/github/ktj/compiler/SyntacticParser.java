@@ -74,7 +74,7 @@ final class SyntacticParser {
 
         while(hasNextStatement()){
             try {
-                AST e = parseNextStatement();
+                AST e = parseNextStatement(false);
                 if(e != null) ast.add(e);
                 else if(th.isNext("}")) throw new RuntimeException("Illegal argument");
             }catch(RuntimeException e){
@@ -89,7 +89,7 @@ final class SyntacticParser {
         return ast.toArray(new AST[0]);
     }
 
-    private AST parseNextStatement(){
+    private AST parseNextStatement(boolean inLoop){
         if(!hasNextStatement()) return null;
 
         while((!th.hasNext() || th.isEmpty()) && hasNextLine()) nextLine();
@@ -101,12 +101,17 @@ final class SyntacticParser {
 
         AST ast;
 
-        switch(th.assertToken(Token.Type.IDENTIFIER).s){
+        switch(th.assertToken("_", Token.Type.IDENTIFIER, Token.Type.OPERATOR).s){
             case "while":
                 ast = parseWhile();
                 break;
             case "if":
-                ast = parseIf();
+                ast = parseIf(inLoop);
+                break;
+            case "break":
+                if(!inLoop) throw new RuntimeException("Nothing to break");
+                assertEndOfStatement();
+                ast = new AST.Break();
                 break;
             case "return":
                 ast = parseReturn();
@@ -162,20 +167,20 @@ final class SyntacticParser {
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
         if(th.assertToken("{", "->").equals("->")){
-            ast.ast = new AST[]{parseNextStatement()};
-        }else ast.ast = parseContent();
+            ast.ast = new AST[]{parseNextStatement(true)};
+        }else ast.ast = parseContent(true);
 
         return ast;
     }
 
-    private AST.If parseIf(){
+    private AST.If parseIf(boolean inLoop){
         AST.If ast = new AST.If();
 
         th.assertHasNext();
         ast.condition = parseCalc();
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
         if(th.assertToken("->", "{").equals("->")){
-            ast.ast = new AST[]{parseNextStatement()};
+            ast.ast = new AST[]{parseNextStatement(inLoop)};
 
             if(!th.hasNext() && hasNextLine()){
                 int index = th.getIndex();
@@ -187,7 +192,7 @@ final class SyntacticParser {
                 }
             }
         }else{
-            ast.ast = parseContent();
+            ast.ast = parseContent(inLoop);
             if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
         }
 
@@ -205,7 +210,7 @@ final class SyntacticParser {
             }else end = true;
 
             if(th.current().equals("->")){
-                current.ast = new AST[]{parseNextStatement()};
+                current.ast = new AST[]{parseNextStatement(inLoop)};
 
                 if(!th.hasNext() && hasNextLine()){
                     int index = th.getIndex();
@@ -217,7 +222,7 @@ final class SyntacticParser {
                     }
                 }
             }else if(th.current().equals("{")){
-                current.ast = parseContent();
+                current.ast = parseContent(inLoop);
                 if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
             }
         }
@@ -253,9 +258,9 @@ final class SyntacticParser {
                     }while(th.isNext(","));
                 }else defauld = true;
 
-                if(th.assertToken("->", "{").equals("->")) branches.add(new AST[]{parseNextStatement()});
+                if(th.assertToken("->", "{").equals("->")) branches.add(new AST[]{parseNextStatement(true)});
                 else{
-                    branches.add(parseContent());
+                    branches.add(parseContent(true));
                     if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
                 }
 
@@ -273,12 +278,28 @@ final class SyntacticParser {
         return ast;
     }
 
-    private AST[] parseContent(){
+    private AST.For parseFor(){
+        AST.For ast = new AST.For();
+        ast.variable = th.assertToken(Token.Type.IDENTIFIER).s;
+        if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
+        th.assertToken("in");
+        ast.load = parseCall();
+        if(!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable")) throw new RuntimeException("Expected type java.lang.Iterable got "+ast.load.type);
+
+        if(th.assertToken("{", "->").equals("->")){
+            ast.ast = new AST[]{parseNextStatement(true)};
+        }else ast.ast = parseContent(true);
+        assertEndOfStatement();
+
+        return ast;
+    }
+
+    private AST[] parseContent(boolean inLoop){
         scope = new Scope(scope);
         ArrayList<AST> astList = new ArrayList<>();
 
         while(!th.isNext("}")){
-            AST current = parseNextStatement();
+            AST current = parseNextStatement(inLoop);
             if(current != null) astList.add(current);
         }
 
@@ -289,23 +310,53 @@ final class SyntacticParser {
     }
 
     private AST parseStatement(){
-        if(!th.isNext(Token.Type.IDENTIFIER)) throw new RuntimeException("illegal argument");
+        if(!th.isNext(Token.Type.IDENTIFIER) && !th.isNext("_") && !th.isNext(Token.Type.OPERATOR)) throw new RuntimeException("illegal argument");
 
         boolean constant = th.current().equals("const");
-        if(constant) th.assertToken(Token.Type.IDENTIFIER);
+        if(constant) th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "_");
 
-        int i = 1;
+        if(th.current().equals("_")){
+            String name = th.assertToken(Token.Type.IDENTIFIER).s;
+            th.assertToken("=");
+            AST.Calc calc = parseCalc();
+            assertEndOfStatement();
 
-        while(th.isNext("[")){
-            i++;
-            if(th.isNext("]")) i++;
-            else break;
-        }
+            if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
+            scope.add(name, calc.type, constant);
 
-        if(th.isNext(Token.Type.IDENTIFIER) && i % 2 != 0){
-            for(int j = 0;j <= i;j++) th.last();
+            AST.VarAssignment ast = new AST.VarAssignment();
+            ast.calc = calc;
+            ast.type = calc.type;
+            ast.load = new AST.Load();
+            ast.load.type = ast.type;
+            ast.load.name = name;
+            ast.load.clazz = ast.type;
 
-            String type = th.assertToken(Token.Type.IDENTIFIER).s;
+            return ast;
+        }else{
+            if(th.current().equals(Token.Type.OPERATOR)){
+                if(constant) throw new RuntimeException("illegal argument");
+                th.last();
+                return parseAssignment();
+            }else if (th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
+                if(constant) throw new RuntimeException("illegal argument");
+                th.last();
+                th.last();
+                return parseAssignment();
+            }
+
+            int i = th.getIndex();
+            while(th.isNext("[")){
+                if(!th.isNext("]")){
+                    if(constant) throw new RuntimeException("illegal argument");
+                    th.setIndex(i);
+                    th.last();
+                    return parseAssignment();
+                }
+            }
+
+            th.setIndex(i);
+            String type = th.current().s;
 
             while(th.isNext("[")){
                 th.assertToken("]");
@@ -338,31 +389,35 @@ final class SyntacticParser {
             ast.load.clazz = type;
 
             return ast;
-        }else{
-            if(constant) throw new RuntimeException("illegal argument");
-
-            for(int j = 0;j < i;j++) th.last();
-            if(th.isValid() && th.current().equals(Token.Type.IDENTIFIER)) th.last();
-            AST.Load load = parseCall();
-
-            if(load.finaly) assertEndOfStatement();
-
-            if (th.hasNext()) {
-                th.assertToken("=");
-                AST.Calc calc = parseCalc();
-                assertEndOfStatement();
-
-                if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
-                if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
-
-                AST.VarAssignment ast = new AST.VarAssignment();
-                ast.calc = calc;
-                ast.load = load;
-                ast.type = ast.calc.type;
-
-                return ast;
-            } else return load;
         }
+    }
+
+    private AST parseAssignment(){
+        int i = th.getIndex();
+        if(i > -1 && th.current().equals(Token.Type.OPERATOR)) return parseCalc();
+
+        AST.Load load = parseCall();
+        if(load.finaly) assertEndOfStatement();
+
+        if(th.isNext("=")){
+            AST.Calc calc = parseCalc();
+            assertEndOfStatement();
+
+            if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
+            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
+
+            AST.VarAssignment ast = new AST.VarAssignment();
+            ast.calc = calc;
+            ast.load = load;
+            ast.type = ast.calc.type;
+
+            return ast;
+        }else if(th.hasNext()){
+            th.setIndex(i);
+            return parseCalc();
+        }
+
+        return load;
     }
 
     private AST.Calc parseCalc(){
@@ -425,6 +480,35 @@ final class SyntacticParser {
 
             if(ast.op.equals("=")){
                 ast.left = parseCalc();
+            }else if(ast.op.contains("=") && CompilerUtil.isPrimitive(ast.right.type)){
+                String op = ast.op.substring(0, 1);
+                ast.op = "=";
+                AST.Calc left = new AST.Calc();
+                left.arg = ast.right.arg;
+                left.type = ast.type;
+                left.setRight();
+                left.op = op;
+                left.type = ast.type;
+                left.left = parseCalc();
+                ast.left = left;
+
+                /*
+                left.arg = arg;
+                            left.type = arg.type;
+                            left.setRight();
+                            left.op = "=";
+                            left.type = arg.type;
+                            left.left = new AST.Calc();
+                            left.left.type = left.type;
+                            left.left.op = op;
+                            AST.Value value = new AST.Value();
+                            value.token = new Token("1", Token.Type.value(left.type));
+                            value.type = left.type;
+                            left.left.arg = value;
+                            left.left.right = new AST.Calc();
+                            left.left.right.type = left.type;
+                            left.left.right.arg = arg;
+                 */
             }else if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
                 AST.Value value = new AST.Value();
 

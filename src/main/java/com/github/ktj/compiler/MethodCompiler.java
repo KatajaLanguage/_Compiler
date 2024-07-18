@@ -33,9 +33,9 @@ final class MethodCompiler {
         for (AST value : ast) compileAST(value);
     }
 
-    private void compileAST(AST ast){
+    private ArrayList<Integer> compileAST(AST ast){
         if(ast instanceof AST.While) compileWhile((AST.While) ast);
-        else if(ast instanceof AST.If) compileIf((AST.If) ast);
+        else if(ast instanceof AST.If) return compileIf((AST.If) ast);
         else if(ast instanceof AST.Return) compileReturn((AST.Return) ast);
         else if(ast instanceof AST.Throw) compileThrow((AST.Throw) ast);
         else if(ast instanceof AST.Switch) compileSwitch((AST.Switch) ast);
@@ -44,10 +44,13 @@ final class MethodCompiler {
             if(!ast.type.equals("void"))
                 code.add(Opcode.POP);
         }else if(ast instanceof AST.VarAssignment) compileVarAssignment((AST.VarAssignment) ast, false);
+        else if(ast instanceof AST.Calc) compileCalc((AST.Calc) ast, true);
+
+        return new ArrayList<>();
     }
 
     private void compileSwitch(AST.Switch ast){
-        compileCalc(ast.calc);
+        compileCalc(ast.calc, false);
         if(!CompilerUtil.isPrimitive(ast.type)){
             if(ast.type.equals("java.lang.String")){
                 //int pos = os.push("&temp", 1);
@@ -85,7 +88,13 @@ final class MethodCompiler {
         for(AST[] asts:ast.branches){
             starts.add(code.getSize());
 
-            for (AST a : asts) compileAST(a);
+            for(AST a : asts){
+                if(a instanceof AST.Break){
+                    code.add(Opcode.GOTO);
+                    ends.add(code.getSize());
+                    code.addIndex(0);
+                }else ends.addAll(compileAST(a));
+            }
 
             if(asts.length == 0 || !(asts[asts.length - 1] instanceof AST.Return)){
                 code.add(Opcode.GOTO);
@@ -103,7 +112,13 @@ final class MethodCompiler {
         //default
         code.write32bit(defauld, code.getSize() - start);
 
-        if(ast.defauld != null) for(AST a:ast.defauld) compileAST(a);
+        if(ast.defauld != null) for(AST a:ast.defauld){
+            if(a instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                ends.add(code.getSize());
+                code.addIndex(0);
+            }else ends.addAll(compileAST(a));
+        }
 
         if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
     }
@@ -116,8 +131,7 @@ final class MethodCompiler {
             case CHAR:
                 return token.s.toCharArray()[0];
             case IDENTIFIER:
-                int i = CompilerUtil.getEnumOrdinal(type, token.s);
-                return i;
+                return CompilerUtil.getEnumOrdinal(type, token.s);
             case STRING:
                 return token.s.hashCode();
         }
@@ -125,12 +139,12 @@ final class MethodCompiler {
     }
 
     private void compileThrow(AST.Throw ast){
-        compileCalc(ast.calc);
+        compileCalc(ast.calc, false);
         code.add(Opcode.ATHROW);
     }
 
     private void compileReturn(AST.Return ast){
-        if(ast.calc != null) compileCalc(ast.calc);
+        if(ast.calc != null) compileCalc(ast.calc, false);
 
         switch(ast.type){
             case "void":
@@ -159,37 +173,50 @@ final class MethodCompiler {
     }
 
     private void compileWhile(AST.While ast){
+        ArrayList<Integer> breaks = new ArrayList<>();
+
         os.newScope();
         int start = code.getSize();
-        compileCalc(ast.condition);
+        compileCalc(ast.condition, false);
         code.addOpcode(Opcode.IFEQ);
-        int branch = code.getSize();
+        breaks.add(code.getSize());
         code.addIndex(0);
 
-        for(AST statement: ast.ast)
-            compileAST(statement);
+        for(AST statement: ast.ast){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
 
         code.addOpcode(Opcode.GOTO);
         code.addIndex(-(code.getSize() - start) + 1);
-        code.write16bit(branch, code.getSize() - branch + 1);
+        for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
         os.clearScope(code);
     }
 
-    private void compileIf(AST.If ast){
+    private ArrayList<Integer> compileIf(AST.If ast){
         ArrayList<Integer> gotos = new ArrayList<>();
+        ArrayList<Integer> breaks = new ArrayList<>();
         int branch = 0;
 
         while (ast != null){
             os.newScope();
             if(ast.condition != null) {
-                compileCalc(ast.condition);
+                compileCalc(ast.condition, false);
                 code.addOpcode(Opcode.IFEQ);
                 branch = code.getSize();
                 code.addIndex(0);
             }
 
-            for(AST statement:ast.ast)
-                compileAST(statement);
+            for(AST statement:ast.ast) {
+                if(statement instanceof AST.Break){
+                    code.add(Opcode.GOTO);
+                    breaks.add(code.getSize());
+                    code.addIndex(0);
+                }else breaks.addAll(compileAST(statement));
+            }
 
             if(ast.elif != null){
                 code.addOpcode(Opcode.GOTO);
@@ -206,6 +233,8 @@ final class MethodCompiler {
 
         for(int i:gotos)
             code.write16bit(i, code.getSize() - i + 1);
+
+        return breaks;
     }
 
     private void compileCall(AST.Load ast, boolean all){
@@ -262,7 +291,7 @@ final class MethodCompiler {
             if(!call.statik && first && call.clazz.equals(clazzName) && !call.call.equals("<init>")) code.addAload(0);
 
             if(!call.call.equals("<init>") || call.type.startsWith("[")){
-                for(AST.Calc calc:call.argTypes) compileCalc(calc);
+                for(AST.Calc calc:call.argTypes) compileCalc(calc, false);
             }
 
             if(call.clazz.startsWith("[")){
@@ -295,7 +324,7 @@ final class MethodCompiler {
             }else if(call.call.equals("<init>")){
                 code.addNew(call.clazz);
                 code.add(Opcode.DUP);
-                for(AST.Calc calc:call.argTypes) compileCalc(calc);
+                for(AST.Calc calc:call.argTypes) compileCalc(calc, false);
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.toDesc("void", call.argTypes));
             }else if(call.statik) code.addInvokestatic(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
             else code.addInvokevirtual(call.clazz, call.call, CompilerUtil.toDesc(call.type, call.argTypes));
@@ -307,7 +336,7 @@ final class MethodCompiler {
         compileCall(ast.load, false);
 
         if(ast.load.call == null){
-            compileCalc(ast.calc);
+            compileCalc(ast.calc, false);
             if(dup) code.add(Opcode.DUP);
 
             int where = os.get(ast.load.name);
@@ -339,8 +368,8 @@ final class MethodCompiler {
             }
         }else{
             if(ast.load.call.clazz.startsWith("[")){
-                compileCalc(ast.load.call.argTypes[0]);
-                compileCalc(ast.calc); //TODO
+                compileCalc(ast.load.call.argTypes[0], false);
+                compileCalc(ast.calc, false); //TODO
 
                 switch(ast.load.call.clazz){
                     case "[int":
@@ -364,20 +393,20 @@ final class MethodCompiler {
                         break;
                 }
             }else if(ast.load.call.statik){
-                compileCalc(ast.calc);
+                compileCalc(ast.calc, false);
                 if(dup) code.add(Opcode.DUP);
                 code.addPutstatic(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
             }else{
-                compileCalc(ast.calc);
+                compileCalc(ast.calc, false);
                 if(dup) code.add(Opcode.DUP);
                 code.addPutfield(ast.load.call.clazz, ast.load.call.call, CompilerUtil.toDesc(ast.load.call.type));
             }
         }
     }
 
-    private void compileCalc(AST.Calc ast){
+    private void compileCalc(AST.Calc ast, boolean isStatement){
         if(ast.op != null && ast.op.equals("=")){
-            if(ast.right.right != null) compileCalc(ast.right.right);
+            if(ast.right.right != null) compileCalc(ast.right.right, false);
 
             assert ast.right.arg instanceof AST.Value;
 
@@ -385,13 +414,13 @@ final class MethodCompiler {
             varAssignment.calc = ast.left;
             varAssignment.load = ((AST.Value) ast.right.arg).load;
             varAssignment.type = ast.type;
-            compileVarAssignment(varAssignment, true);
+            compileVarAssignment(varAssignment, !isStatement);
 
             if(ast.right.right != null) compileOperator(ast);
             return;
         }
 
-        if(ast.right != null) compileCalc(ast.right);
+        if(ast.right != null) compileCalc(ast.right, false);
 
         if(ast.op != null){
             if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type)){
@@ -405,7 +434,7 @@ final class MethodCompiler {
                     if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
                     else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
                     else compileValue((AST.Value) ast.arg);
-                }else compileCalc(ast.left);
+                }else compileCalc(ast.left, false);
                 code.add(Opcode.IFEQ);
                 int branchLocation2 = code.getSize();
                 code.addIndex(0);
@@ -426,7 +455,7 @@ final class MethodCompiler {
                     if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
                     else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
                     else compileValue((AST.Value) ast.arg);
-                }else compileCalc(ast.left);
+                }else compileCalc(ast.left, false);
                 code.add(Opcode.IFEQ);
                 int branchLocation2 = code.getSize();
                 code.addIndex(0);
@@ -446,12 +475,12 @@ final class MethodCompiler {
             if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
             else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
             else compileValue((AST.Value) ast.arg);
-        }else compileCalc(ast.left);
+        }else compileCalc(ast.left, false);
         if(ast.op != null) compileOperator(ast);
     }
 
     private void compileCast(AST.Cast ast){
-        compileCalc(ast.calc);
+        compileCalc(ast.calc, false);
 
         switch(ast.calc.type){
             case "int":
@@ -876,7 +905,7 @@ final class MethodCompiler {
             calc.arg = new AST.Value();
             calc.arg.type = "int";
             ((AST.Value)(calc.arg)).token = new Token(String.valueOf(length), Token.Type.INTEGER);
-            compileCalc(calc);
+            compileCalc(calc, false);
             code.addAnewarray(CompilerUtil.toDesc(ast.type.substring(1)));
         }
 
@@ -885,7 +914,7 @@ final class MethodCompiler {
             if(i < 6) code.addIconst(i);
             else code.add(Opcode.BIPUSH ,i);
 
-            compileCalc(ast.calcs[i]);
+            compileCalc(ast.calcs[i], false);
 
             switch(ast.type.substring(1)){
                 case "int":

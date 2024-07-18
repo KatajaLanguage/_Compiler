@@ -123,4 +123,12 @@ abstract class AST {
         AST[] defauld = null;
         Calc calc = null;
     }
+
+    static class For extends AST{
+        String variable = null;
+        Load load = null;
+        AST[] ast = null;
+    }
+
+    static class Break extends AST{}
 }
