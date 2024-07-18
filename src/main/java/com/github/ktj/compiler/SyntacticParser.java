@@ -169,9 +169,13 @@ final class SyntacticParser {
 
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
+        scope = new Scope(scope);
+
         if(th.assertToken("{", "->").equals("->")){
             ast.ast = new AST[]{parseNextStatement(true)};
         }else ast.ast = parseContent(true);
+
+        scope = scope.last;
 
         return ast;
     }
@@ -182,6 +186,9 @@ final class SyntacticParser {
         th.assertHasNext();
         ast.condition = parseCalc();
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
+
+        scope = new Scope(scope);
+
         if(th.assertToken("->", "{").equals("->")){
             ast.ast = new AST[]{parseNextStatement(inLoop)};
 
@@ -199,6 +206,8 @@ final class SyntacticParser {
             if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
         }
 
+        scope = scope.last;
+
         AST.If current = ast;
         boolean end = false;
         while (th.hasNext() && !end) {
@@ -213,7 +222,9 @@ final class SyntacticParser {
             }else end = true;
 
             if(th.current().equals("->")){
+                scope = new Scope(scope);
                 current.ast = new AST[]{parseNextStatement(inLoop)};
+                scope = scope.last;
 
                 if(!th.hasNext() && hasNextLine()){
                     int index = th.getIndex();
@@ -225,8 +236,12 @@ final class SyntacticParser {
                     }
                 }
             }else if(th.current().equals("{")){
+                scope = new Scope(scope);
+
                 current.ast = parseContent(inLoop);
                 if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+
+                scope = scope.last;
             }
         }
 
@@ -300,11 +315,15 @@ final class SyntacticParser {
     private AST.TryCatch parseTry(boolean inLoop){
         AST.TryCatch ast = new AST.TryCatch();
 
+        scope = new Scope(scope);
+
         if(th.assertToken("->", "{").equals("->")) ast.tryAST = new AST[]{parseNextStatement(inLoop)};
         else{
             ast.tryAST = parseContent(inLoop);
             if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
         }
+
+        scope = scope.last;
 
         th.assertToken("catch");
         th.assertToken("(");
@@ -317,11 +336,15 @@ final class SyntacticParser {
         scope.add(ast.variable, ast.type, false);
         th.assertToken(")");
 
+        scope = new Scope(scope);
+
         if(th.assertToken("->", "{").equals("->")) ast.catchAST = new AST[]{parseNextStatement(inLoop)};
         else{
             ast.catchAST = parseContent(inLoop);
             if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
         }
+
+        scope = scope.last;
 
         assertEndOfStatement();
         return ast;

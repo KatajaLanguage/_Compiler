@@ -87,6 +87,7 @@ final class MethodCompiler {
         ArrayList<Integer> starts = new ArrayList<>();
 
         for(AST[] asts:ast.branches){
+            os.newScope();
             starts.add(code.getSize());
 
             for(AST a : asts){
@@ -102,6 +103,7 @@ final class MethodCompiler {
                 ends.add(code.getSize());
                 code.addIndex(0);
             }
+            os.clearScope(code);
         }
 
         int i = 1;
@@ -114,11 +116,13 @@ final class MethodCompiler {
         code.write32bit(defauld, code.getSize() - start);
 
         if(ast.defauld != null) for(AST a:ast.defauld){
+            os.newScope();
             if(a instanceof AST.Break){
                 code.add(Opcode.GOTO);
                 ends.add(code.getSize());
                 code.addIndex(0);
             }else ends.addAll(compileAST(a));
+            os.clearScope(code);
         }
 
         if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
@@ -258,8 +262,8 @@ final class MethodCompiler {
             if(ast.condition != null)
                 code.write16bit(branch, code.getSize() - branch + 1);
 
-            ast = ast.elif;
             os.clearScope(code);
+            ast = ast.elif;
         }
 
         for(int i:gotos)

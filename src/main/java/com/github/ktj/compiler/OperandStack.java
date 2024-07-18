@@ -133,6 +133,7 @@ final class OperandStack {
             //code.addOpcode(Opcode.POP);
             pop();
         }
+        scopes.remove(scopes.size() - 1);
     }
 
     void newScope(){
