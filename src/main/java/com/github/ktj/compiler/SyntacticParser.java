@@ -305,13 +305,14 @@ final class SyntacticParser {
         if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
         th.assertToken("in");
         ast.load = parseCall();
-        if(!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable")) throw new RuntimeException("Expected type java.lang.Iterable got "+ast.load.type);
+        if(!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable") && !ast.load.type.startsWith("[")) throw new RuntimeException("Expected type java.lang.Iterable got "+ast.load.type);
 
         if(th.assertToken("{", "->").equals("->")){
             ast.ast = new AST[]{parseNextStatement(true)};
         }else ast.ast = parseContent(true);
         assertEndOfStatement();
 
+        ast.type = ast.load.type;
         return ast;
     }
 

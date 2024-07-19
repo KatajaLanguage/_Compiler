@@ -210,22 +210,77 @@ final class MethodCompiler {
 
     private void compileFor(AST.For ast){
         ArrayList<Integer> breaks = new ArrayList<>();
+        int loop = -1;
 
         compileCall(ast.load, true);
-        code.addInvokevirtual(ast.load.type, "iterator", "()Ljava.util.Iterator;");
-        int where = os.push("&i", 1);
-        os.push(ast.variable, 1);
-        os.newScope();
-        code.addAstore(where);
-        int loop = code.getSize();
-        code.addAload(where);
-        code.addInvokeinterface("java.util.Iterator", "hasNext", "()Z", 1);
-        code.add(Opcode.IFEQ);
-        breaks.add(code.getSize());
-        code.addIndex(0);
-        code.addAload(where);
-        code.addInvokeinterface("java.util.Iterator", "next", "()Ljava/lang/Object;", 1);
-        code.addAstore(where + 1);
+        if(ast.type.startsWith("[")){
+            os.newScope();
+            int where = os.push("&i", 1);
+            os.push(ast.variable, 1);
+            code.addAstore(where);
+            code.addAload(where);
+            code.add(Opcode.ARRAYLENGTH);
+            os.push("&temp1", 1);
+            code.addIstore(where + 1);
+            code.addIconst(0);
+            os.push("&temp2", 1);
+            code.addIstore(where + 2);
+            loop = code.getSize();
+            code.addIload(where + 2);
+            code.addIload(where + 1);
+            code.add(Opcode.IF_ICMPGE);
+            breaks.add(code.getSize());
+            code.addIndex(0);
+            code.addAload(where);
+            code.addIload(where + 2);
+            switch(ast.type){
+                case "[int":
+                case "[short":
+                case "[char":
+                case "[boolean":
+                case "[byte":
+                    code.add(Opcode.IALOAD);
+                    os.push(ast.variable, 1);
+                    code.addIstore(where + 3);
+                    break;
+                case "[double":
+                    code.add(Opcode.DALOAD);
+                    os.push(ast.variable, 2);
+                    code.addIstore(where + 3);
+                    break;
+                case "[float":
+                    code.add(Opcode.FALOAD);
+                    os.push(ast.variable, 1);
+                    code.addIstore(where + 3);
+                    break;
+                case "[long":
+                    code.add(Opcode.LALOAD);
+                    os.push(ast.variable, 2);
+                    code.addIstore(where + 3);
+                    break;
+                default:
+                    code.add(Opcode.AALOAD);
+                    os.push(ast.variable, 1);
+                    code.addIstore(where + 3);
+                    break;
+            }
+        }else {
+            code.addInvokevirtual(ast.load.type, "iterator", "()Ljava.util.Iterator;");
+            os.newScope();
+            int where = os.push("&i", 1);
+            os.push(ast.variable, 1);
+            code.addAstore(where);
+            loop = code.getSize();
+            code.addAload(where);
+            code.addInvokeinterface("java.util.Iterator", "hasNext", "()Z", 1);
+            code.add(Opcode.IFEQ);
+            breaks.add(code.getSize());
+            code.addIndex(0);
+            code.addAload(where);
+            code.addInvokeinterface("java.util.Iterator", "next", "()Ljava/lang/Object;", 1);
+            os.push("&temp", 1);
+            code.addAstore(where + 1);
+        }
 
         for(AST statement: ast.ast){
             if(statement instanceof AST.Break){
@@ -233,6 +288,13 @@ final class MethodCompiler {
                 breaks.add(code.getSize());
                 code.addIndex(0);
             }else breaks.addAll(compileAST(statement));
+        }
+
+        if(ast.type.startsWith("[")){
+            code.addIload(os.get("&i") + 2);
+            code.addIconst(1);
+            code.add(Opcode.IADD);
+            code.addIstore(os.get("&i") + 2);
         }
 
         code.add(Opcode.GOTO);

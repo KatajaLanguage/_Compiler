@@ -1,6 +1,8 @@
 int[] i = {1, 2 ..5}
 
 main {
-    _j = i[3]
+    for j in i {
+
+    }
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
