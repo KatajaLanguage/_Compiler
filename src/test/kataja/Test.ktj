@@ -1,9 +1,5 @@
 use $java/lang/System
+use java/util/ArrayList
 
-main {
-    for j in {1, 2 ..10} {
-        out.println(j)
-        _i = j + 5
-    }
-}
+main -> out.println(args.length == 0 ? 3*7 : 8+6)
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

@@ -638,6 +638,7 @@ final class MethodCompiler {
                 if(ast.left == null){
                     if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
                     else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+                    else if(ast.arg instanceof AST.InlineIf) compileInlineIf((AST.InlineIf) ast.arg);
                     else compileValue((AST.Value) ast.arg);
                 }else compileCalc(ast.left, false);
                 code.add(Opcode.IFEQ);
@@ -659,6 +660,7 @@ final class MethodCompiler {
                 if(ast.left == null){
                     if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
                     else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+                    else if(ast.arg instanceof AST.InlineIf) compileInlineIf((AST.InlineIf) ast.arg);
                     else compileValue((AST.Value) ast.arg);
                 }else compileCalc(ast.left, false);
                 code.add(Opcode.IFEQ);
@@ -679,9 +681,24 @@ final class MethodCompiler {
         if(ast.left == null){
             if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
             else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+            else if(ast.arg instanceof AST.InlineIf) compileInlineIf((AST.InlineIf) ast.arg);
             else compileValue((AST.Value) ast.arg);
         }else compileCalc(ast.left, false);
         if(ast.op != null) compileOperator(ast);
+    }
+
+    private void compileInlineIf(AST.InlineIf ast){
+        compileCalc(ast.condition, false);
+        code.add(Opcode.IFEQ);
+        int start = code.getSize();
+        code.addIndex(0);
+        compileCalc(ast.trueValue, false);
+        code.add(Opcode.GOTO);
+        int end = code.getSize();
+        code.addIndex(0);
+        code.write16bit(start, code.getSize() - start + 1);
+        compileCalc(ast.falseValue, false);
+        code.write16bit(end, code.getSize() - end + 1);
     }
 
     private void compileCast(AST.Cast ast){

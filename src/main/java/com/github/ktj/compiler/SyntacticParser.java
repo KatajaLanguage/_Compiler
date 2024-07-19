@@ -547,8 +547,25 @@ final class SyntacticParser {
         }
 
         while(th.hasNext()){
-            if(!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")){
+            if((!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")) && !th.current().equals("?")){
                 th.last();
+                return ast;
+            }
+
+            if(th.current().equals("?")){
+                AST.InlineIf arg = new AST.InlineIf();
+                if(!ast.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.type);
+                arg.condition = ast;
+                arg.trueValue = parseCalc();
+                arg.type = arg.trueValue.type;
+                th.assertToken(":");
+                arg.falseValue = parseCalc();
+                if(!arg.type.equals(arg.falseValue.type)) throw new RuntimeException("Expected type "+ast.type+" got "+arg.falseValue.type);
+
+                ast = new AST.Calc();
+                ast.arg = arg;
+                ast.type = ast.arg.type;
+
                 return ast;
             }
 
@@ -557,7 +574,7 @@ final class SyntacticParser {
 
             if(ast.op.equals("=")){
                 ast.left = parseCalc();
-            }else if(ast.op.contains("=") && CompilerUtil.isPrimitive(ast.right.type)){
+            }else if(CompilerUtil.isPrimitive(ast.right.type) && (ast.op.equals("+=") || ast.op.equals("-=") || ast.op.equals("*=") || ast.op.equals("/=") || ast.op.equals("%="))){
                 String op = ast.op.substring(0, 1);
                 ast.op = "=";
                 AST.Calc left = new AST.Calc();
@@ -568,24 +585,6 @@ final class SyntacticParser {
                 left.type = ast.type;
                 left.left = parseCalc();
                 ast.left = left;
-
-                /*
-                left.arg = arg;
-                            left.type = arg.type;
-                            left.setRight();
-                            left.op = "=";
-                            left.type = arg.type;
-                            left.left = new AST.Calc();
-                            left.left.type = left.type;
-                            left.left.op = op;
-                            AST.Value value = new AST.Value();
-                            value.token = new Token("1", Token.Type.value(left.type));
-                            value.type = left.type;
-                            left.left.arg = value;
-                            left.left.right = new AST.Calc();
-                            left.left.right.type = left.type;
-                            left.left.right.arg = arg;
-                 */
             }else if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
                 AST.Value value = new AST.Value();
 

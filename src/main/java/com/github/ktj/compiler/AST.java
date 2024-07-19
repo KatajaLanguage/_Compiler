@@ -61,6 +61,12 @@ abstract class AST {
         Calc[] calcs = null;
     }
 
+    static class InlineIf extends CalcArg{
+        Calc condition = null;
+        Calc trueValue = null;
+        Calc falseValue = null;
+    }
+
     static final class Load extends AST{
         String name = null;
         String clazz = null;
