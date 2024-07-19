@@ -108,7 +108,7 @@ public class CompilerUtil {
 
     public static String signatureToDesc(String methodSignature, String returnType){
         StringBuilder sb = new StringBuilder("(");
-        for(String arg:methodSignature.split("%")) sb.append(toDesc(arg));
+        if(!methodSignature.isEmpty()) for(String arg:methodSignature.split("%")) sb.append(toDesc(arg));
         sb.append(")").append(toDesc(returnType));
         return sb.toString();
     }

@@ -131,6 +131,9 @@ abstract class AST {
         String variable = null;
         Load load = null;
         AST[] ast = null;
+        Token from = null;
+        Calc to = null;
+        Token step = null;
     }
 
     static class Break extends AST{}

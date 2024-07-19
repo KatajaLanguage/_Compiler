@@ -304,15 +304,32 @@ final class SyntacticParser {
         ast.variable = th.assertToken(Token.Type.IDENTIFIER).s;
         if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
         th.assertToken("in");
-        ast.load = parseCall();
-        if(!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable") && !ast.load.type.startsWith("[")) throw new RuntimeException("Expected type java.lang.Iterable got "+ast.load.type);
+        if(th.isNext("{")){
+            th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.DOUBLE, Token.Type.FLOAT);
+            Token.Type type = th.current().t;
+            ast.from = th.current();
+            th.assertToken(",");
+            ast.step = th.assertToken(type);
+            th.assertToken(".");
+            th.assertToken(".");
+            ast.to = parseCalc();
+            if(!ast.to.type.equals(type.toString())) throw new RuntimeException("Expected type "+type+" got " + ast.to.type);
+            ast.type = type.toString();
+            th.assertToken("}");
+        }else {
+            ast.load = parseCall();
+            if (!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable") && !ast.load.type.startsWith("["))
+                throw new RuntimeException("Expected type java.lang.Iterable got " + ast.load.type);
+            ast.type = ast.load.type;
+        }
+
+        scope.add(ast.variable, ast.type, false);
 
         if(th.assertToken("{", "->").equals("->")){
             ast.ast = new AST[]{parseNextStatement(true)};
         }else ast.ast = parseContent(true);
         assertEndOfStatement();
 
-        ast.type = ast.load.type;
         return ast;
     }
 
@@ -1062,7 +1079,7 @@ final class SyntacticParser {
 
             call.argTypes = args.toArray(new AST.Calc[0]);
 
-            String[] methodSpecs = CompilerUtil.getMethod(name, false, desc.toString(), clazzName);
+            String[] methodSpecs = CompilerUtil.getMethod(call.clazz, false, desc.toString(), clazzName);
             if(methodSpecs == null)
                 throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
 

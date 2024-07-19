@@ -210,76 +210,122 @@ final class MethodCompiler {
 
     private void compileFor(AST.For ast){
         ArrayList<Integer> breaks = new ArrayList<>();
+        os.newScope();
         int loop = -1;
 
-        compileCall(ast.load, true);
-        if(ast.type.startsWith("[")){
-            os.newScope();
-            int where = os.push("&i", 1);
-            os.push(ast.variable, 1);
-            code.addAstore(where);
-            code.addAload(where);
-            code.add(Opcode.ARRAYLENGTH);
-            os.push("&temp1", 1);
-            code.addIstore(where + 1);
-            code.addIconst(0);
-            os.push("&temp2", 1);
-            code.addIstore(where + 2);
-            loop = code.getSize();
-            code.addIload(where + 2);
-            code.addIload(where + 1);
-            code.add(Opcode.IF_ICMPGE);
-            breaks.add(code.getSize());
-            code.addIndex(0);
-            code.addAload(where);
-            code.addIload(where + 2);
+        if(ast.from != null){
+            AST.Value value = new AST.Value();
+            value.token = ast.from;
+            value.type = ast.type;
+            compileValue(value);
+            int where;
             switch(ast.type){
-                case "[int":
-                case "[short":
-                case "[char":
-                case "[boolean":
-                case "[byte":
-                    code.add(Opcode.IALOAD);
-                    os.push(ast.variable, 1);
-                    code.addIstore(where + 3);
+                case "short":
+                case "int":
+                    where = os.push("&i", 1);
+                    code.addIstore(where);
+                    loop = code.getSize();
+                    code.addIload(where);
+                    compileCalc(ast.to, false);
+                    int stepI = Integer.parseInt(ast.step.s) - Integer.parseInt(ast.from.s);
+                    if(stepI < 0) code.add(Opcode.IF_ICMPLE);
+                    else code.add(Opcode.IF_ICMPGE);
+                    breaks.add(code.getSize());
+                    code.addIndex(0);
                     break;
-                case "[double":
-                    code.add(Opcode.DALOAD);
-                    os.push(ast.variable, 2);
-                    code.addIstore(where + 3);
+                case "double":
+                    where = os.push("&i", 2);
+                    code.addDstore(where);
+                    loop = code.getSize();
+                    code.addDload(where);
+                    compileCalc(ast.to, false);
+                    double stepD = Double.parseDouble(ast.step.s) - Double.parseDouble(ast.from.s);
+                    if(stepD < 0) code.add(Opcode.DCMPL);
+                    else code.add(Opcode.DCMPG);
+                    breaks.add(code.getSize());
+                    code.addIndex(0);
                     break;
-                case "[float":
-                    code.add(Opcode.FALOAD);
-                    os.push(ast.variable, 1);
-                    code.addIstore(where + 3);
-                    break;
-                case "[long":
-                    code.add(Opcode.LALOAD);
-                    os.push(ast.variable, 2);
-                    code.addIstore(where + 3);
-                    break;
-                default:
-                    code.add(Opcode.AALOAD);
-                    os.push(ast.variable, 1);
-                    code.addIstore(where + 3);
+                case "float":
+                    where = os.push("&i", 1);
+                    code.addFstore(where);
+                    loop = code.getSize();
+                    code.addFload(where);
+                    compileCalc(ast.to, false);
+                    float stepF = Float.parseFloat(ast.step.s) - Float.parseFloat(ast.from.s);
+                    if(stepF < 0) code.add(Opcode.FCMPL);
+                    else code.add(Opcode.FCMPG);
+                    breaks.add(code.getSize());
+                    code.addIndex(0);
                     break;
             }
         }else {
-            code.addInvokevirtual(ast.load.type, "iterator", "()Ljava.util.Iterator;");
-            os.newScope();
-            int where = os.push("&i", 1);
-            os.push(ast.variable, 1);
-            code.addAstore(where);
-            loop = code.getSize();
-            code.addAload(where);
-            code.addInvokeinterface("java.util.Iterator", "hasNext", "()Z", 1);
-            code.add(Opcode.IFEQ);
-            breaks.add(code.getSize());
-            code.addIndex(0);
-            code.addAload(where);
-            code.addInvokeinterface("java.util.Iterator", "next", "()Ljava/lang/Object;", 1);
-            os.push("&temp", 1);
-            code.addAstore(where + 1);
+            compileCall(ast.load, true);
+            if (ast.type.startsWith("[")) {
+                int where = os.push("&i", 1);
+                os.push(ast.variable, 1);
+                code.addAstore(where);
+                code.addAload(where);
+                code.add(Opcode.ARRAYLENGTH);
+                os.push("&temp1", 1);
+                code.addIstore(where + 1);
+                code.addIconst(0);
+                os.push("&temp2", 1);
+                code.addIstore(where + 2);
+                loop = code.getSize();
+                code.addIload(where + 2);
+                code.addIload(where + 1);
+                code.add(Opcode.IF_ICMPGE);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+                code.addAload(where);
+                code.addIload(where + 2);
+                switch (ast.type) {
+                    case "[int":
+                    case "[short":
+                    case "[char":
+                    case "[boolean":
+                    case "[byte":
+                        code.add(Opcode.IALOAD);
+                        os.push(ast.variable, 1);
+                        code.addIstore(where + 3);
+                        break;
+                    case "[double":
+                        code.add(Opcode.DALOAD);
+                        os.push(ast.variable, 2);
+                        code.addIstore(where + 3);
+                        break;
+                    case "[float":
+                        code.add(Opcode.FALOAD);
+                        os.push(ast.variable, 1);
+                        code.addIstore(where + 3);
+                        break;
+                    case "[long":
+                        code.add(Opcode.LALOAD);
+                        os.push(ast.variable, 2);
+                        code.addIstore(where + 3);
+                        break;
+                    default:
+                        code.add(Opcode.AALOAD);
+                        os.push(ast.variable, 1);
+                        code.addIstore(where + 3);
+                        break;
+                }
+            } else {
+                code.addInvokevirtual(ast.load.type, "iterator", "()Ljava.util.Iterator;");
+                int where = os.push("&i", 1);
+                os.push(ast.variable, 1);
+                code.addAstore(where);
+                loop = code.getSize();
+                code.addAload(where);
+                code.addInvokeinterface("java.util.Iterator", "hasNext", "()Z", 1);
+                code.add(Opcode.IFEQ);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+                code.addAload(where);
+                code.addInvokeinterface("java.util.Iterator", "next", "()Ljava/lang/Object;", 1);
+                os.push("&temp", 1);
+                code.addAstore(where + 1);
+            }
         }
 
         for(AST statement: ast.ast){
@@ -295,6 +341,34 @@ final class MethodCompiler {
             code.addIconst(1);
             code.add(Opcode.IADD);
             code.addIstore(os.get("&i") + 2);
+        }else if(ast.from != null){
+            switch(ast.type){
+                case "short":
+                case "int":
+                    code.addIload(os.get("&i"));
+                    code.addIconst(1);
+                    code.add(Opcode.IADD);
+                    code.addIstore(os.get("&i"));
+                    break;
+                case "long":
+                    code.addLload(os.get("&i"));
+                    code.addLconst(1);
+                    code.add(Opcode.LADD);
+                    code.addLstore(os.get("&i"));
+                    break;
+                case "double":
+                    code.addDload(os.get("&i"));
+                    code.addDconst(1);
+                    code.add(Opcode.DADD);
+                    code.addDstore(os.get("&i"));
+                    break;
+                case "float":
+                    code.addFload(os.get("&i"));
+                    code.addFconst(1);
+                    code.add(Opcode.FADD);
+                    code.addFstore(os.get("&i"));
+                    break;
+            }
         }
 
         code.add(Opcode.GOTO);

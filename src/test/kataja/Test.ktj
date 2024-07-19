@@ -1,8 +1,8 @@
-int[] i = {1, 2 ..5}
+use $java/lang/System
 
 main {
-    for j in i {
-
+    for j in {1, 2 ..10} {
+        out.println(j)
     }
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
