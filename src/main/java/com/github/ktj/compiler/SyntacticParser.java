@@ -304,8 +304,26 @@ final class SyntacticParser {
         ast.variable = th.assertToken(Token.Type.IDENTIFIER).s;
         if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
         th.assertToken("in");
-        ast.load = parseCall();
-        if(!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable")) throw new RuntimeException("Expected type java.lang.Iterable got "+ast.load.type);
+        if(th.isNext("{")){
+            th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.DOUBLE, Token.Type.FLOAT);
+            Token.Type type = th.current().t;
+            ast.from = th.current();
+            th.assertToken(",");
+            ast.step = th.assertToken(type);
+            th.assertToken(".");
+            th.assertToken(".");
+            ast.to = parseCalc();
+            if(!ast.to.type.equals(type.toString())) throw new RuntimeException("Expected type "+type+" got " + ast.to.type);
+            ast.type = type.toString();
+            th.assertToken("}");
+        }else {
+            ast.load = parseCall();
+            if (!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable") && !ast.load.type.startsWith("["))
+                throw new RuntimeException("Expected type java.lang.Iterable got " + ast.load.type);
+            ast.type = ast.load.type;
+        }
+
+        scope.add(ast.variable, ast.type, false);
 
         if(th.assertToken("{", "->").equals("->")){
             ast.ast = new AST[]{parseNextStatement(true)};
@@ -529,8 +547,25 @@ final class SyntacticParser {
         }
 
         while(th.hasNext()){
-            if(!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")){
+            if((!th.next().equals(Token.Type.OPERATOR) || th.current().equals("->")) && !th.current().equals("?")){
                 th.last();
+                return ast;
+            }
+
+            if(th.current().equals("?")){
+                AST.InlineIf arg = new AST.InlineIf();
+                if(!ast.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.type);
+                arg.condition = ast;
+                arg.trueValue = parseCalc();
+                arg.type = arg.trueValue.type;
+                th.assertToken(":");
+                arg.falseValue = parseCalc();
+                if(!arg.type.equals(arg.falseValue.type)) throw new RuntimeException("Expected type "+ast.type+" got "+arg.falseValue.type);
+
+                ast = new AST.Calc();
+                ast.arg = arg;
+                ast.type = ast.arg.type;
+
                 return ast;
             }
 
@@ -539,7 +574,7 @@ final class SyntacticParser {
 
             if(ast.op.equals("=")){
                 ast.left = parseCalc();
-            }else if(ast.op.contains("=") && CompilerUtil.isPrimitive(ast.right.type)){
+            }else if(CompilerUtil.isPrimitive(ast.right.type) && (ast.op.equals("+=") || ast.op.equals("-=") || ast.op.equals("*=") || ast.op.equals("/=") || ast.op.equals("%="))){
                 String op = ast.op.substring(0, 1);
                 ast.op = "=";
                 AST.Calc left = new AST.Calc();
@@ -550,24 +585,6 @@ final class SyntacticParser {
                 left.type = ast.type;
                 left.left = parseCalc();
                 ast.left = left;
-
-                /*
-                left.arg = arg;
-                            left.type = arg.type;
-                            left.setRight();
-                            left.op = "=";
-                            left.type = arg.type;
-                            left.left = new AST.Calc();
-                            left.left.type = left.type;
-                            left.left.op = op;
-                            AST.Value value = new AST.Value();
-                            value.token = new Token("1", Token.Type.value(left.type));
-                            value.type = left.type;
-                            left.left.arg = value;
-                            left.left.right = new AST.Calc();
-                            left.left.right.type = left.type;
-                            left.left.right.arg = arg;
-                 */
             }else if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
                 AST.Value value = new AST.Value();
 
@@ -1061,7 +1078,7 @@ final class SyntacticParser {
 
             call.argTypes = args.toArray(new AST.Calc[0]);
 
-            String[] methodSpecs = CompilerUtil.getMethod(name, false, desc.toString(), clazzName);
+            String[] methodSpecs = CompilerUtil.getMethod(call.clazz, false, desc.toString(), clazzName);
             if(methodSpecs == null)
                 throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
 

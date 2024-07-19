@@ -1,6 +1,5 @@
-int[] i = {1, 2 ..5}
+use $java/lang/System
+use java/util/ArrayList
 
-main {
-    _j = i[3]
-}
+main -> _i = args.length == 0 ? 1 : 0
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
