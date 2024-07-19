@@ -3,6 +3,7 @@ use $java/lang/System
 main {
     for j in {1, 2 ..10} {
         out.println(j)
+        _i = j + 5
     }
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

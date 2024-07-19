@@ -222,7 +222,7 @@ final class MethodCompiler {
             switch(ast.type){
                 case "short":
                 case "int":
-                    where = os.push("&i", 1);
+                    where = os.push(ast.variable, 1);
                     code.addIstore(where);
                     loop = code.getSize();
                     code.addIload(where);
@@ -234,7 +234,7 @@ final class MethodCompiler {
                     code.addIndex(0);
                     break;
                 case "double":
-                    where = os.push("&i", 2);
+                    where = os.push(ast.variable, 2);
                     code.addDstore(where);
                     loop = code.getSize();
                     code.addDload(where);
@@ -246,7 +246,7 @@ final class MethodCompiler {
                     code.addIndex(0);
                     break;
                 case "float":
-                    where = os.push("&i", 1);
+                    where = os.push(ast.variable, 1);
                     code.addFstore(where);
                     loop = code.getSize();
                     code.addFload(where);
@@ -262,7 +262,6 @@ final class MethodCompiler {
             compileCall(ast.load, true);
             if (ast.type.startsWith("[")) {
                 int where = os.push("&i", 1);
-                os.push(ast.variable, 1);
                 code.addAstore(where);
                 code.addAload(where);
                 code.add(Opcode.ARRAYLENGTH);
@@ -342,31 +341,32 @@ final class MethodCompiler {
             code.add(Opcode.IADD);
             code.addIstore(os.get("&i") + 2);
         }else if(ast.from != null){
+            int where = os.get(ast.variable);
             switch(ast.type){
                 case "short":
                 case "int":
-                    code.addIload(os.get("&i"));
+                    code.addIload(where);
                     code.addIconst(1);
                     code.add(Opcode.IADD);
-                    code.addIstore(os.get("&i"));
+                    code.addIstore(where);
                     break;
                 case "long":
-                    code.addLload(os.get("&i"));
+                    code.addLload(where);
                     code.addLconst(1);
                     code.add(Opcode.LADD);
-                    code.addLstore(os.get("&i"));
+                    code.addLstore(where);
                     break;
                 case "double":
-                    code.addDload(os.get("&i"));
+                    code.addDload(where);
                     code.addDconst(1);
                     code.add(Opcode.DADD);
-                    code.addDstore(os.get("&i"));
+                    code.addDstore(where);
                     break;
                 case "float":
-                    code.addFload(os.get("&i"));
+                    code.addFload(where);
                     code.addFconst(1);
                     code.add(Opcode.FADD);
-                    code.addFstore(os.get("&i"));
+                    code.addFstore(where);
                     break;
             }
         }
