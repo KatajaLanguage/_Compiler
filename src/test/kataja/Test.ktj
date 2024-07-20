@@ -1,5 +1,5 @@
 use $java/lang/System
 use java/util/ArrayList
 
-main -> _i = args.length == 0 ? 1 : 0
+main -> out.println("ab"+"cd")
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

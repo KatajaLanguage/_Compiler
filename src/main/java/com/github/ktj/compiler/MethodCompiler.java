@@ -623,6 +623,21 @@ final class MethodCompiler {
 
             if(ast.right.right != null) compileOperator(ast);
             return;
+        }else if(ast.op != null && ast.op.equals("+") && ast.right.type.equals("java.lang.String")){
+            code.addNew("java.lang.StringBuilder");
+            code.add(Opcode.DUP);
+            code.addInvokespecial("java.lang.StringBuilder", "<init>", "()V");
+            compileCalc(ast.right, false);
+            code.addInvokevirtual("java.lang.StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+            if(ast.left == null){
+                if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+                else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+                else if(ast.arg instanceof AST.InlineIf) compileInlineIf((AST.InlineIf) ast.arg);
+                else compileValue((AST.Value) ast.arg);
+            }else compileCalc(ast.left, false);
+            code.addInvokevirtual("java.lang.StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+            code.addInvokevirtual("java.lang.StringBuilder", "toString", "()Ljava/lang/String;");
+            return;
         }
 
         if(ast.right != null) compileCalc(ast.right, false);
