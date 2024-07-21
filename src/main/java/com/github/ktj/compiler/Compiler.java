@@ -199,8 +199,6 @@ public final class Compiler {
 
     private void writeFile(ClassFile cf){
         try{
-            ClassPool.getDefault().makeClass(cf).writeFile(outFolder.getPath());
-            /*
             byte[] classBytecode = ClassPool.getDefault().makeClass(cf).toBytecode();
 
             ClassReader reader = new ClassReader(classBytecode);
@@ -214,7 +212,7 @@ public final class Compiler {
 
             try (FileOutputStream fos = new FileOutputStream(file)){
                 fos.write(writer.toByteArray());
-            }*/
+            }
         }catch(IOException | CannotCompileException e){
             throw new RuntimeException("Failed to write ClassFile for " + cf.getName() + (debug ? " : " + e.getMessage() : ""));
         }
