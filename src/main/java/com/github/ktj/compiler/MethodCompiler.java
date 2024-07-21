@@ -506,6 +506,11 @@ final class MethodCompiler {
     }
 
     private void compileWhile(AST.While ast){
+        if(ast.doWhile){
+            compileDoWhile(ast);
+            return;
+        }
+
         ArrayList<Integer> breaks = new ArrayList<>();
 
         os.newScope();
@@ -527,6 +532,29 @@ final class MethodCompiler {
         code.addIndex(-(code.getSize() - start) + 1);
         for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
         os.clearScope(code);
+    }
+
+    private void compileDoWhile(AST.While ast){
+        ArrayList<Integer> breaks = new ArrayList<>();
+
+        os.newScope();
+        int start = code.getSize();
+
+        for(AST statement: ast.ast){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
+
+        os.clearScope(code);
+
+        compileCalc(ast.condition, false);
+        code.addOpcode(Opcode.IFNE);
+        code.addIndex(-(code.getSize() - start) + 1);
+
+        for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
     }
 
     private ArrayList<Integer> compileIf(AST.If ast){

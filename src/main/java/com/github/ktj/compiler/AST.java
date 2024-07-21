@@ -113,6 +113,7 @@ abstract class AST {
     }
 
     static final class While extends AST{
+        boolean doWhile = false;
         Calc condition = null;
         AST[] ast = null;
     }
