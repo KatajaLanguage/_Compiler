@@ -1,5 +1,12 @@
 use $java/lang/System
 use java/util/ArrayList
 
-main -> out.println("ab"+"cd")
+test(String s) {
+    switch s {
+        "a" -> out.println("a")
+        "b", "c" -> out.println("b")
+        "Aa", "BB" -> out.println("c")
+        default -> out.println("d")
+    }
+}
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
