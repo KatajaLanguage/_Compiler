@@ -1,5 +1,9 @@
 use $java/lang/System
 use java/util/ArrayList
 
-main -> _i = args.length == 0 ? 1 : 0
+test(String s) {
+    do{
+        s.substring(1)
+    }while(s !== null)
+}
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

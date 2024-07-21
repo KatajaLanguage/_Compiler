@@ -219,7 +219,8 @@ public class CompilerUtil {
             if(NUMBER_OPERATORS.contains(operator))
                 return type1.equals("boolean") ? null : new String[]{type1, operator};
         }else{
-            if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2)) || type2.equals("null")) return new String[]{"boolean", operator};
+            if ((operator.equals("===") || operator.equals("!==")) && (type1.equals(type2) || type2.equals("null"))) return new String[]{"boolean", operator};
+            if (operator.equals("+") && type1.equals("java.lang.String") && type2.equals("java.lang.String")) return new String[]{"java.lang.String", operator};
             return getMethod(type1, false, operatorToIdentifier(operator)+"%"+type2, type1);
         }
 

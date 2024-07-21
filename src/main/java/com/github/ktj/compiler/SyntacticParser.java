@@ -108,6 +108,9 @@ final class SyntacticParser {
             case "while":
                 ast = parseWhile();
                 break;
+            case "do":
+                ast = parseDoWhile();
+                break;
             case "if":
                 ast = parseIf(inLoop);
                 break;
@@ -179,6 +182,24 @@ final class SyntacticParser {
         }else ast.ast = parseContent(true);
 
         scope = scope.last;
+
+        return ast;
+    }
+
+    private AST.While parseDoWhile(){
+        AST.While ast = new AST.While();
+        ast.doWhile = true;
+        th.assertToken("{");
+
+        scope = new Scope(scope);
+        ast.ast = parseContent(true);
+        scope = scope.last;
+
+        th.assertToken("while");
+        ast.condition = parseCalc();
+        assertEndOfStatement();
+
+        if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
         return ast;
     }
@@ -270,14 +291,18 @@ final class SyntacticParser {
 
                 boolean defauld = false;
 
-                if(th.assertToken("case", "default").equals("case")){
-                    do{
-                        Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR, Token.Type.IDENTIFIER, Token.Type.STRING);
-                        ast.values.put(t, branches.size());
+                do{
+                    Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR, Token.Type.IDENTIFIER, Token.Type.STRING);
 
-                        if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, clazzName) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
-                    }while(th.isNext(","));
-                }else defauld = true;
+                    if(t.equals("default")){
+                        defauld = true;
+                        break;
+                    }
+
+                    ast.values.put(t, branches.size());
+
+                    if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, clazzName) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
+                }while(th.isNext(","));
 
                 if(th.assertToken("->", "{").equals("->")) branches.add(new AST[]{parseNextStatement(true)});
                 else{

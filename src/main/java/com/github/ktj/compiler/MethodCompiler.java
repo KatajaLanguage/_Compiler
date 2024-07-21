@@ -8,6 +8,7 @@ import com.github.ktj.lang.Modifier;
 import javassist.bytecode.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 final class MethodCompiler {
 
@@ -53,17 +54,11 @@ final class MethodCompiler {
 
     private void compileSwitch(AST.Switch ast){
         compileCalc(ast.calc, false);
-        if(!CompilerUtil.isPrimitive(ast.type)){
-            if(ast.type.equals("java.lang.String")){
-                //int pos = os.push("&temp", 1);
-                //code.addAstore(pos);
-                //code.addIconst(-1);
-                //os.push("&temp", 1);
-                //code.addIstore(pos + 1);
-                //code.addAload(pos);
-                code.addInvokevirtual("java.lang.String", "hashCode", "()I");
-            }else code.addInvokevirtual(ast.type, "ordinal", "()I");
-        }
+
+        if(ast.type.equals("java.lang.String")){
+            compileStringSwitch(ast);
+            return;
+        }else code.addInvokevirtual(ast.type, "ordinal", "()I");
 
         int start = code.getSize();
 
@@ -127,6 +122,139 @@ final class MethodCompiler {
         }
 
         if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
+    }
+
+    private void compileStringSwitch(AST.Switch ast){
+        os.newScope();
+
+        int pos = os.push("&v", 1);
+        code.addAstore(pos);
+        code.addIconst(-1);
+        os.push("&i", 1);
+        code.addIstore(pos + 1);
+        code.addAload(pos);
+        code.addInvokevirtual("java.lang.String", "hashCode", "()I");
+
+        HashMap<Integer, ArrayList<String>> map = new HashMap<>();
+        for(Token t:ast.values.keySet()){
+            if(!map.containsKey(t.s.hashCode())){
+                map.put(t.s.hashCode(), new ArrayList<>());
+                map.get(t.s.hashCode()).add(t.s);
+            }else map.get(t.s.hashCode()).add(t.s);
+        }
+
+        int start = code.getSize();
+
+        code.add(Opcode.LOOKUPSWITCH);
+
+        while(code.getSize()%4 != 0) code.add(Opcode.NOP);
+
+        int defauld = code.getSize();
+        code.addGap(8);
+        code.write32bit(defauld, 0);
+        code.write32bit(defauld + 4, map.keySet().size());
+
+        for(int i:map.keySet()){
+            int size = code.getSize();
+            code.addGap(8);
+            code.write32bit(size, i);
+            code.write32bit(size + 4, 0);
+        }
+
+        ArrayList<Integer> toDefault = new ArrayList<>();
+        int j = 1;
+
+        for(int i:map.keySet()){
+            code.write32bit(defauld +  (j * 8), i);
+            code.write32bit(defauld + 4 + (j * 8), code.length() - start);
+            j++;
+
+            for(String string:map.get(i)){
+                code.addAload(pos);
+                code.addLdc(string.substring(1, string.length() - 1));
+                code.addInvokevirtual("java.lang.String", "equals", "(Ljava/lang/Object;)Z");
+                code.add(Opcode.IFEQ);
+                int g = code.getSize();
+                code.addIndex(0);
+                int branch = getSwitchBranch(ast.values, string);
+                if(branch < 6) code.addIconst(branch);
+                else code.add(Opcode.BIPUSH, branch);
+                code.addIstore(pos + 1);
+                code.add(Opcode.GOTO);
+                toDefault.add(code.getSize());
+                code.addIndex(0);
+                code.write16bit(g, code.getSize() - g + 1);
+            }
+            code.add(Opcode.GOTO);
+            toDefault.add(code.getSize());
+            code.addIndex(0);
+        }
+
+        code.write32bit(defauld, code.getSize() - start);
+        for(int i:toDefault) code.write16bit(i, code.getSize() - i + 1);
+
+        code.addIload(pos + 1);
+        start = code.getSize();
+
+        code.add(Opcode.LOOKUPSWITCH);
+
+        while(code.getSize()%4 != 0) code.add(Opcode.NOP);
+
+        defauld = code.getSize();
+        code.addGap(8);
+        code.write32bit(defauld, 0);
+        code.write32bit(defauld + 4, ast.branches.length);
+
+        for(int i = 0;i < ast.branches.length;i++){
+            int size = code.getSize();
+            code.addGap(8);
+            code.write32bit(size, i);
+            code.write32bit(size + 4, 0);
+        }
+
+        ArrayList<Integer> ends = new ArrayList<>();
+
+        for(int i = 0;i < ast.branches.length;i++){
+            code.write32bit(defauld + 12 + (i * 8), code.getSize() - start);
+            os.newScope();
+
+            for(AST a : ast.branches[i]){
+                if(a instanceof AST.Break){
+                    code.add(Opcode.GOTO);
+                    ends.add(code.getSize());
+                    code.addIndex(0);
+                }else ends.addAll(compileAST(a));
+            }
+
+            if(ast.branches[i].length == 0 || !(ast.branches[i][ast.branches[i].length - 1] instanceof AST.Return)){
+                code.add(Opcode.GOTO);
+                ends.add(code.getSize());
+                code.addIndex(0);
+            }
+            os.clearScope(code);
+        }
+
+        //default
+        code.write32bit(defauld, code.getSize() - start);
+
+        if(ast.defauld != null) for(AST a:ast.defauld){
+            os.newScope();
+            if(a instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                ends.add(code.getSize());
+                code.addIndex(0);
+            }else ends.addAll(compileAST(a));
+            os.clearScope(code);
+        }
+
+        if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
+
+        os.clearScope(code);
+    }
+
+    private int getSwitchBranch(HashMap<Token, Integer> map, String string){
+        for(Token t:map.keySet()) if(t.s.equals(string)) return map.get(t);
+        return -1;
     }
 
     private int parseSwitchValue(Token token, String type){
@@ -378,6 +506,11 @@ final class MethodCompiler {
     }
 
     private void compileWhile(AST.While ast){
+        if(ast.doWhile){
+            compileDoWhile(ast);
+            return;
+        }
+
         ArrayList<Integer> breaks = new ArrayList<>();
 
         os.newScope();
@@ -399,6 +532,29 @@ final class MethodCompiler {
         code.addIndex(-(code.getSize() - start) + 1);
         for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
         os.clearScope(code);
+    }
+
+    private void compileDoWhile(AST.While ast){
+        ArrayList<Integer> breaks = new ArrayList<>();
+
+        os.newScope();
+        int start = code.getSize();
+
+        for(AST statement: ast.ast){
+            if(statement instanceof AST.Break){
+                code.add(Opcode.GOTO);
+                breaks.add(code.getSize());
+                code.addIndex(0);
+            }else breaks.addAll(compileAST(statement));
+        }
+
+        os.clearScope(code);
+
+        compileCalc(ast.condition, false);
+        code.addOpcode(Opcode.IFNE);
+        code.addIndex(-(code.getSize() - start) + 1);
+
+        for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
     }
 
     private ArrayList<Integer> compileIf(AST.If ast){
@@ -622,6 +778,21 @@ final class MethodCompiler {
             compileVarAssignment(varAssignment, !isStatement);
 
             if(ast.right.right != null) compileOperator(ast);
+            return;
+        }else if(ast.op != null && ast.op.equals("+") && ast.right.type.equals("java.lang.String")){
+            code.addNew("java.lang.StringBuilder");
+            code.add(Opcode.DUP);
+            code.addInvokespecial("java.lang.StringBuilder", "<init>", "()V");
+            compileCalc(ast.right, false);
+            code.addInvokevirtual("java.lang.StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+            if(ast.left == null){
+                if (ast.arg instanceof AST.Cast) compileCast((AST.Cast) ast.arg);
+                else if (ast.arg instanceof AST.ArrayCreation) compileArrayCreation((AST.ArrayCreation) ast.arg);
+                else if(ast.arg instanceof AST.InlineIf) compileInlineIf((AST.InlineIf) ast.arg);
+                else compileValue((AST.Value) ast.arg);
+            }else compileCalc(ast.left, false);
+            code.addInvokevirtual("java.lang.StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+            code.addInvokevirtual("java.lang.StringBuilder", "toString", "()Ljava/lang/String;");
             return;
         }
 
