@@ -23,6 +23,8 @@ public class KtjInterface extends Compilable{
 
     @Override
     public void validateTypes(){
+        if(genericTypes != null) for(GenericType genericType:genericTypes) genericType.type = validateType(genericType.type, true);
+
         HashMap<String, KtjMethod> help = new HashMap<>();
 
         for(String methodName:methods.keySet()){

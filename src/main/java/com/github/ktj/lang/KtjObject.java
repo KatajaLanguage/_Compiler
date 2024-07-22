@@ -7,7 +7,7 @@ import java.util.HashMap;
 
 public class KtjObject extends KtjClass{
     public KtjObject(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line) {
-        super(modifier, uses, statics, file, line);
+        super(modifier, null, uses, statics, file, line);
     }
 
     @Override

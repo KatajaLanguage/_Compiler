@@ -297,7 +297,9 @@ final class Parser {
         if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) throw new RuntimeException("Illegal modifier private");
         if(classes.containsKey(name)) err("Class "+name+" is already defined");
 
-        KtjClass clazz = new KtjClass(modifier, uses, statics, getFileName(), line);
+        ArrayList<GenericType> generics = parseGenerics();
+
+        KtjClass clazz = new KtjClass(modifier, generics, uses, statics, getFileName(), line);
         current = clazz;
 
         if(th.isNext("extends")){
@@ -469,16 +471,10 @@ final class Parser {
         if(th.isNext("<")){
             do{
                 String typeName = th.assertToken(Token.Type.IDENTIFIER).s;
-                ArrayList<String> bounds = new ArrayList<>();
-                if(th.isNext("extends")){
-                    do{
-                        th.assertToken(Token.Type.IDENTIFIER);
-                        if(bounds.contains(th.current().s)) err(th.current().s+" is already extended");
-                        bounds.add(th.current().s);
-                    }while(th.isNext(","));
-                }
-                for(GenericType type:generics) if(type.name.equals(typeName)) err("Generic Type "+type.name);
-                generics.add(new GenericType(typeName, bounds));
+                String type = "Object";
+                if(th.isNext("extends")) type = th.assertToken(Token.Type.IDENTIFIER).s;
+                for(GenericType genericType:generics) if(genericType.name.equals(typeName)) err("Generic Type "+genericType.name);
+                generics.add(new GenericType(typeName, type));
             }while(th.isNext(","));
             th.assertToken(">");
         }

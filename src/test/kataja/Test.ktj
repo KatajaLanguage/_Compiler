@@ -1,9 +1,4 @@
-use $java/lang/System
-use java/util/ArrayList
-
-test(String s) {
-    do{
-        s.substring(1)
-    }while(s !== null)
+class test<E extends String>{
+    public E test
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
