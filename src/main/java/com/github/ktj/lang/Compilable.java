@@ -1,9 +1,7 @@
 package com.github.ktj.lang;
 
 import com.github.ktj.bytecode.AccessFlag;
-import com.github.ktj.compiler.Compiler;
 import com.github.ktj.compiler.CompilerUtil;
-import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +9,7 @@ import java.util.HashMap;
 public abstract class Compilable {
 
     public final Modifier modifier;
+    public final ArrayList<GenericType> genericTypes;
     public final HashMap<String, String> uses;
     public final ArrayList<String> statics;
     public final String file;
@@ -18,6 +17,16 @@ public abstract class Compilable {
 
     public Compilable(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
         this.modifier = modifier;
+        this.genericTypes = null;
+        this.uses = uses;
+        this.statics = statics;
+        this.file = file;
+        this.line = line;
+    }
+
+    public Compilable(Modifier modifier, ArrayList<GenericType> genericTypes, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        this.modifier = modifier;
+        this.genericTypes = genericTypes;
         this.uses = uses;
         this.statics = statics;
         this.file = file;

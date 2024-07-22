@@ -9,8 +9,8 @@ public class KtjInterface extends Compilable{
 
     public HashMap<String, KtjMethod> methods;
 
-    public KtjInterface(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
-        super(modifier, uses, statics, file, line);
+    public KtjInterface(Modifier modifier, ArrayList<GenericType> genericTypes, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        super(modifier, genericTypes, uses, statics, file, line);
         methods = new HashMap<>();
     }
 

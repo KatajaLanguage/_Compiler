@@ -432,10 +432,11 @@ final class Parser {
         if(!modifier.isValidForInterface()) err("illegal modifier");
 
         String name = parseName();
+        ArrayList<GenericType> generics = parseGenerics();
 
         th.assertToken("{");
 
-        KtjInterface clazz = new KtjInterface(modifier, uses, statics, getFileName(), line);
+        KtjInterface clazz = new KtjInterface(modifier, generics, uses, statics, getFileName(), line);
         current = clazz;
 
         while (sc.hasNextLine()){
@@ -460,6 +461,29 @@ final class Parser {
         if(CompilerUtil.classExist(name)) err("Type Class "+name+" is already defined");
 
         return name;
+    }
+
+    private ArrayList<GenericType> parseGenerics(){
+        ArrayList<GenericType> generics = new ArrayList<>();
+
+        if(th.isNext("<")){
+            do{
+                String typeName = th.assertToken(Token.Type.IDENTIFIER).s;
+                ArrayList<String> bounds = new ArrayList<>();
+                if(th.isNext("extends")){
+                    do{
+                        th.assertToken(Token.Type.IDENTIFIER);
+                        if(bounds.contains(th.current().s)) err(th.current().s+" is already extended");
+                        bounds.add(th.current().s);
+                    }while(th.isNext(","));
+                }
+                for(GenericType type:generics) if(type.name.equals(typeName)) err("Generic Type "+type.name);
+                generics.add(new GenericType(typeName, bounds));
+            }while(th.isNext(","));
+            th.assertToken(">");
+        }
+
+        return generics;
     }
 
     private void parseMethodAndField(Modifier mod, String clazzName){

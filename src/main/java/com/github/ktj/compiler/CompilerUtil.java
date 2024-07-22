@@ -3,9 +3,7 @@ package com.github.ktj.compiler;
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -375,31 +373,6 @@ public class CompilerUtil {
         return null;
     }
 
-    public static boolean isFinal(String clazzName, String field){
-        if(clazzName.startsWith("[")){
-            return true;
-        }
-
-        Compilable compilable = Compiler.Instance().classes.get(clazzName);
-
-        if(compilable != null) {
-            if(compilable instanceof KtjTypeClass) return true;
-            else if(compilable instanceof KtjDataClass){
-                if (((KtjDataClass) (compilable)).fields.containsKey(field)) return ((KtjDataClass) (compilable)).fields.get(field).modifier.finaly;
-            }else if(compilable instanceof KtjClass){
-                if (((KtjClass) (compilable)).fields.containsKey(field))
-                    return ((KtjClass) (compilable)).fields.get(field).modifier.finaly;
-            }
-        }else{
-            try{
-                Field f = Class.forName(clazzName).getField(field);
-                return (f.getModifiers() & AccessFlag.FINAL) != 0;
-            }catch(Exception ignored){}
-        }
-
-        return false;
-    }
-
     private static boolean canAccess(String type1, String type2, AccessFlag flag){
         if(flag == AccessFlag.ACC_PUBLIC) return true;
         if(flag == AccessFlag.ACC_PRIVATE) return type1.equals(type2);
@@ -424,6 +397,27 @@ public class CompilerUtil {
         }catch(ClassNotFoundException e){
             throw new RuntimeException("unable to find "+type2);
         }
+    }
+
+    public static boolean validateGenericTypes(String clazzName, String...types){
+        Compilable c = Compiler.Instance().classes.get(clazzName);
+        if(c != null){
+            if(c instanceof KtjDataClass){
+
+            }else if(c instanceof KtjInterface){
+                
+            }
+        }else{
+            try{
+                Class<?> clazz = Class.forName(clazzName);
+                TypeVariable<?>[] typeParameters = clazz.getTypeParameters();
+                if(typeParameters.length != types.length) return false;
+                for(TypeVariable<?> type:typeParameters) for(Type bound:type.getBounds()) if(!isSuperClass(clazzName, bound.getTypeName())) return false;
+                return true;
+            }catch(ClassNotFoundException ignored){}
+        }
+
+        return false;
     }
 
     public static boolean isFinal(String clazz){

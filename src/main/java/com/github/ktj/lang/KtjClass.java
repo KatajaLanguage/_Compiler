@@ -16,7 +16,7 @@ public class KtjClass extends KtjInterface{
     public String superclass = null;
 
     public KtjClass(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
-        super(modifier, uses, statics, file, line);
+        super(modifier, null, uses, statics, file, line);
         fields = new HashMap<>();
     }
 

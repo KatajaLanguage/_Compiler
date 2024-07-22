@@ -1,5 +1,5 @@
-public interface Test{
+public interface Test<A extends Object, String>{
 
     public abstract void test()
 
-}
+}#-q -d -c src/test/kataja/InterfaceTest.ktj
