@@ -440,14 +440,29 @@ final class SyntacticParser {
                 if(constant) throw new RuntimeException("illegal argument");
                 th.last();
                 return parseAssignment();
-            }else if (th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
-                if(constant) throw new RuntimeException("illegal argument");
-                th.last();
-                th.last();
-                return parseAssignment();
+            }else if(th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
+                if(th.current().equals("<")){
+                    th.last();
+                }else{
+                    if (constant) throw new RuntimeException("illegal argument");
+                    th.last();
+                    th.last();
+                    return parseAssignment();
+                }
             }
 
             int i = th.getIndex();
+            if(th.isNext("<")){
+                do{
+                    if(!(th.isNext(Token.Type.IDENTIFIER) && method.uses.containsKey(th.current().s))){
+                        th.setIndex(i);
+                        th.last();
+                        return parseAssignment();
+                    }
+                }while(th.isNext(","));
+                th.assertToken(">");
+            }
+
             while(th.isNext("[")){
                 if(!th.isNext("]")){
                     if(constant) throw new RuntimeException("illegal argument");
@@ -460,10 +475,25 @@ final class SyntacticParser {
             th.setIndex(i);
             String type = th.current().s;
 
+            StringBuilder genericType = new StringBuilder();
+
+            if(th.isNext("<")){
+                do{
+                    th.assertToken(Token.Type.IDENTIFIER);
+                    if(genericType.length() != 0) genericType.append("%");
+                    genericType.append(method.uses.get(th.current().s));
+                }while(th.isNext(","));
+                th.assertToken(">");
+
+                if(CompilerUtil.validateGenericTypes(type, genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+type);
+            }
+
             while(th.isNext("[")){
                 th.assertToken("]");
                 type = "["+type;
             }
+
+            if(genericType.length() != 0) type = type+"|"+genericType;
 
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");

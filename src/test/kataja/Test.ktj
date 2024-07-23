@@ -1,4 +1,6 @@
-class test<E extends String>{
-    public E test
+use java/util/ArrayList
+
+test(){
+    ArrayList<String> list = ArrayList<String>()
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
