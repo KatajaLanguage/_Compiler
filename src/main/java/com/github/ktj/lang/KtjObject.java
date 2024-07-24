@@ -11,7 +11,7 @@ public class KtjObject extends KtjClass{
     }
 
     @Override
-    public void validateInit() {
+    public void validateInit(String className) {
         boolean initExist = false;
 
         for(String method: methods.keySet()) {
@@ -22,7 +22,7 @@ public class KtjObject extends KtjClass{
         }
 
         if(!initExist){
-            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PRIVATE), "void", "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
+            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PRIVATE), className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
         }
     }
 }

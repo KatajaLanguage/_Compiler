@@ -120,7 +120,7 @@ public final class Compiler {
 
                 if(classes.get(name) instanceof KtjClass){
                     ((KtjClass) classes.get(name)).validateInterfaces();
-                    ((KtjClass) classes.get(name)).validateInit();
+                    ((KtjClass) classes.get(name)).validateInit(name);
                 }
             }catch(RuntimeException e){
                 RuntimeException exception = new RuntimeException(e+" in Class "+name);

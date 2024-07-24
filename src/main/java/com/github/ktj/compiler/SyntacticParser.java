@@ -473,7 +473,7 @@ final class SyntacticParser {
             }
 
             th.setIndex(i);
-            String type = th.current().s;
+            String type = method.validateType(th.current().s, false);
 
             StringBuilder genericType = new StringBuilder();
 
@@ -485,7 +485,7 @@ final class SyntacticParser {
                 }while(th.isNext(","));
                 th.assertToken(">");
 
-                if(CompilerUtil.validateGenericTypes(type, genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+type);
+                if(!CompilerUtil.validateGenericTypes(type, genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+type);
             }
 
             while(th.isNext("[")){
@@ -499,8 +499,6 @@ final class SyntacticParser {
             th.assertToken("=");
             AST.Calc calc = parseCalc();
             assertEndOfStatement();
-
-            type = method.validateType(type, false);
 
             if(CompilerUtil.isPrimitive(type)){
                 if(!type.equals(calc.type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
@@ -924,6 +922,21 @@ final class SyntacticParser {
         if(CompilerUtil.isPrimitive(call) || method.uses.containsKey(call)){
             ast.call = new AST.Call();
 
+            StringBuilder genericType = new StringBuilder();
+
+            if(th.isNext("<")){
+                if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal argument");
+
+                do{
+                    th.assertToken(Token.Type.IDENTIFIER);
+                    if(genericType.length() != 0) genericType.append("%");
+                    genericType.append(method.uses.get(th.current().s));
+                }while(th.isNext(","));
+                th.assertToken(">");
+
+                if(!CompilerUtil.validateGenericTypes(method.uses.get(call), genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+method.uses.get(call));
+            }
+
             if(th.isNext("[")){
                 th.last();
 
@@ -970,6 +983,7 @@ final class SyntacticParser {
                 ast.call.type = methodSpecs[0];
                 ast.call.signature = methodSpecs[1];
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
+                if(genericType.length() != 0) ast.call.type = ast.call.type+"|"+genericType;
                 ast.type = ast.call.type;
             }else{
                 if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);

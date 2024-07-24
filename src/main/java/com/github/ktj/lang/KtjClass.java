@@ -47,7 +47,7 @@ public class KtjClass extends KtjInterface{
         return sb.length() == 0 ? null : sb.toString();
     }
 
-    public void validateInit(){
+    public void validateInit(String className){
         boolean initExist = false;
 
         for(String method: methods.keySet()) {
@@ -58,7 +58,7 @@ public class KtjClass extends KtjInterface{
         }
 
         if(!initExist){
-            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), "void", "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
+            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
         }
     }
 

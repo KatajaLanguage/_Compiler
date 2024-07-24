@@ -52,9 +52,20 @@ public abstract class Compilable {
 
         if(CompilerUtil.isPrimitive(type)) return type;
 
-        if(!uses.containsKey(type)) throw new RuntimeException("Unknown Type "+type+(errorAt?" at "+file+":"+line:""));
+        if(!uses.containsKey(type)){
+            if(genericTypes != null) for(GenericType gType:genericTypes) if (gType.name.equals(type)) return type;
+            throw new RuntimeException("Unknown Type "+type+(errorAt?" at "+file+":"+line:""));
+        }
 
         return uses.get(type);
+    }
+
+    public int genericIndex(String type){
+        if(genericTypes == null) return -1;
+
+        for(int i = 0;i < genericTypes.size();i++) if(genericTypes.get(i).name.equals(type)) return i;
+
+        return -1;
     }
 
     public int getAccessFlag(){

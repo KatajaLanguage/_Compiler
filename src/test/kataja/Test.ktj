@@ -1,6 +1,9 @@
-use java/util/ArrayList
+class Test<E>{
+    E test
 
-test(){
-    ArrayList<String> list = ArrayList<String>()
+    test(){
+        Test<String> object = Test<String>()
+        object.test = "test"
+    }
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

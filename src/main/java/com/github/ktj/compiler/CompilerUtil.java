@@ -5,6 +5,7 @@ import com.github.ktj.lang.*;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -226,6 +227,8 @@ public class CompilerUtil {
     }
 
     public static String[] getMethod(String clazzName, boolean statik, String method, String callingClazz){
+        String[] generics = clazzName.split("\\|").length == 2 ? clazzName.split("\\|")[1].split("%") : new String[0];
+        clazzName = clazzName.split("\\|")[0];
         if(Compiler.Instance().classes.containsKey(clazzName)){
             Compilable compilable = Compiler.Instance().classes.get(clazzName);
             if(compilable instanceof KtjDataClass){
@@ -265,7 +268,7 @@ public class CompilerUtil {
                         }
 
                         if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && (((KtjInterface) compilable).methods.get(mName).modifier.statik == statik)){
-                            return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.split("%", 2)[1]};
+                            return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.contains("%") ? mName.split("%", 2)[1] : ""};
                         }
                     }
                 }
@@ -346,6 +349,9 @@ public class CompilerUtil {
     }
 
     public static String getFieldType(String clazzName, String field, boolean statik, String callingClazz){
+        String[] generics = clazzName.split("\\|").length == 2 ? clazzName.split("\\|")[1].split("%") : new String[0];
+        clazzName = clazzName.split("\\|")[0];
+
         if(clazzName.startsWith("[")){
             if(!field.equals("length")) return null;
             return "int";
@@ -400,12 +406,16 @@ public class CompilerUtil {
     }
 
     public static boolean validateGenericTypes(String clazzName, String...types){
+        if(types.length == 0) return true;
+
         Compilable c = Compiler.Instance().classes.get(clazzName);
         if(c != null){
             if(c instanceof KtjDataClass){
-
+                return false;
             }else if(c instanceof KtjInterface){
-                
+                if(types.length != c.genericTypes.size()) return false;
+                for(int i = 0;i < types.length;i++) if(!isSuperClass(types[i], c.genericTypes.get(i).type)) return false;
+                return true;
             }
         }else{
             try{
@@ -414,7 +424,9 @@ public class CompilerUtil {
                 if(typeParameters.length != types.length) return false;
                 for(TypeVariable<?> type:typeParameters) for(Type bound:type.getBounds()) if(!isSuperClass(clazzName, bound.getTypeName())) return false;
                 return true;
-            }catch(ClassNotFoundException ignored){}
+            }catch(ClassNotFoundException ignored){
+                return false;
+            }
         }
 
         return false;
