@@ -1019,9 +1019,12 @@ final class SyntacticParser {
                     ast.call.argTypes = args.toArray(new AST.Calc[0]);
                 }else{
                     ast.call.name = call;
-                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
+                    String[] fieldSpecs = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
+                    if(fieldSpecs == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
 
-                    if(ast.call.type == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
+                    ast.call.type = fieldSpecs[1] != null ? fieldSpecs[1] : fieldSpecs[0];
+                    ast.call.cast = fieldSpecs[1];
+                    ast.call.signature = fieldSpecs[0];
 
                     ast.call.statik = true;
                     ast.type = ast.call.type;
@@ -1076,21 +1079,25 @@ final class SyntacticParser {
                 ast.call.clazz = clazzName;
 
                 ast.call.name = call;
-                ast.call.type = CompilerUtil.getFieldType(clazzName, call, false, clazzName);
+                String[] fieldSpecs = CompilerUtil.getFieldType(clazzName, call, false, clazzName);
 
-                if(ast.call.type == null){
-                    ast.call.type = CompilerUtil.getFieldType(clazzName, call, true, clazzName);
+                if(fieldSpecs == null){
+                    fieldSpecs = CompilerUtil.getFieldType(clazzName, call, true, clazzName);
                     ast.call.statik = true;
                 }
 
-                if(ast.call.type == null){
+                if(fieldSpecs == null){
                     ast.call.clazz = getClazzFromField(call);
                     if(ast.call.clazz == null)
                         throw new RuntimeException("Field " + call + " is not defined for class " + clazzName);
-                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
+                    fieldSpecs = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
                     ast.call.statik = true;
                 }
 
+                assert fieldSpecs != null;
+                ast.call.type = fieldSpecs[1] != null ? fieldSpecs[1] : fieldSpecs[0];
+                ast.call.cast = fieldSpecs[1];
+                ast.call.signature = fieldSpecs[0];
                 ast.type = ast.call.type;
             }
 
@@ -1156,9 +1163,13 @@ final class SyntacticParser {
             call.signature = methodSpecs[1];
         }else{
             call.name = name;
-            call.type = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
+            String[] fieldSpecs = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
 
-            if(call.type == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
+            if(fieldSpecs == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
+
+            call.cast = fieldSpecs[1];
+            call.signature = fieldSpecs[0];
+            call.type = call.cast == null ? call.signature : call.cast;
         }
 
         while(th.isNext("[")){
@@ -1188,7 +1199,7 @@ final class SyntacticParser {
 
     private String getClazzFromField(String field){
         for(String name:method.statics){
-            String type = CompilerUtil.getFieldType(method.uses.get(name), field, true, clazzName);
+            String[] type = CompilerUtil.getFieldType(method.uses.get(name), field, true, clazzName);
             if(type != null) return method.uses.get(name);
         }
         return null;

@@ -643,11 +643,13 @@ final class MethodCompiler {
 
         if(call.argTypes == null) {
             if(call.clazz.startsWith("[")) code.add(Opcode.ARRAYLENGTH);
-            else if (call.statik) code.addGetstatic(call.clazz, call.name, CompilerUtil.toDesc(call.type));
+            else if (call.statik) code.addGetstatic(call.clazz, call.name, CompilerUtil.toDesc(call.signature));
             else {
                 if (first && call.clazz.equals(clazzName)) code.addAload(0);
-                code.addGetfield(call.clazz, call.name, CompilerUtil.toDesc(call.type));
+                code.addGetfield(call.clazz, call.name, CompilerUtil.toDesc(call.signature));
             }
+
+            if(call.cast != null) code.addCheckcast(call.cast);
         }else{
             if(!call.statik && first && call.clazz.equals(clazzName) && !call.name.equals("<init>")) code.addAload(0);
 

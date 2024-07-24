@@ -1,9 +1,12 @@
+use $java/lang/System
+
 class Test<E>{
     E test
 
     test(){
         Test<String> object = Test<String>()
         object.test = "test"
+        out.println(object.test)
     }
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

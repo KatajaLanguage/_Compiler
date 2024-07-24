@@ -2,6 +2,7 @@ package com.github.ktj.compiler;
 
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
+import com.sun.istack.internal.NotNull;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
@@ -348,31 +349,41 @@ public class CompilerUtil {
         return -1;
     }
 
-    public static String getFieldType(String clazzName, String field, boolean statik, String callingClazz){
+    public static String[] getFieldType(String clazzName, String field, boolean statik, String callingClazz){
         String[] generics = clazzName.split("\\|").length == 2 ? clazzName.split("\\|")[1].split("%") : new String[0];
         clazzName = clazzName.split("\\|")[0];
 
         if(clazzName.startsWith("[")){
             if(!field.equals("length")) return null;
-            return "int";
+            return new String[]{"int", null};
         }
 
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
         if(compilable != null) {
             if(compilable instanceof KtjClass){
-                if (((KtjClass)(compilable)).fields.containsKey(field) && ((KtjClass)(compilable)).fields.get(field).modifier.statik == statik)
-                    return canAccess(callingClazz, clazzName, ((KtjClass)(compilable)).fields.get(field).modifier.accessFlag) ? ((KtjClass)(compilable)).fields.get(field).type : null;
+                if (((KtjClass)(compilable)).fields.containsKey(field) && ((KtjClass)(compilable)).fields.get(field).modifier.statik == statik) {
+                    if(!canAccess(callingClazz, clazzName, ((KtjClass) (compilable)).fields.get(field).modifier.accessFlag)) return null;
+                    String type = ((KtjClass) (compilable)).fields.get(field).type;
+                    int gi = compilable.genericIndex(type);
+                    if(gi == -1 || generics.length == 0) return new String[]{type, null};
+                    return new String[]{compilable.genericTypes.get(gi).type, generics[gi]};
+                }
             }else if(compilable instanceof KtjTypeClass){
-                if (((KtjTypeClass)(compilable)).hasValue(field) && statik) return clazzName;
+                if (((KtjTypeClass)(compilable)).hasValue(field) && statik) return new String[]{clazzName, null};
             }else if(compilable instanceof KtjDataClass){
                 if (((KtjDataClass)(compilable)).fields.containsKey(field) && ((KtjDataClass)(compilable)).fields.get(field).modifier.statik == statik)
-                    return ((KtjDataClass)(compilable)).fields.get(field).type;
+                    return new String[]{((KtjDataClass)(compilable)).fields.get(field).type, null};
             }
         }else{
             try{
                 Field f = Class.forName(clazzName).getField(field);
-                if((((f.getModifiers() & AccessFlag.STATIC) != 0) == statik) && canAccess(callingClazz, clazzName, getAccessFlag(f.getModifiers()))) return f.getType().getName();
+                if((((f.getModifiers() & AccessFlag.STATIC) != 0) == statik) && canAccess(callingClazz, clazzName, getAccessFlag(f.getModifiers()))){
+                    if(f.getGenericType() instanceof TypeVariable<?>){
+                        TypeVariable<?>[] typeParameters = Class.forName(clazzName).getTypeParameters();
+                        for(int i = 0; i < typeParameters.length; i++) if(typeParameters[i].getName().equals(((TypeVariable<?>) f.getGenericType()).getName())) return new String[]{f.getType().getName(), generics[i]};
+                    }else return new String[]{f.getType().getName(), null};
+                }
             }catch(Exception ignored){}
         }
 
