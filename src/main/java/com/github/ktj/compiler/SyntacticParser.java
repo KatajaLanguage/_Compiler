@@ -1014,6 +1014,7 @@ final class SyntacticParser {
                     ast.call.name = call;
                     ast.call.type = methodSpecs[0];
                     ast.call.signature = methodSpecs[1];
+                    if(methodSpecs.length == 3) ast.call.cast = methodSpecs[2];
                     ast.type = ast.call.type;
                     ast.call.statik = true;
                     ast.call.argTypes = args.toArray(new AST.Calc[0]);
@@ -1072,6 +1073,7 @@ final class SyntacticParser {
 
                 ast.call.type = methodSpecs[0];
                 ast.call.signature = methodSpecs[1];
+                if(methodSpecs.length == 3) ast.call.cast = methodSpecs[2];
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
                 ast.type = ast.call.type;
             }else{
@@ -1161,6 +1163,7 @@ final class SyntacticParser {
             call.name = name;
             call.type = methodSpecs[0];
             call.signature = methodSpecs[1];
+            if(methodSpecs.length == 3) call.cast = methodSpecs[2];
         }else{
             call.name = name;
             String[] fieldSpecs = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);

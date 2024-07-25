@@ -269,7 +269,7 @@ public class CompilerUtil {
                         }
 
                         if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && (((KtjInterface) compilable).methods.get(mName).modifier.statik == statik)){
-                            return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.contains("%") ? mName.split("%", 2)[1] : ""};
+                            return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.contains("%") ? mName.split("%", 2)[1] : "", compilable.correctType(((KtjInterface) compilable).methods.get(mName).returnType).equals(((KtjInterface) compilable).methods.get(mName).returnType) ? null : ((KtjInterface) compilable).methods.get(mName).returnType};
                         }
                     }
                 }
@@ -311,8 +311,18 @@ public class CompilerUtil {
                             }
                             if (matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())) && ((m.getModifiers() & AccessFlag.STATIC) != 0) == statik) {
                                 StringBuilder sb = new StringBuilder();
-                                for(Class<?> field:m.getParameterTypes()) sb.append(sb.length() == 0 ? "":"%").append(adjustType(field.getTypeName()));
-                                return new String[]{m.getReturnType().getName(), sb.toString()};
+                                for(int i = 0;i < m.getParameterCount();i++){
+                                    sb.append(sb.length() == 0 ? "":"%").append(adjustType(m.getParameterTypes()[i].getTypeName()));
+                                    if(m.getGenericParameterTypes()[i] instanceof TypeVariable<?>){
+                                        TypeVariable<?>[] typeParameters = Class.forName(clazzName).getTypeParameters();
+                                        for(int j = 0; j < typeParameters.length; j++) if(typeParameters[j].getName().equals(((TypeVariable<?>) m.getGenericParameterTypes()[i]).getName()) && !generics[j].equals(parameters[i + 1])) return null;
+                                    }
+                                }
+
+                                if(m.getGenericReturnType() instanceof TypeVariable<?>){
+                                    TypeVariable<?>[] typeParameters = Class.forName(clazzName).getTypeParameters();
+                                    for(int i = 0; i < typeParameters.length; i++) if(typeParameters[i].getName().equals(((TypeVariable<?>) m.getGenericReturnType()).getName())) return new String[]{generics[i], sb.toString(), generics[i]};
+                                }else return new String[]{m.getReturnType().getName(), sb.toString()};
                             }
                         }
                     }

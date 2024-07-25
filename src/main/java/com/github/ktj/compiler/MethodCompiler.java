@@ -689,8 +689,13 @@ final class MethodCompiler {
                 code.add(Opcode.DUP);
                 for(AST.Calc calc:call.argTypes) compileCalc(calc, false);
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.signatureToDesc(call.signature, "void"));
-            }else if(call.statik) code.addInvokestatic(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
-            else code.addInvokevirtual(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
+            }else if(call.statik){
+                code.addInvokestatic(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
+                if(call.cast != null) code.addCheckcast(call.cast);
+            }else{
+                code.addInvokevirtual(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
+                if(call.cast != null) code.addCheckcast(call.cast);
+            }
         }
     }
 

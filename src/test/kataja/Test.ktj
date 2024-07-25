@@ -1,17 +1,9 @@
 use $java/lang/System
+use java/util/ArrayList
 
-class Test<E>{
-
-    E test
-
-    E ttest(E e){
-        return e
-    }
-
-    test(){
-        Test object = Test()
-        object.test = ttest("test")
-        out.println(object.test)
-    }
+main{
+    ArrayList<String> list = ArrayList<String>()
+    list.add("test")
+    String s = list.get(0)
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
