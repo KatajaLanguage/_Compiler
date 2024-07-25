@@ -68,6 +68,13 @@ public abstract class Compilable {
         return -1;
     }
 
+    public String correctType(String type){
+        int i = genericIndex(type);
+        if(i == -1) return type;
+        assert genericTypes != null;
+        return genericTypes.get(i).type;
+    }
+
     public int getAccessFlag(){
         int accessFlag = 0;
         switch (modifier.accessFlag){

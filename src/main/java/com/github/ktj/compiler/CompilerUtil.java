@@ -366,7 +366,8 @@ public class CompilerUtil {
                     if(!canAccess(callingClazz, clazzName, ((KtjClass) (compilable)).fields.get(field).modifier.accessFlag)) return null;
                     String type = ((KtjClass) (compilable)).fields.get(field).type;
                     int gi = compilable.genericIndex(type);
-                    if(gi == -1 || generics.length == 0) return new String[]{type, null};
+                    if(gi == -1) return new String[]{type, null};
+                    if(generics.length == 0) return new String[]{compilable.correctType(type), null};
                     return new String[]{compilable.genericTypes.get(gi).type, generics[gi]};
                 }
             }else if(compilable instanceof KtjTypeClass){

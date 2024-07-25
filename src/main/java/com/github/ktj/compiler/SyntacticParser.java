@@ -534,7 +534,7 @@ final class SyntacticParser {
             assertEndOfStatement();
 
             if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
-            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
+            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type)) && !CompilerUtil.isSuperClass(calc.type, load.type)) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
 
             AST.VarAssignment ast = new AST.VarAssignment();
             ast.calc = calc;

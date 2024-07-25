@@ -1,10 +1,11 @@
 use $java/lang/System
 
 class Test<E>{
+
     E test
 
     test(){
-        Test<String> object = Test<String>()
+        Test object = Test()
         object.test = "test"
         out.println(object.test)
     }
