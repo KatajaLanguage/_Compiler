@@ -2,11 +2,9 @@ package com.github.ktj.compiler;
 
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
-import com.sun.istack.internal.NotNull;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
