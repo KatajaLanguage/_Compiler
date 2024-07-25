@@ -262,14 +262,25 @@ public class CompilerUtil {
                         boolean matches = true;
 
                         for (int i = 0; i < parameter.length; i++){
-                            if(!isSuperClass(parameters[i + 1], parameter[i].type)){
-                                matches = false;
-                                break;
+                            if(compilable.uses.containsKey(parameter[i].type)) {
+                                if (!isSuperClass(parameters[i + 1], parameter[i].type)) {
+                                    matches = false;
+                                    break;
+                                }
+                            }else{
+                                for(int j = 0;j < compilable.genericTypes.size();j++){
+                                    if(parameter[i].type.equals(compilable.genericTypes.get(j).type) && !isSuperClass(parameters[i + 1], generics[j])){
+                                        matches = false;
+                                        break;
+                                    }
+                                }
+                                if(!matches) break;
                             }
                         }
 
                         if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && (((KtjInterface) compilable).methods.get(mName).modifier.statik == statik)){
-                            return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.contains("%") ? mName.split("%", 2)[1] : "", compilable.correctType(((KtjInterface) compilable).methods.get(mName).returnType).equals(((KtjInterface) compilable).methods.get(mName).returnType) ? null : ((KtjInterface) compilable).methods.get(mName).returnType};
+                            if(compilable.uses.containsKey(((KtjInterface) compilable).methods.get(mName).returnType) || mName.startsWith("<init>")) return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.contains("%") ? mName.split("%", 2)[1] : "", null};
+                            else for(int j = 0;j < compilable.genericTypes.size();j++) if(((KtjInterface) compilable).methods.get(mName).returnType.equals(compilable.genericTypes.get(j).name)) return new String[]{generics[j], mName.contains("%") ? mName.split("%", 2)[1] : "", generics[j]};
                         }
                     }
                 }

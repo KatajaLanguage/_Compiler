@@ -1,9 +1,12 @@
 use $java/lang/System
 use java/util/ArrayList
 
+class Test<E>{
+    E test(E e) = e
+}
+
 main{
-    ArrayList<String> list = ArrayList<String>()
-    list.add("test")
-    String s = list.get(0)
+    Test<String> test = Test<String>()
+    test.test("test")
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
