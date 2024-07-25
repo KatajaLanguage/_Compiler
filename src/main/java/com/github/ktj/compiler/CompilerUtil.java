@@ -10,17 +10,27 @@ import java.util.Set;
 
 public class CompilerUtil {
 
-    public static final String[] PRIMITIVES = new String[]{"int", "double", "float", "short", "long", "boolean", "char", "byte"};
+    public static final Set<String> PRIMITIVES = new HashSet<>();
     public static final Set<String> NUM_BOOL_OPERATORS = new HashSet<>();
     public static final Set<String> NUMBER_OPERATORS = new HashSet<>();
 
     static{
+        PRIMITIVES.add("int");
+        PRIMITIVES.add("double");
+        PRIMITIVES.add("float");
+        PRIMITIVES.add("short");
+        PRIMITIVES.add("long");
+        PRIMITIVES.add("boolean");
+        PRIMITIVES.add("char");
+        PRIMITIVES.add("byte");
+
         NUM_BOOL_OPERATORS.add("==");
         NUM_BOOL_OPERATORS.add("!=");
         NUM_BOOL_OPERATORS.add(">");
         NUM_BOOL_OPERATORS.add("<");
         NUM_BOOL_OPERATORS.add(">=");
         NUM_BOOL_OPERATORS.add("<=");
+
         NUMBER_OPERATORS.add("+");
         NUMBER_OPERATORS.add("-");
         NUMBER_OPERATORS.add("*");
@@ -95,7 +105,7 @@ public class CompilerUtil {
                     desc.append("V");
                     break;
                 default:
-                    if(type.startsWith("[")) desc.append("["+toDesc(type.substring(1)));
+                    if(type.startsWith("[")) desc.append("[").append(toDesc(type.substring(1)));
                     else desc.append("L").append(type.replace(".", "/")).append(";");
                     break;
             }
@@ -114,7 +124,7 @@ public class CompilerUtil {
     public static boolean classExist(String name){
         if(name.startsWith("[")) return classExist(name.substring(1));
 
-        if(isPrimitive(name)) return true;
+        if(PRIMITIVES.contains(name)) return true;
 
         try {
             Class.forName(name);
@@ -188,9 +198,9 @@ public class CompilerUtil {
 
     public static String[] getOperatorReturnType(String type, String operator){
         if(type.equals("boolean") && operator.equals("!")) return new String[]{"boolean"};
-        if((operator.equals("++") || operator.equals("--")) && isPrimitive(type) && !type.equals("boolean")) return new String[]{type};
+        if((operator.equals("++") || operator.equals("--")) && PRIMITIVES.contains(type) && !type.equals("boolean")) return new String[]{type};
 
-        if(!isPrimitive(type)){
+        if(!PRIMITIVES.contains(type)){
             return getMethod(type, false, operatorToIdentifier(operator), type);
         }
 
@@ -202,7 +212,7 @@ public class CompilerUtil {
 
         if(operator.equals("=")) return type1.equals(type2) ?new String[]{type1, operator} : null;
 
-        if(isPrimitive(type1)){
+        if(PRIMITIVES.contains(type1)){
             if(!type1.equals(type2))
                 return null;
 
@@ -346,9 +356,9 @@ public class CompilerUtil {
     private static String adjustType(String type){
         if(!type.contains("[")) return type;
 
-        String result = type.split("\\[")[0];
-        for(int i=0;i<type.split("\\[").length - 1;i++)  result = "["+result;
-        return result;
+        StringBuilder result = new StringBuilder(type.split("\\[")[0]);
+        for(int i=0;i<type.split("\\[").length - 1;i++)  result.insert(0, "[");
+        return result.toString();
     }
 
     public static int getEnumOrdinal(String clazz, String value){
@@ -480,7 +490,7 @@ public class CompilerUtil {
 
     public static boolean isSuperClass(String clazz, String superClass){
         if(clazz.equals(superClass)) return true;
-        if(isPrimitive(clazz) || isPrimitive(superClass)) return false;
+        if(PRIMITIVES.contains(clazz) || PRIMITIVES.contains(superClass)) return false;
         if(clazz.equals("java.lang.Object")) return false;
         if(superClass.equals("java.lang.Object")) return true;
 
@@ -508,18 +518,12 @@ public class CompilerUtil {
     }
 
     public static boolean canCast(String type, String to){
-        if(isPrimitive(type) && isPrimitive(to)) return true;
+        if(PRIMITIVES.contains(type) && PRIMITIVES.contains(to)) return true;
 
         return isSuperClass(type, to) || isSuperClass(to, type);
     }
 
-    public static boolean isPrimitive(String type){
-        for(String p:PRIMITIVES) if(p.equals(type)) return true;
-
-        return false;
-    }
-
-    public static AST.Return getDefaultReturn(String type){
+    static AST.Return getDefaultReturn(String type){
         AST.Return ast = new AST.Return();
         ast.type = type;
 

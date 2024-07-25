@@ -99,7 +99,7 @@ final class MethodCompiler {
                 ends.add(code.getSize());
                 code.addIndex(0);
             }
-            os.clearScope(code);
+            os.clearScope();
         }
 
         int i = 1;
@@ -118,7 +118,7 @@ final class MethodCompiler {
                 ends.add(code.getSize());
                 code.addIndex(0);
             }else ends.addAll(compileAST(a));
-            os.clearScope(code);
+            os.clearScope();
         }
 
         if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
@@ -231,7 +231,7 @@ final class MethodCompiler {
                 ends.add(code.getSize());
                 code.addIndex(0);
             }
-            os.clearScope(code);
+            os.clearScope();
         }
 
         //default
@@ -244,12 +244,12 @@ final class MethodCompiler {
                 ends.add(code.getSize());
                 code.addIndex(0);
             }else ends.addAll(compileAST(a));
-            os.clearScope(code);
+            os.clearScope();
         }
 
         if(!ends.isEmpty()) for(int end:ends) code.write16bit(end, code.getSize() - end + 1);
 
-        os.clearScope(code);
+        os.clearScope();
     }
 
     private int getSwitchBranch(HashMap<Token, Integer> map, String string){
@@ -289,7 +289,7 @@ final class MethodCompiler {
                 code.addIndex(0);
             }else breaks.addAll(compileAST(statement));
         }
-        os.clearScope(code);
+        os.clearScope();
         int end = code.getSize();
 
         os.newScope();
@@ -301,7 +301,7 @@ final class MethodCompiler {
                 code.addIndex(0);
             }else breaks.addAll(compileAST(statement));
         }
-        os.clearScope(code);
+        os.clearScope();
 
         code.addExceptionHandler(start, end, end, ast.type);
         return breaks;
@@ -502,7 +502,7 @@ final class MethodCompiler {
         code.add(Opcode.GOTO);
         code.addIndex(-(code.getSize() - loop) + 1);
         for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
-        os.clearScope(code);
+        os.clearScope();
     }
 
     private void compileWhile(AST.While ast){
@@ -531,7 +531,7 @@ final class MethodCompiler {
         code.addOpcode(Opcode.GOTO);
         code.addIndex(-(code.getSize() - start) + 1);
         for(int branch:breaks) code.write16bit(branch, code.getSize() - branch + 1);
-        os.clearScope(code);
+        os.clearScope();
     }
 
     private void compileDoWhile(AST.While ast){
@@ -548,7 +548,7 @@ final class MethodCompiler {
             }else breaks.addAll(compileAST(statement));
         }
 
-        os.clearScope(code);
+        os.clearScope();
 
         compileCalc(ast.condition, false);
         code.addOpcode(Opcode.IFNE);
@@ -588,7 +588,7 @@ final class MethodCompiler {
             if(ast.condition != null)
                 code.write16bit(branch, code.getSize() - branch + 1);
 
-            os.clearScope(code);
+            os.clearScope();
             ast = ast.elif;
         }
 
@@ -806,7 +806,7 @@ final class MethodCompiler {
         if(ast.right != null) compileCalc(ast.right, false);
 
         if(ast.op != null){
-            if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type)){
+            if(ast.op.equals(">>") && !CompilerUtil.PRIMITIVES.contains(ast.right.type)){
                 code.addInstanceof(((AST.Value) ast.arg).token.s);
                 return;
             }else if(ast.op.equals("&&") && ((ast.left != null && ast.left.type.equals("boolean")) || ast.arg.type.equals("boolean"))){
@@ -1270,7 +1270,7 @@ final class MethodCompiler {
     private void compileArrayCreation(AST.ArrayCreation ast){
         int length = ast.calcs.length;
 
-        if(CompilerUtil.isPrimitive(ast.type.substring(1))) {
+        if(CompilerUtil.PRIMITIVES.contains(ast.type.substring(1))) {
             int atype = 0;
             switch (ast.type.substring(1)) {
                 case "boolean":

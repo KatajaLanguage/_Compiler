@@ -33,10 +33,6 @@ public abstract class Compilable {
         this.line = line;
     }
 
-    public String getType(String type){
-        return uses.getOrDefault(type, null);
-    }
-
     public abstract void validateTypes();
 
     public void validateUses(String type){
@@ -50,7 +46,7 @@ public abstract class Compilable {
     public String validateType(String type, boolean errorAt) throws RuntimeException{
         if(type.startsWith("[")) return "["+validateType(type.substring(1), errorAt);
 
-        if(CompilerUtil.isPrimitive(type)) return type;
+        if(CompilerUtil.PRIMITIVES.contains(type)) return type;
 
         if(!uses.containsKey(type)){
             if(genericTypes != null) for(GenericType gType:genericTypes) if (gType.name.equals(type)) return type;
@@ -87,7 +83,7 @@ public abstract class Compilable {
             case ACC_PROTECTED:
                 accessFlag = AccessFlag.PROTECTED;
                 break;
-        };
+        }
 
         if(modifier.finaly || modifier.constant) accessFlag += AccessFlag.FINAL;
         if(modifier.abstrakt) accessFlag += AccessFlag.ABSTRACT;

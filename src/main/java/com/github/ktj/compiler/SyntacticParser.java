@@ -162,7 +162,7 @@ final class SyntacticParser {
             assertEndOfStatement();
         }else ast.type = "void";
 
-        if(!ast.type.equals(method.correctType(method.returnType))  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
+        if(!ast.type.equals(method.correctType(method.returnType))  && !(ast.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
 
         return ast;
     }
@@ -473,7 +473,7 @@ final class SyntacticParser {
             }
 
             th.setIndex(i);
-            String type = method.validateType(th.current().s, false);
+            StringBuilder type = new StringBuilder(method.validateType(th.current().s, false));
 
             StringBuilder genericType = new StringBuilder();
 
@@ -485,38 +485,38 @@ final class SyntacticParser {
                 }while(th.isNext(","));
                 th.assertToken(">");
 
-                if(!CompilerUtil.validateGenericTypes(type, genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+type);
+                if(!CompilerUtil.validateGenericTypes(type.toString(), genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+type);
             }
 
             while(th.isNext("[")){
                 th.assertToken("]");
-                type = "["+type;
+                type.insert(0, "[");
             }
 
-            if(genericType.length() != 0) type = type+"|"+genericType;
+            if(genericType.length() != 0) type.append("|").append(genericType);
 
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");
             AST.Calc calc = parseCalc();
             assertEndOfStatement();
 
-            if(CompilerUtil.isPrimitive(type)){
-                if(!type.equals(calc.type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+            if(CompilerUtil.PRIMITIVES.contains(type.toString())){
+                if(!type.toString().equals(calc.type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
             }else if(!calc.type.equals("null")){
-                if(!CompilerUtil.isSuperClass(calc.type, type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+                if(!CompilerUtil.isSuperClass(calc.type, type.toString())) throw new RuntimeException("Expected type "+type+" got "+calc.type);
             }
             if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
 
-            scope.add(name, type, constant);
+            scope.add(name, type.toString(), constant);
 
             AST.VarAssignment ast = new AST.VarAssignment();
 
             ast.calc = calc;
-            ast.type = type;
+            ast.type = type.toString();
             ast.load = new AST.Load();
-            ast.load.type = type;
+            ast.load.type = type.toString();
             ast.load.name = name;
-            ast.load.clazz = type;
+            ast.load.clazz = type.toString();
 
             return ast;
         }
@@ -534,7 +534,7 @@ final class SyntacticParser {
             assertEndOfStatement();
 
             if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
-            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type)) && !CompilerUtil.isSuperClass(calc.type, load.type)) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
+            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(load.type)) && !CompilerUtil.isSuperClass(calc.type, load.type)) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
 
             AST.VarAssignment ast = new AST.VarAssignment();
             ast.calc = calc;
@@ -559,7 +559,7 @@ final class SyntacticParser {
         }else{
             AST.CalcArg arg = parseValue();
 
-            if(arg instanceof AST.Value && ((AST.Value) arg).op != null && CompilerUtil.isPrimitive(arg.type)){
+            if(arg instanceof AST.Value && ((AST.Value) arg).op != null && CompilerUtil.PRIMITIVES.contains(arg.type)){
                 if(((AST.Value) arg).op.equals("++") || ((AST.Value) arg).op.equals("--")){
                     String op = ((AST.Value) arg).op.substring(1);
                     ((AST.Value) arg).op = null;
@@ -627,7 +627,7 @@ final class SyntacticParser {
 
             if(ast.op.equals("=")){
                 ast.left = parseCalc();
-            }else if(CompilerUtil.isPrimitive(ast.right.type) && (ast.op.equals("+=") || ast.op.equals("-=") || ast.op.equals("*=") || ast.op.equals("/=") || ast.op.equals("%="))){
+            }else if(CompilerUtil.PRIMITIVES.contains(ast.right.type) && (ast.op.equals("+=") || ast.op.equals("-=") || ast.op.equals("*=") || ast.op.equals("/=") || ast.op.equals("%="))){
                 String op = ast.op.substring(0, 1);
                 ast.op = "=";
                 AST.Calc left = new AST.Calc();
@@ -638,7 +638,7 @@ final class SyntacticParser {
                 left.type = ast.type;
                 left.left = parseCalc();
                 ast.left = left;
-            }else if(ast.op.equals(">>") && !CompilerUtil.isPrimitive(ast.right.type) && !CompilerUtil.isPrimitive(th.assertToken(Token.Type.IDENTIFIER).s)){
+            }else if(ast.op.equals(">>") && !CompilerUtil.PRIMITIVES.contains(ast.right.type) && !CompilerUtil.PRIMITIVES.contains(th.assertToken(Token.Type.IDENTIFIER).s)){
                 AST.Value value = new AST.Value();
 
                 value.token = th.current();
@@ -658,7 +658,7 @@ final class SyntacticParser {
                 }else{
                     AST.CalcArg arg = parseValue();
 
-                    if(arg instanceof AST.Value && ((AST.Value) arg).op != null && CompilerUtil.isPrimitive(arg.type)){
+                    if(arg instanceof AST.Value && ((AST.Value) arg).op != null && CompilerUtil.PRIMITIVES.contains(arg.type)){
                         if(((AST.Value) arg).op.equals("++") || ((AST.Value) arg).op.equals("--")){
                             String op = ((AST.Value) arg).op.substring(1);
                             ((AST.Value) arg).op = null;
@@ -719,13 +719,13 @@ final class SyntacticParser {
     private AST.CalcArg parseValue(){
         th.next();
 
-        if(th.current().equals(Token.Type.IDENTIFIER) && (CompilerUtil.isPrimitive(th.current().s) || method.uses.containsKey(th.current().s))){
+        if(th.current().equals(Token.Type.IDENTIFIER) && (CompilerUtil.PRIMITIVES.contains(th.current().s) || method.uses.containsKey(th.current().s))){
             if(th.isNext(Token.Type.OPERATOR) || th.isNext(Token.Type.SIMPLE)){
                 th.last();
             }else{
                 AST.Cast ast = new AST.Cast();
 
-                ast.cast = CompilerUtil.isPrimitive(th.current().s) ? th.current().s : method.uses.get(th.current().s);
+                ast.cast = CompilerUtil.PRIMITIVES.contains(th.current().s) ? th.current().s : method.uses.get(th.current().s);
                 ast.calc = parseCalc();
                 ast.type = ast.cast;
 
@@ -919,13 +919,13 @@ final class SyntacticParser {
 
         String call = th.assertToken(Token.Type.IDENTIFIER).s;
 
-        if(CompilerUtil.isPrimitive(call) || method.uses.containsKey(call)){
+        if(CompilerUtil.PRIMITIVES.contains(call) || method.uses.containsKey(call)){
             ast.call = new AST.Call();
 
             StringBuilder genericType = new StringBuilder();
 
             if(th.isNext("<")){
-                if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal argument");
+                if(CompilerUtil.PRIMITIVES.contains(call)) throw new RuntimeException("illegal argument");
 
                 do{
                     th.assertToken(Token.Type.IDENTIFIER);
@@ -940,7 +940,7 @@ final class SyntacticParser {
             if(th.isNext("[")){
                 th.last();
 
-                ast.call.clazz = CompilerUtil.isPrimitive(call) ? call : method.uses.get(call);
+                ast.call.clazz = CompilerUtil.PRIMITIVES.contains(call) ? call : method.uses.get(call);
                 ast.call.name = "<init>";
 
                 ArrayList<AST.Calc> args = new ArrayList<>();
@@ -958,7 +958,7 @@ final class SyntacticParser {
                 ast.call.type = ast.call.clazz;
                 ast.type = ast.call.type;
             }else if(th.isNext("(")){
-                if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
+                if(CompilerUtil.PRIMITIVES.contains(call)) throw new RuntimeException("illegal type "+call);
 
                 ast.call.clazz = method.uses.get(call);
                 ast.call.name = "<init>";
@@ -986,7 +986,7 @@ final class SyntacticParser {
                 if(genericType.length() != 0) ast.call.type = ast.call.type+"|"+genericType;
                 ast.type = ast.call.type;
             }else{
-                if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
+                if(CompilerUtil.PRIMITIVES.contains(call)) throw new RuntimeException("illegal type "+call);
 
                 th.assertToken(".");
                 ast.call.clazz = method.uses.get(call);

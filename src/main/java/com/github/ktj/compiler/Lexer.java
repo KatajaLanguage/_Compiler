@@ -2,7 +2,6 @@ package com.github.ktj.compiler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public final class Lexer {
 

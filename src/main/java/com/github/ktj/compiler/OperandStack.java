@@ -124,29 +124,13 @@ final class OperandStack {
         return temp;
     }
 
-    void pop(int i){
-        for(int j = 0;j < i;j++) pop();
-    }
-
-    void clearScope(Bytecode code){
-        while (size > scopes.get(scopes.size() - 1)) {
-            //code.addOpcode(Opcode.POP);
-            pop();
-        }
+    void clearScope(){
+        while (size > scopes.get(scopes.size() - 1)) pop();
         scopes.remove(scopes.size() - 1);
     }
 
     void newScope(){
         scopes.add(size);
-    }
-
-    int clearTemp(){
-        int i = 0;
-        while (stack.getKey(stack.size()).equals("&temp")){
-            pop();
-            i++;
-        }
-        return i;
     }
 
     int get(String name){
@@ -156,10 +140,6 @@ final class OperandStack {
         return stack.getValue(name);
     }
 
-    boolean isEmpty(){
-        return stack.size() == 0;
-    }
-
     static OperandStack forMethod(KtjMethod method){
         OperandStack os = new OperandStack(method.modifier.statik);
 
@@ -167,9 +147,5 @@ final class OperandStack {
             os.push(method.parameter[i].name, (method.parameter[i].type.equals("double") || method.parameter[i].type.equals("long")) ? 2 : 1);
 
         return os;
-    }
-
-    boolean contains(String name){
-        return stack.hasKey(name);
     }
 }

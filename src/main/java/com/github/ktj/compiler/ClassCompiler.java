@@ -181,8 +181,6 @@ final class ClassCompiler {
             cf.addField2(fInfo);
         }
 
-        //cf.addAttribute(new AttributeInfo());
-
         //Methods
         for(String desc:clazz.methods.keySet()){
             MethodInfo mInfo = MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc);
