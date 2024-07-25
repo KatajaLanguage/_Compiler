@@ -78,6 +78,7 @@ abstract class AST {
         boolean statik = false;
         String clazz = null;
         String name = null;
+        String cast = null;
         String signature = null;
         Call prev = null;
         Calc[] argTypes = null;

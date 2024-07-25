@@ -9,8 +9,8 @@ public class KtjInterface extends Compilable{
 
     public HashMap<String, KtjMethod> methods;
 
-    public KtjInterface(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
-        super(modifier, uses, statics, file, line);
+    public KtjInterface(Modifier modifier, ArrayList<GenericType> genericTypes, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        super(modifier, genericTypes, uses, statics, file, line);
         methods = new HashMap<>();
     }
 
@@ -23,6 +23,8 @@ public class KtjInterface extends Compilable{
 
     @Override
     public void validateTypes(){
+        if(genericTypes != null) for(GenericType genericType:genericTypes) genericType.type = validateType(genericType.type, true);
+
         HashMap<String, KtjMethod> help = new HashMap<>();
 
         for(String methodName:methods.keySet()){

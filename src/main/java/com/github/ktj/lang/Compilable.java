@@ -1,9 +1,7 @@
 package com.github.ktj.lang;
 
 import com.github.ktj.bytecode.AccessFlag;
-import com.github.ktj.compiler.Compiler;
 import com.github.ktj.compiler.CompilerUtil;
-import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +9,7 @@ import java.util.HashMap;
 public abstract class Compilable {
 
     public final Modifier modifier;
+    public final ArrayList<GenericType> genericTypes;
     public final HashMap<String, String> uses;
     public final ArrayList<String> statics;
     public final String file;
@@ -18,6 +17,16 @@ public abstract class Compilable {
 
     public Compilable(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
         this.modifier = modifier;
+        this.genericTypes = null;
+        this.uses = uses;
+        this.statics = statics;
+        this.file = file;
+        this.line = line;
+    }
+
+    public Compilable(Modifier modifier, ArrayList<GenericType> genericTypes, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        this.modifier = modifier;
+        this.genericTypes = genericTypes;
         this.uses = uses;
         this.statics = statics;
         this.file = file;
@@ -43,9 +52,27 @@ public abstract class Compilable {
 
         if(CompilerUtil.isPrimitive(type)) return type;
 
-        if(!uses.containsKey(type)) throw new RuntimeException("Unknown Type "+type+(errorAt?" at "+file+":"+line:""));
+        if(!uses.containsKey(type)){
+            if(genericTypes != null) for(GenericType gType:genericTypes) if (gType.name.equals(type)) return type;
+            throw new RuntimeException("Unknown Type "+type+(errorAt?" at "+file+":"+line:""));
+        }
 
         return uses.get(type);
+    }
+
+    public int genericIndex(String type){
+        if(genericTypes == null) return -1;
+
+        for(int i = 0;i < genericTypes.size();i++) if(genericTypes.get(i).name.equals(type)) return i;
+
+        return -1;
+    }
+
+    public String correctType(String type){
+        int i = genericIndex(type);
+        if(i == -1) return type;
+        assert genericTypes != null;
+        return genericTypes.get(i).type;
     }
 
     public int getAccessFlag(){

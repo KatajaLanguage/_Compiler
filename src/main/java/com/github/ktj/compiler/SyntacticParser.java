@@ -22,7 +22,7 @@ final class SyntacticParser {
             vars.put("null", "java.lang.Object");
             for(int i = 0;i < method.parameter.length;i++){
                 if(vars.containsKey(method.parameter[i].name)) throw new RuntimeException(method.parameter[i].name+" is already defined at "+method.file+":"+method.line);
-                vars.put(method.parameter[i].name, method.parameter[i].type);
+                vars.put(method.parameter[i].name, method.correctType(method.parameter[i].type));
                 if(method.parameter[i].constant) constants.add(method.parameter[i].name);
             }
         }
@@ -84,7 +84,7 @@ final class SyntacticParser {
             }
         }
 
-        if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
+        if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.correctType(method.returnType)));
 
         return ast.toArray(new AST[0]);
     }
@@ -162,7 +162,7 @@ final class SyntacticParser {
             assertEndOfStatement();
         }else ast.type = "void";
 
-        if(!ast.type.equals(method.returnType)  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
+        if(!ast.type.equals(method.correctType(method.returnType))  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
 
         return ast;
     }
@@ -440,14 +440,29 @@ final class SyntacticParser {
                 if(constant) throw new RuntimeException("illegal argument");
                 th.last();
                 return parseAssignment();
-            }else if (th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
-                if(constant) throw new RuntimeException("illegal argument");
-                th.last();
-                th.last();
-                return parseAssignment();
+            }else if(th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
+                if(th.current().equals("<")){
+                    th.last();
+                }else{
+                    if (constant) throw new RuntimeException("illegal argument");
+                    th.last();
+                    th.last();
+                    return parseAssignment();
+                }
             }
 
             int i = th.getIndex();
+            if(th.isNext("<")){
+                do{
+                    if(!(th.isNext(Token.Type.IDENTIFIER) && method.uses.containsKey(th.current().s))){
+                        th.setIndex(i);
+                        th.last();
+                        return parseAssignment();
+                    }
+                }while(th.isNext(","));
+                th.assertToken(">");
+            }
+
             while(th.isNext("[")){
                 if(!th.isNext("]")){
                     if(constant) throw new RuntimeException("illegal argument");
@@ -458,19 +473,32 @@ final class SyntacticParser {
             }
 
             th.setIndex(i);
-            String type = th.current().s;
+            String type = method.validateType(th.current().s, false);
+
+            StringBuilder genericType = new StringBuilder();
+
+            if(th.isNext("<")){
+                do{
+                    th.assertToken(Token.Type.IDENTIFIER);
+                    if(genericType.length() != 0) genericType.append("%");
+                    genericType.append(method.uses.get(th.current().s));
+                }while(th.isNext(","));
+                th.assertToken(">");
+
+                if(!CompilerUtil.validateGenericTypes(type, genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+type);
+            }
 
             while(th.isNext("[")){
                 th.assertToken("]");
                 type = "["+type;
             }
 
+            if(genericType.length() != 0) type = type+"|"+genericType;
+
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");
             AST.Calc calc = parseCalc();
             assertEndOfStatement();
-
-            type = method.validateType(type, false);
 
             if(CompilerUtil.isPrimitive(type)){
                 if(!type.equals(calc.type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
@@ -506,7 +534,7 @@ final class SyntacticParser {
             assertEndOfStatement();
 
             if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
-            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type))) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
+            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.isPrimitive(load.type)) && !CompilerUtil.isSuperClass(calc.type, load.type)) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
 
             AST.VarAssignment ast = new AST.VarAssignment();
             ast.calc = calc;
@@ -894,6 +922,21 @@ final class SyntacticParser {
         if(CompilerUtil.isPrimitive(call) || method.uses.containsKey(call)){
             ast.call = new AST.Call();
 
+            StringBuilder genericType = new StringBuilder();
+
+            if(th.isNext("<")){
+                if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal argument");
+
+                do{
+                    th.assertToken(Token.Type.IDENTIFIER);
+                    if(genericType.length() != 0) genericType.append("%");
+                    genericType.append(method.uses.get(th.current().s));
+                }while(th.isNext(","));
+                th.assertToken(">");
+
+                if(!CompilerUtil.validateGenericTypes(method.uses.get(call), genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+method.uses.get(call));
+            }
+
             if(th.isNext("[")){
                 th.last();
 
@@ -940,6 +983,7 @@ final class SyntacticParser {
                 ast.call.type = methodSpecs[0];
                 ast.call.signature = methodSpecs[1];
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
+                if(genericType.length() != 0) ast.call.type = ast.call.type+"|"+genericType;
                 ast.type = ast.call.type;
             }else{
                 if(CompilerUtil.isPrimitive(call)) throw new RuntimeException("illegal type "+call);
@@ -970,14 +1014,18 @@ final class SyntacticParser {
                     ast.call.name = call;
                     ast.call.type = methodSpecs[0];
                     ast.call.signature = methodSpecs[1];
+                    if(methodSpecs.length == 3) ast.call.cast = methodSpecs[2];
                     ast.type = ast.call.type;
                     ast.call.statik = true;
                     ast.call.argTypes = args.toArray(new AST.Calc[0]);
                 }else{
                     ast.call.name = call;
-                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
+                    String[] fieldSpecs = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
+                    if(fieldSpecs == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
 
-                    if(ast.call.type == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
+                    ast.call.type = fieldSpecs[1] != null ? fieldSpecs[1] : fieldSpecs[0];
+                    ast.call.cast = fieldSpecs[1];
+                    ast.call.signature = fieldSpecs[0];
 
                     ast.call.statik = true;
                     ast.type = ast.call.type;
@@ -1025,6 +1073,7 @@ final class SyntacticParser {
 
                 ast.call.type = methodSpecs[0];
                 ast.call.signature = methodSpecs[1];
+                if(methodSpecs.length == 3) ast.call.cast = methodSpecs[2];
                 ast.call.argTypes = args.toArray(new AST.Calc[0]);
                 ast.type = ast.call.type;
             }else{
@@ -1032,21 +1081,25 @@ final class SyntacticParser {
                 ast.call.clazz = clazzName;
 
                 ast.call.name = call;
-                ast.call.type = CompilerUtil.getFieldType(clazzName, call, false, clazzName);
+                String[] fieldSpecs = CompilerUtil.getFieldType(clazzName, call, false, clazzName);
 
-                if(ast.call.type == null){
-                    ast.call.type = CompilerUtil.getFieldType(clazzName, call, true, clazzName);
+                if(fieldSpecs == null){
+                    fieldSpecs = CompilerUtil.getFieldType(clazzName, call, true, clazzName);
                     ast.call.statik = true;
                 }
 
-                if(ast.call.type == null){
+                if(fieldSpecs == null){
                     ast.call.clazz = getClazzFromField(call);
                     if(ast.call.clazz == null)
                         throw new RuntimeException("Field " + call + " is not defined for class " + clazzName);
-                    ast.call.type = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
+                    fieldSpecs = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
                     ast.call.statik = true;
                 }
 
+                assert fieldSpecs != null;
+                ast.call.type = fieldSpecs[1] != null ? fieldSpecs[1] : fieldSpecs[0];
+                ast.call.cast = fieldSpecs[1];
+                ast.call.signature = fieldSpecs[0];
                 ast.type = ast.call.type;
             }
 
@@ -1110,11 +1163,16 @@ final class SyntacticParser {
             call.name = name;
             call.type = methodSpecs[0];
             call.signature = methodSpecs[1];
+            if(methodSpecs.length == 3) call.cast = methodSpecs[2];
         }else{
             call.name = name;
-            call.type = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
+            String[] fieldSpecs = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
 
-            if(call.type == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
+            if(fieldSpecs == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
+
+            call.cast = fieldSpecs[1];
+            call.signature = fieldSpecs[0];
+            call.type = call.cast == null ? call.signature : call.cast;
         }
 
         while(th.isNext("[")){
@@ -1144,7 +1202,7 @@ final class SyntacticParser {
 
     private String getClazzFromField(String field){
         for(String name:method.statics){
-            String type = CompilerUtil.getFieldType(method.uses.get(name), field, true, clazzName);
+            String[] type = CompilerUtil.getFieldType(method.uses.get(name), field, true, clazzName);
             if(type != null) return method.uses.get(name);
         }
         return null;

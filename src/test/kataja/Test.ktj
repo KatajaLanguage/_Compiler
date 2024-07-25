@@ -1,9 +1,12 @@
 use $java/lang/System
 use java/util/ArrayList
 
-test(String s) {
-    do{
-        s.substring(1)
-    }while(s !== null)
+class Test<E>{
+    E test(E e) = e
+}
+
+main{
+    Test<String> test = Test<String>()
+    test.test("test")
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

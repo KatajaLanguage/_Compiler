@@ -15,8 +15,8 @@ public class KtjClass extends KtjInterface{
     public String[] interfaces = new String[0];
     public String superclass = null;
 
-    public KtjClass(Modifier modifier, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
-        super(modifier, uses, statics, file, line);
+    public KtjClass(Modifier modifier, ArrayList<GenericType> genericTypes, HashMap<String, String> uses, ArrayList<String> statics, String file, int line){
+        super(modifier, genericTypes, uses, statics, file, line);
         fields = new HashMap<>();
     }
 
@@ -47,7 +47,7 @@ public class KtjClass extends KtjInterface{
         return sb.length() == 0 ? null : sb.toString();
     }
 
-    public void validateInit(){
+    public void validateInit(String className){
         boolean initExist = false;
 
         for(String method: methods.keySet()) {
@@ -58,7 +58,7 @@ public class KtjClass extends KtjInterface{
         }
 
         if(!initExist){
-            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), "void", "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
+            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), genericTypes, className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
         }
     }
 

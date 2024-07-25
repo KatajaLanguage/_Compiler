@@ -169,7 +169,7 @@ final class ClassCompiler {
         for(String fieldName:clazz.fields.keySet()){
             KtjField field = clazz.fields.get(fieldName);
 
-            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, CompilerUtil.toDesc(field.type));
+            FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, CompilerUtil.toDesc(field.correctType()));
             fInfo.setAccessFlags(field.getAccessFlag());
             cf.addField2(fInfo);
         }

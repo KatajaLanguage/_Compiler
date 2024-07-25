@@ -3,9 +3,7 @@ package com.github.ktj.compiler;
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.*;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -228,6 +226,8 @@ public class CompilerUtil {
     }
 
     public static String[] getMethod(String clazzName, boolean statik, String method, String callingClazz){
+        String[] generics = clazzName.split("\\|").length == 2 ? clazzName.split("\\|")[1].split("%") : new String[0];
+        clazzName = clazzName.split("\\|")[0];
         if(Compiler.Instance().classes.containsKey(clazzName)){
             Compilable compilable = Compiler.Instance().classes.get(clazzName);
             if(compilable instanceof KtjDataClass){
@@ -260,14 +260,25 @@ public class CompilerUtil {
                         boolean matches = true;
 
                         for (int i = 0; i < parameter.length; i++){
-                            if(!isSuperClass(parameters[i + 1], parameter[i].type)){
-                                matches = false;
-                                break;
+                            if(compilable.uses.containsKey(parameter[i].type)) {
+                                if (!isSuperClass(parameters[i + 1], parameter[i].type)) {
+                                    matches = false;
+                                    break;
+                                }
+                            }else{
+                                for(int j = 0;j < compilable.genericTypes.size();j++){
+                                    if(parameter[i].type.equals(compilable.genericTypes.get(j).type) && !isSuperClass(parameters[i + 1], generics[j])){
+                                        matches = false;
+                                        break;
+                                    }
+                                }
+                                if(!matches) break;
                             }
                         }
 
                         if(matches && canAccess(callingClazz, clazzName, ((KtjInterface) compilable).methods.get(mName).modifier.accessFlag) && (((KtjInterface) compilable).methods.get(mName).modifier.statik == statik)){
-                            return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.split("%", 2)[1]};
+                            if(compilable.uses.containsKey(((KtjInterface) compilable).methods.get(mName).returnType) || mName.startsWith("<init>")) return new String[]{((KtjInterface) compilable).methods.get(mName).returnType, mName.contains("%") ? mName.split("%", 2)[1] : "", null};
+                            else for(int j = 0;j < compilable.genericTypes.size();j++) if(((KtjInterface) compilable).methods.get(mName).returnType.equals(compilable.genericTypes.get(j).name)) return new String[]{generics[j], mName.contains("%") ? mName.split("%", 2)[1] : "", generics[j]};
                         }
                     }
                 }
@@ -309,8 +320,18 @@ public class CompilerUtil {
                             }
                             if (matches && canAccess(callingClazz, clazzName, getAccessFlag(m.getModifiers())) && ((m.getModifiers() & AccessFlag.STATIC) != 0) == statik) {
                                 StringBuilder sb = new StringBuilder();
-                                for(Class<?> field:m.getParameterTypes()) sb.append(sb.length() == 0 ? "":"%").append(adjustType(field.getTypeName()));
-                                return new String[]{m.getReturnType().getName(), sb.toString()};
+                                for(int i = 0;i < m.getParameterCount();i++){
+                                    sb.append(sb.length() == 0 ? "":"%").append(adjustType(m.getParameterTypes()[i].getTypeName()));
+                                    if(m.getGenericParameterTypes()[i] instanceof TypeVariable<?>){
+                                        TypeVariable<?>[] typeParameters = Class.forName(clazzName).getTypeParameters();
+                                        for(int j = 0; j < typeParameters.length; j++) if(typeParameters[j].getName().equals(((TypeVariable<?>) m.getGenericParameterTypes()[i]).getName()) && !generics[j].equals(parameters[i + 1])) return null;
+                                    }
+                                }
+
+                                if(m.getGenericReturnType() instanceof TypeVariable<?>){
+                                    TypeVariable<?>[] typeParameters = Class.forName(clazzName).getTypeParameters();
+                                    for(int i = 0; i < typeParameters.length; i++) if(typeParameters[i].getName().equals(((TypeVariable<?>) m.getGenericReturnType()).getName())) return new String[]{generics[i], sb.toString(), generics[i]};
+                                }else return new String[]{m.getReturnType().getName(), sb.toString()};
                             }
                         }
                     }
@@ -347,57 +368,46 @@ public class CompilerUtil {
         return -1;
     }
 
-    public static String getFieldType(String clazzName, String field, boolean statik, String callingClazz){
+    public static String[] getFieldType(String clazzName, String field, boolean statik, String callingClazz){
+        String[] generics = clazzName.split("\\|").length == 2 ? clazzName.split("\\|")[1].split("%") : new String[0];
+        clazzName = clazzName.split("\\|")[0];
+
         if(clazzName.startsWith("[")){
             if(!field.equals("length")) return null;
-            return "int";
+            return new String[]{"int", null};
         }
 
         Compilable compilable = Compiler.Instance().classes.get(clazzName);
 
         if(compilable != null) {
             if(compilable instanceof KtjClass){
-                if (((KtjClass)(compilable)).fields.containsKey(field) && ((KtjClass)(compilable)).fields.get(field).modifier.statik == statik)
-                    return canAccess(callingClazz, clazzName, ((KtjClass)(compilable)).fields.get(field).modifier.accessFlag) ? ((KtjClass)(compilable)).fields.get(field).type : null;
+                if (((KtjClass)(compilable)).fields.containsKey(field) && ((KtjClass)(compilable)).fields.get(field).modifier.statik == statik) {
+                    if(!canAccess(callingClazz, clazzName, ((KtjClass) (compilable)).fields.get(field).modifier.accessFlag)) return null;
+                    String type = ((KtjClass) (compilable)).fields.get(field).type;
+                    int gi = compilable.genericIndex(type);
+                    if(gi == -1) return new String[]{type, null};
+                    if(generics.length == 0) return new String[]{compilable.correctType(type), null};
+                    return new String[]{compilable.genericTypes.get(gi).type, generics[gi]};
+                }
             }else if(compilable instanceof KtjTypeClass){
-                if (((KtjTypeClass)(compilable)).hasValue(field) && statik) return clazzName;
+                if (((KtjTypeClass)(compilable)).hasValue(field) && statik) return new String[]{clazzName, null};
             }else if(compilable instanceof KtjDataClass){
                 if (((KtjDataClass)(compilable)).fields.containsKey(field) && ((KtjDataClass)(compilable)).fields.get(field).modifier.statik == statik)
-                    return ((KtjDataClass)(compilable)).fields.get(field).type;
+                    return new String[]{((KtjDataClass)(compilable)).fields.get(field).type, null};
             }
         }else{
             try{
                 Field f = Class.forName(clazzName).getField(field);
-                if((((f.getModifiers() & AccessFlag.STATIC) != 0) == statik) && canAccess(callingClazz, clazzName, getAccessFlag(f.getModifiers()))) return f.getType().getName();
+                if((((f.getModifiers() & AccessFlag.STATIC) != 0) == statik) && canAccess(callingClazz, clazzName, getAccessFlag(f.getModifiers()))){
+                    if(f.getGenericType() instanceof TypeVariable<?>){
+                        TypeVariable<?>[] typeParameters = Class.forName(clazzName).getTypeParameters();
+                        for(int i = 0; i < typeParameters.length; i++) if(typeParameters[i].getName().equals(((TypeVariable<?>) f.getGenericType()).getName())) return new String[]{f.getType().getName(), generics[i]};
+                    }else return new String[]{f.getType().getName(), null};
+                }
             }catch(Exception ignored){}
         }
 
         return null;
-    }
-
-    public static boolean isFinal(String clazzName, String field){
-        if(clazzName.startsWith("[")){
-            return true;
-        }
-
-        Compilable compilable = Compiler.Instance().classes.get(clazzName);
-
-        if(compilable != null) {
-            if(compilable instanceof KtjTypeClass) return true;
-            else if(compilable instanceof KtjDataClass){
-                if (((KtjDataClass) (compilable)).fields.containsKey(field)) return ((KtjDataClass) (compilable)).fields.get(field).modifier.finaly;
-            }else if(compilable instanceof KtjClass){
-                if (((KtjClass) (compilable)).fields.containsKey(field))
-                    return ((KtjClass) (compilable)).fields.get(field).modifier.finaly;
-            }
-        }else{
-            try{
-                Field f = Class.forName(clazzName).getField(field);
-                return (f.getModifiers() & AccessFlag.FINAL) != 0;
-            }catch(Exception ignored){}
-        }
-
-        return false;
     }
 
     private static boolean canAccess(String type1, String type2, AccessFlag flag){
@@ -424,6 +434,33 @@ public class CompilerUtil {
         }catch(ClassNotFoundException e){
             throw new RuntimeException("unable to find "+type2);
         }
+    }
+
+    public static boolean validateGenericTypes(String clazzName, String...types){
+        if(types.length == 0) return true;
+
+        Compilable c = Compiler.Instance().classes.get(clazzName);
+        if(c != null){
+            if(c instanceof KtjDataClass){
+                return false;
+            }else if(c instanceof KtjInterface){
+                if(types.length != c.genericTypes.size()) return false;
+                for(int i = 0;i < types.length;i++) if(!isSuperClass(types[i], c.genericTypes.get(i).type)) return false;
+                return true;
+            }
+        }else{
+            try{
+                Class<?> clazz = Class.forName(clazzName);
+                TypeVariable<?>[] typeParameters = clazz.getTypeParameters();
+                if(typeParameters.length != types.length) return false;
+                for(TypeVariable<?> type:typeParameters) for(Type bound:type.getBounds()) if(!isSuperClass(clazzName, bound.getTypeName())) return false;
+                return true;
+            }catch(ClassNotFoundException ignored){
+                return false;
+            }
+        }
+
+        return false;
     }
 
     public static boolean isFinal(String clazz){

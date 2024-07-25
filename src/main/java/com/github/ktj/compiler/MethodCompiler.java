@@ -643,11 +643,13 @@ final class MethodCompiler {
 
         if(call.argTypes == null) {
             if(call.clazz.startsWith("[")) code.add(Opcode.ARRAYLENGTH);
-            else if (call.statik) code.addGetstatic(call.clazz, call.name, CompilerUtil.toDesc(call.type));
+            else if (call.statik) code.addGetstatic(call.clazz, call.name, CompilerUtil.toDesc(call.signature));
             else {
                 if (first && call.clazz.equals(clazzName)) code.addAload(0);
-                code.addGetfield(call.clazz, call.name, CompilerUtil.toDesc(call.type));
+                code.addGetfield(call.clazz, call.name, CompilerUtil.toDesc(call.signature));
             }
+
+            if(call.cast != null) code.addCheckcast(call.cast);
         }else{
             if(!call.statik && first && call.clazz.equals(clazzName) && !call.name.equals("<init>")) code.addAload(0);
 
@@ -687,8 +689,13 @@ final class MethodCompiler {
                 code.add(Opcode.DUP);
                 for(AST.Calc calc:call.argTypes) compileCalc(calc, false);
                 code.addInvokespecial(call.clazz, "<init>", CompilerUtil.signatureToDesc(call.signature, "void"));
-            }else if(call.statik) code.addInvokestatic(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
-            else code.addInvokevirtual(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
+            }else if(call.statik){
+                code.addInvokestatic(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
+                if(call.cast != null) code.addCheckcast(call.cast);
+            }else{
+                code.addInvokevirtual(call.clazz, call.name, CompilerUtil.signatureToDesc(call.signature, call.type));
+                if(call.cast != null) code.addCheckcast(call.cast);
+            }
         }
     }
 
@@ -1343,9 +1350,9 @@ final class MethodCompiler {
         String name = desc.split("%", 2)[0];
         StringBuilder descBuilder = new StringBuilder("(");
 
-        for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(p.type));
+        for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(clazz.correctType(p.type)));
 
-        descBuilder.append(")").append(CompilerUtil.toDesc(method.returnType));
+        descBuilder.append(")").append(CompilerUtil.toDesc(clazz.correctType(method.returnType)));
 
         MethodInfo mInfo = new MethodInfo(cp, name, descBuilder.toString());
         mInfo.setAccessFlags(method.getAccessFlag());
@@ -1383,7 +1390,7 @@ final class MethodCompiler {
         Modifier mod = new Modifier(AccessFlag.ACC_PRIVATE);
         mod.statik = true;
 
-        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(mod, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.statics, clazz.file, Integer.MIN_VALUE), cp);
+        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(mod, null, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.statics, clazz.file, Integer.MIN_VALUE), cp);
 
         mInfo.setCodeAttribute(bytecode.toCodeAttribute());
 

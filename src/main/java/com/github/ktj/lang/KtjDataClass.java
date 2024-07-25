@@ -26,7 +26,7 @@ public class KtjDataClass extends Compilable{
         Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
         mod.constant = constant;
 
-        fields.put(name, new KtjField(mod, type, null, uses, statics, file, line));
+        fields.put(name, new KtjField(mod, type, null, null, uses, statics, file, line));
         return false;
     }
 }
