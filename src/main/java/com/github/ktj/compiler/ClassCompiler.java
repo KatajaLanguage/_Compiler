@@ -150,9 +150,14 @@ final class ClassCompiler {
         ClassFile cf = new ClassFile(true, name, "java/lang/Object");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
+        cf.addAttribute(getSignature(clazz, cf.getConstPool()));
 
         //Methods
-        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, name, cf.getConstPool(), clazz.methods.get(desc), desc));
+        for(String desc:clazz.methods.keySet()){
+            MethodInfo mInfo = MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc);
+            mInfo.addAttribute(getSignature(clazz.methods.get(desc), cf.getConstPool()));
+            cf.addMethod2(mInfo);
+        }
 
         Compiler.Instance().compiledClasses.add(cf);
     }
@@ -161,6 +166,7 @@ final class ClassCompiler {
         ClassFile cf = new ClassFile(false, path.isEmpty() ? name : path+"."+name, clazz.superclass);
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
+        cf.addAttribute(getSignature(clazz, cf.getConstPool()));
 
         for(String interfaceName: clazz.interfaces)
             cf.addInterface(interfaceName);
@@ -177,12 +183,43 @@ final class ClassCompiler {
         //cf.addAttribute(new AttributeInfo());
 
         //Methods
-        for(String desc:clazz.methods.keySet()) cf.addMethod2(MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc));
+        for(String desc:clazz.methods.keySet()){
+            MethodInfo mInfo = MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc);
+            mInfo.addAttribute(getSignature(clazz.methods.get(desc), cf.getConstPool()));
+            cf.addMethod2(mInfo);
+        }
 
         //<clinit>
         String clinit = clazz.createClinit();
         if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clinit));
 
         Compiler.Instance().compiledClasses.add(cf);
+    }
+
+    private static SignatureAttribute getSignature(KtjInterface clazz, ConstPool cp){
+        StringBuilder signature = new StringBuilder();
+        if(clazz.genericTypes != null){
+            signature.append("<");
+            for(GenericType type: clazz.genericTypes){
+                signature.append(type.name).append(":").append(CompilerUtil.toDesc(type.type));
+            }
+            signature.append(">");
+        }
+        if(clazz instanceof KtjClass) signature.append(CompilerUtil.toDesc(((KtjClass) clazz).superclass));
+        else signature.append("Ljava/lang/String;");
+        return new SignatureAttribute(cp, signature.toString());
+    }
+
+    private static SignatureAttribute getSignature(KtjMethod method, ConstPool cp){
+        StringBuilder signature = new StringBuilder("(");
+        for(KtjMethod.Parameter parameter:method.parameter){
+            int gi = method.genericIndex(parameter.type);
+            if(gi == -1) signature.append(CompilerUtil.toDesc(parameter.type));
+            else signature.append("T").append(parameter.type).append(";");
+        }
+        int gi = method.genericIndex(method.returnType);
+        if(gi == -1) signature.append(")").append(CompilerUtil.toDesc(method.returnType));
+        else signature.append(")T").append(method.returnType).append(";");
+        return new SignatureAttribute(cp, signature.toString());
     }
 }

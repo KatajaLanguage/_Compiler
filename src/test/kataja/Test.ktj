@@ -1,12 +1,12 @@
 use $java/lang/System
 use java/util/ArrayList
 
-class Test<E>{
+class Test<E, F extends String>{
     E test(E e) = e
 }
 
 main{
-    Test<String> test = Test<String>()
+    Test<String, String> test = Test<String, String>()
     test.test("test")
 }
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
