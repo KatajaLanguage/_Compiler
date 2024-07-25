@@ -2,6 +2,8 @@ use $java/lang/System
 use java/util/ArrayList
 
 class Test<E, F extends String>{
+    E e
+
     E test(E e) = e
 }
 

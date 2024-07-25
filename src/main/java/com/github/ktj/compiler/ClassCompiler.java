@@ -177,6 +177,7 @@ final class ClassCompiler {
 
             FieldInfo fInfo = new FieldInfo(cf.getConstPool(), fieldName, CompilerUtil.toDesc(field.correctType()));
             fInfo.setAccessFlags(field.getAccessFlag());
+            fInfo.addAttribute(getSignature(field, cf.getConstPool()));
             cf.addField2(fInfo);
         }
 
@@ -221,5 +222,11 @@ final class ClassCompiler {
         if(gi == -1) signature.append(")").append(CompilerUtil.toDesc(method.returnType));
         else signature.append(")T").append(method.returnType).append(";");
         return new SignatureAttribute(cp, signature.toString());
+    }
+
+    private static SignatureAttribute getSignature(KtjField field, ConstPool cp){
+        int gi = field.genericIndex(field.type);
+        if(gi == -1) return new SignatureAttribute(cp, CompilerUtil.toDesc(field.type));
+        else return new SignatureAttribute(cp, "T"+field.type+";");
     }
 }
