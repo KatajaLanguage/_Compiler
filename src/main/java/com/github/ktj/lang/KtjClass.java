@@ -58,7 +58,7 @@ public class KtjClass extends KtjInterface{
         }
 
         if(!initExist){
-            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
+            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), genericTypes, className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
         }
     }
 

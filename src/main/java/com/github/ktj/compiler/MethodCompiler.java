@@ -1345,9 +1345,9 @@ final class MethodCompiler {
         String name = desc.split("%", 2)[0];
         StringBuilder descBuilder = new StringBuilder("(");
 
-        for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(p.type));
+        for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(clazz.correctType(p.type)));
 
-        descBuilder.append(")").append(CompilerUtil.toDesc(method.returnType));
+        descBuilder.append(")").append(CompilerUtil.toDesc(clazz.correctType(method.returnType)));
 
         MethodInfo mInfo = new MethodInfo(cp, name, descBuilder.toString());
         mInfo.setAccessFlags(method.getAccessFlag());
@@ -1385,7 +1385,7 @@ final class MethodCompiler {
         Modifier mod = new Modifier(AccessFlag.ACC_PRIVATE);
         mod.statik = true;
 
-        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(mod, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.statics, clazz.file, Integer.MIN_VALUE), cp);
+        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(mod, null, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.statics, clazz.file, Integer.MIN_VALUE), cp);
 
         mInfo.setCodeAttribute(bytecode.toCodeAttribute());
 

@@ -22,7 +22,7 @@ final class SyntacticParser {
             vars.put("null", "java.lang.Object");
             for(int i = 0;i < method.parameter.length;i++){
                 if(vars.containsKey(method.parameter[i].name)) throw new RuntimeException(method.parameter[i].name+" is already defined at "+method.file+":"+method.line);
-                vars.put(method.parameter[i].name, method.parameter[i].type);
+                vars.put(method.parameter[i].name, method.correctType(method.parameter[i].type));
                 if(method.parameter[i].constant) constants.add(method.parameter[i].name);
             }
         }
@@ -84,7 +84,7 @@ final class SyntacticParser {
             }
         }
 
-        if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.returnType));
+        if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.correctType(method.returnType)));
 
         return ast.toArray(new AST[0]);
     }
@@ -162,7 +162,7 @@ final class SyntacticParser {
             assertEndOfStatement();
         }else ast.type = "void";
 
-        if(!ast.type.equals(method.returnType)  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
+        if(!ast.type.equals(method.correctType(method.returnType))  && !(ast.type.equals("null") && !CompilerUtil.isPrimitive(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
 
         return ast;
     }

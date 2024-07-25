@@ -4,9 +4,13 @@ class Test<E>{
 
     E test
 
+    E ttest(E e){
+        return e
+    }
+
     test(){
         Test object = Test()
-        object.test = "test"
+        object.test = ttest("test")
         out.println(object.test)
     }
 }

@@ -176,7 +176,7 @@ final class Parser {
 
             Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
             mod.statik = true;
-            addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), line));
+            addMethod("main%[String", new KtjMethod(mod, null, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), line));
             return;
         }
 
@@ -207,7 +207,7 @@ final class Parser {
 
         Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
         mod.statik = true;
-        addMethod("main%[String", new KtjMethod(mod, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), _line));
+        addMethod("main%[String", new KtjMethod(mod, null, "void", code.toString(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), _line));
     }
 
     private void parseModifier(String clazzName){
@@ -577,7 +577,7 @@ final class Parser {
 
         if(mod.abstrakt){
             th.assertNull();
-            addMethod(desc.toString(), new KtjMethod(mod, type, null, new KtjMethod.Parameter[0], uses, statics, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, null, new KtjMethod.Parameter[0], uses, statics, getFileName(), _line));
         }else if(th.isNext("{")){
             StringBuilder code = new StringBuilder();
             int i = 1;
@@ -602,7 +602,7 @@ final class Parser {
             if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
             if(name.equals("->")) throw new RuntimeException("illegal method name");
 
-            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }else if(th.isNext(":")){
             StringBuilder sb = new StringBuilder();
             boolean last = false;
@@ -685,7 +685,7 @@ final class Parser {
             if(sb.toString().isEmpty()) err("Expected ( got nothing");
             if(!last) err("Expected default");
 
-            addMethod(desc.toString(), new KtjMethod(mod, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }else{
             StringBuilder code = new StringBuilder();
 
@@ -693,7 +693,7 @@ final class Parser {
 
             while(th.hasNext()) code.append(" ").append(th.next());
 
-            addMethod(desc.toString(), new KtjMethod(mod, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }
     }
 
