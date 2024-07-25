@@ -2,7 +2,7 @@
 Kataja Compiler, written in Java, to compile Kataja Code to Java Bytecode
 
 ## How to use
-First Download the latest Version ([here](https://github.com/XaverWeste/Kataja-Compiler/tree/master/releases)) and run the jar ````java -jar KatajaCompiler-0.8.5.jar````. The Compiler starts a command prompt and waits for arguments.
+First Download the latest Version ([here](https://github.com/XaverWeste/Kataja-Compiler/tree/master/releases)) and run the jar ````java -jar KatajaCompiler-0.9.0.jar````. The Compiler starts a command prompt and waits for arguments.
 
 Every Argument has to be a combination of the arguments described below (Note that the order of arguments is fixed, in the Order of the list below, every argument is optional).
 
