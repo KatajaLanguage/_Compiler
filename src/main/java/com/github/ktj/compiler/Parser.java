@@ -13,7 +13,7 @@ final class Parser {
     private HashMap<String, String> uses;
     private ArrayList<String> statics;
     private Scanner sc;
-    private TokenHandler th;
+    private TokenHandlerOld th;
     private String path;
     private String name;
     private Compilable current = null;
@@ -506,7 +506,7 @@ final class Parser {
 
     private void parseField(Modifier mod, String type, String name){
         if(!mod.isValidForField()) err("illegal modifier");
-        if(Lexer.isOperator(name.toCharArray()[0])) throw new RuntimeException("illegal argument");
+        if(LexerOld.isOperator(name.toCharArray()[0])) throw new RuntimeException("illegal argument");
 
         String initValue = null;
 
@@ -540,14 +540,14 @@ final class Parser {
             if(!mod.isValidForInit()) err("illegal modifier");
         }else if(!mod.isValidForMethod()) err("illegal modifier");
 
-        if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) {
+        if(!name.equals("<init>") && LexerOld.isOperator(name.toCharArray()[0])) {
             name = CompilerUtil.operatorToIdentifier(name);
             if(type.equals("void")) err("Method should not return void");
             if(mod.statik || current == null) err("Method should not be static");
             if(mod.accessFlag != AccessFlag.ACC_PUBLIC) err("Method should be public");
         }
 
-        TokenHandler parameterList = th.getInBracket();
+        TokenHandlerOld parameterList = th.getInBracket();
         ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();
         int _line = line;
 
@@ -599,7 +599,7 @@ final class Parser {
 
             if(!th.current().equals("}")) err("Expected '}'");
 
-            if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
+            if(!name.equals("<init>") && LexerOld.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) throw new RuntimeException("To many parameters");
             if(name.equals("->")) throw new RuntimeException("illegal method name");
 
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
@@ -612,7 +612,7 @@ final class Parser {
                 if(!th.isEmpty()){
                     if(!th.isNext("(")) break;
 
-                    TokenHandler ib = th.getInBracket();
+                    TokenHandlerOld ib = th.getInBracket();
                     StringBuilder arg = new StringBuilder();
                     if(ib.isEmpty()) err("Expected arguments");
 
@@ -728,7 +728,7 @@ final class Parser {
 
     private void nextLine() throws RuntimeException{
         if(sc.hasNextLine()){
-            th = Lexer.lex(sc.nextLine());
+            th = LexerOld.lex(sc.nextLine());
             line ++;
         }else throw new RuntimeException();
     }

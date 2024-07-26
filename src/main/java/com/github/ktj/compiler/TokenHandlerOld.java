@@ -3,12 +3,12 @@ package com.github.ktj.compiler;
 import java.util.ArrayList;
 import java.util.List;
 
-final class TokenHandler {
+final class TokenHandlerOld {
 
     private final Token[] tokens;
     private int index;
 
-    public TokenHandler(List<Token> tokens){
+    public TokenHandlerOld(List<Token> tokens){
         this.tokens = tokens.toArray(new Token[0]);
         index = -1;
     }
@@ -49,7 +49,7 @@ final class TokenHandler {
         index = -1;
     }
 
-    public TokenHandler getInBracket() throws RuntimeException {
+    public TokenHandlerOld getInBracket() throws RuntimeException {
         if(!isValid()) throw new RuntimeException("expected left bracket got nothing in: "+this);
         Token current = tokens[index];
         if(!(current.s.equals("(") || current.s.equals("[") || current.s.equals("{"))) throw new RuntimeException("expected left bracket got "+tokens[index].s+" in: "+this);
@@ -67,7 +67,7 @@ final class TokenHandler {
         }
 
         if(i > 0) throw new RuntimeException("expected right bracket got nothing in: "+this);
-        return new TokenHandler(tokenList);
+        return new TokenHandlerOld(tokenList);
     }
 
     public Token assertToken(String string) throws RuntimeException {

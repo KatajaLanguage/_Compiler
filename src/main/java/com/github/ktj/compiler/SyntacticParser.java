@@ -47,7 +47,7 @@ final class SyntacticParser {
     }
 
     private HashMap<String, String> typeValues;
-    private TokenHandler th;
+    private TokenHandlerOld th;
     private Compilable clazz;
     private KtjMethod method;
     private Scope scope;
@@ -1225,13 +1225,13 @@ final class SyntacticParser {
     private void nextLine(){
         method.line++;
         index++;
-        th = Lexer.lex(code[index]);
+        th = LexerOld.lex(code[index]);
     }
 
     private void lastLine(){
         method.line--;
         index--;
-        th = Lexer.lex(code[index]);
+        th = LexerOld.lex(code[index]);
     }
 
     private boolean hasNextLine(){
