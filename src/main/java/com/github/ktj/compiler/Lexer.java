@@ -8,26 +8,14 @@ import java.util.Scanner;
 
 final class Lexer{
 
-    private final Token[][] token;
-    private final String file;
-    private int line;
-    private int i;
-
-    Lexer(File file) throws FileNotFoundException{
-        this.file = file.getPath()+"/"+file.getName();
-        token = lex(file);
-        line = 0;
-        i = -1;
-    }
-
-    private Token[][] lex(File file) throws FileNotFoundException{
+    private TokenHandler lex(File file) throws FileNotFoundException{
         List<Token[]> result = new ArrayList<>();
         List<Token> token = new ArrayList<>();
 
         Scanner sc = new Scanner(file);
         List<Character> chars = new ArrayList<>();
         StringBuilder value;
-        line = 0;
+        int line = 0;
 
         while(sc.hasNextLine()){
             for(char c:sc.nextLine().trim().toCharArray()) chars.add(c);
@@ -108,17 +96,17 @@ final class Lexer{
                 }
                 value.append("\"");
                 i++;
-                if(chars.get(i) != '"') throw new LexingException("Expected \"", this.file, line);
+                if(chars.get(i) != '"') throw new LexingException("Expected \"", file.getPath()+"/"+file.getName(), line);
                 token.add(new Token(value.toString(), Token.Type.STRING));
             }else if(chars.get(i) == '\''){
                 if(chars.size() >= i + 2 && chars.get(i + 2) == '\''){
                     token.add(new Token("'"+chars.get(i + 1)+"'", Token.Type.CHAR));
                     i += 3;
-                }else throw new LexingException("Expected '", this.file, line);
+                }else throw new LexingException("Expected '", file.getPath()+"/"+file.getName(), line);
             }else if(!(chars.get(i) == '\r' || chars.get(i) == '\t' || chars.get(i) == ' ')) token.add(new Token(String.valueOf(chars.get(i)), Token.Type.SIMPLE));
         }
 
-        return result.toArray(new Token[0][0]);
+        return new TokenHandler(result.toArray(new Token[0][0]));
     }
 
     public static boolean isOperator(char c){
