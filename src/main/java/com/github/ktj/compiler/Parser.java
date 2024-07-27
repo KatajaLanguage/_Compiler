@@ -467,10 +467,9 @@ final class Parser {
             StringBuilder sb = new StringBuilder();
             th.assertHasNext();
 
-            while(th.hasNext()){
-                sb.append(th.next().s).append(" ");
-                if(th.current().equals(";") && th.hasNext()) throw new RuntimeException("illegal argument");
-            }
+            while(!th.isEndOfStatement()) sb.append(th.next().s).append(" ");
+
+            if(sb.toString().trim().isEmpty()) throw new RuntimeException("Expected value");
 
             initValue = sb.toString();
         }
