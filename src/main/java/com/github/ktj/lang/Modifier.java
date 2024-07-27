@@ -10,6 +10,9 @@ public final class Modifier {
     public boolean abstrakt = false;
     public boolean synchronised = false;
     public boolean statik = false;
+    public boolean volatil = false;
+    public boolean transint = false;
+    public boolean strict = false;
 
     public Modifier(AccessFlag accessFlag){
         this.accessFlag = accessFlag;
@@ -41,20 +44,6 @@ public final class Modifier {
 
     public boolean isValidForInterface(){
         return !(constant || finaly || synchronised || statik);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if(!(obj instanceof Modifier)) return false;
-
-        if(((Modifier) obj).accessFlag != accessFlag) return false;
-        if(((Modifier) obj).finaly == finaly) return true;
-        if(((Modifier) obj).constant == constant) return true;
-        if(((Modifier) obj).abstrakt == abstrakt) return true;
-        if(((Modifier) obj).synchronised == synchronised) return true;
-        if(((Modifier) obj).statik == statik) return true;
-
-        return true;
     }
 
     @Override

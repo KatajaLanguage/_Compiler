@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 final class Lexer{
 
-    private TokenHandler lex(File file) throws FileNotFoundException{
+    static TokenHandler lex(File file) throws FileNotFoundException{
         List<Token[]> result = new ArrayList<>();
         List<Token> token = new ArrayList<>();
 

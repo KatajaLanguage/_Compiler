@@ -89,6 +89,9 @@ public abstract class Compilable {
         if(modifier.abstrakt) accessFlag += AccessFlag.ABSTRACT;
         if(modifier.statik) accessFlag += AccessFlag.STATIC;
         if(modifier.synchronised) accessFlag += AccessFlag.SYNCHRONIZED;
+        if(modifier.volatil) accessFlag += AccessFlag.VOLATILE;
+        if(modifier.transint) accessFlag += AccessFlag.TRANSIENT;
+        if(modifier.strict) accessFlag += AccessFlag.STRICT;
 
         return accessFlag;
     }

@@ -49,37 +49,91 @@ final class TokenHandler{
         throw new RuntimeException("Expected Token got nothing");
     }
 
-    public void assertToken(String...strings) throws RuntimeException{
+    public Token assertToken(String...strings) throws RuntimeException{
         Token t = next();
 
-        for(String string:strings) if(t.equals(string)) return;
+        for(String string:strings) if(t.equals(string)) return t;
 
         throw new RuntimeException("Expected one of "+Arrays.toString(strings)+" got "+t.s);
     }
 
-    public void assertToken(Token.Type...types) throws RuntimeException{
+    public Token assertTokenTypes(Token.Type...types) throws RuntimeException{
         Token t = next();
 
-        for(Token.Type type:types) if(t.equals(type)) return;
+        for(Token.Type type:types) if(t.equals(type)) return t;
 
         throw new RuntimeException("Expected one of "+Arrays.toString(types)+" got "+t.t);
+    }
+
+    public Token assertToken(Token.Type type, String...strings) throws RuntimeException{
+        Token t = next();
+
+        if(t.equals(type)) return t;
+
+        for(String string:strings) if(t.equals(string)) return t;
+
+        throw new RuntimeException("Expected one of "+type+", "+Arrays.toString(strings)+" got "+t.s);
+    }
+
+    public Token assertToken(Token.Type type1, Token.Type type2,String...strings) throws RuntimeException{
+        Token t = next();
+
+        if(t.equals(type1)) return t;
+        if(t.equals(type2)) return t;
+
+        for(String string:strings) if(t.equals(string)) return t;
+
+        throw new RuntimeException("Expected one of "+type1+", "+type2+", "+Arrays.toString(strings)+" got "+t.s);
     }
 
     public void assertEndOfStatement() throws RuntimeException{
         if(i + 1 != token[line].length) assertToken(";");
     }
 
+    public void assertHasNext(){
+        next();
+        last();
+    }
+
+    public boolean isNext(String string){
+        if(next().equals(string)) return true;
+
+        last();
+        return false;
+    }
+
+    public boolean isNext(Token.Type type){
+        if(next().equals(type)) return true;
+
+        last();
+        return false;
+    }
+
+    public boolean isEndOfStatement(){
+        if(i + 1 == token[line].length) return true;
+
+        return isNext(";");
+    }
+
     public boolean hasNext(){
-        if(i + 1 < token[line].length) return true;
-        else{
+        String index = getIndex();
+        if(i + 1 < token[line].length){
+            setIndex(index);
+            return true;
+        }else{
             while(line++ < token.length){
                 if(token[line].length > 0){
-                    i = -1;
+                    setIndex(index);
                     return true;
                 }
             }
         }
+        setIndex(index);
         return false;
+    }
+
+    public int getLine(){
+        return line;
     }
 
     public String getIndex(){
