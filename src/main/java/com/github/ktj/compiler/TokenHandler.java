@@ -121,7 +121,7 @@ final class TokenHandler{
             setIndex(index);
             return true;
         }else{
-            while(line++ < token.length){
+            while(++line < token.length){
                 if(token[line].length > 0){
                     setIndex(index);
                     return true;
@@ -133,7 +133,7 @@ final class TokenHandler{
     }
 
     public int getLine(){
-        return line;
+        return line + 1;
     }
 
     public String getIndex(){
