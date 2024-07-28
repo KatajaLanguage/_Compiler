@@ -490,7 +490,6 @@ final class Parser {
         }
 
         ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();
-        int _line = th.getLine();
 
         while(th.hasNext()){
             boolean constant = th.assertToken(Token.Type.IDENTIFIER).equals("const");
@@ -521,6 +520,7 @@ final class Parser {
             th.assertEndOfStatement();
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, null, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), th.getLine()));
         }else if(th.isNext("{")){
+            int _line = th.getLine();
             String code = parseContent();
 
             if(!name.equals("<init>") && LexerOld.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) err("To many parameters");
@@ -595,6 +595,7 @@ final class Parser {
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }*/else{
             StringBuilder code = new StringBuilder();
+            int _line = th.getLine();
 
             if(th.assertToken("=", "->").equals("=")) code.append("return");
 
@@ -632,8 +633,8 @@ final class Parser {
 
         while(b > 0 && th.hasNext()){
             th.next();
-            if(th.getLine() != line){
-                line = th.getLine();
+            while(th.getLine() != line){
+                line++;
                 sb.append("\n");
             }
             sb.append(th.current()).append(" ");
