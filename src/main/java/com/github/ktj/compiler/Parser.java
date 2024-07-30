@@ -171,7 +171,7 @@ final class Parser {
 
         Modifier mod = new Modifier(AccessFlag.ACC_PUBLIC);
         mod.statik = true;
-        addMethod("main%[String", new KtjMethod(mod, null, "void", parseContent(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), _line));
+        addMethod("main%[String", new KtjMethod(mod, null, "void", getInBracket(), new KtjMethod.Parameter[]{new KtjMethod.Parameter(false, "[String", "args")}, uses, statics, getFileName(), _line));
     }
 
     private void parseModifier(String clazzName){
@@ -521,79 +521,64 @@ final class Parser {
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, null, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), th.getLine()));
         }else if(th.isNext("{")){
             int _line = th.getLine();
-            String code = parseContent();
+            String code = getInBracket();
 
             if(!name.equals("<init>") && LexerOld.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) err("To many parameters");
             if(name.equals("->")) err("illegal method name");
 
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
-        }/*else if(th.isNext(":")){ //////////////////////////////////////TODO/////////////////////////////////////
+        }else if(th.isNext(":")){
+            if(parameter.isEmpty()) err("Expected parameter");
+
             StringBuilder sb = new StringBuilder();
             boolean last = false;
+            int _line = th.getLine();
 
-            while(th.hasNext() && !last){
-                if(!tho.isEmpty()){
-                    if(!th.isNext("(")) break;
-
-                    TokenHandlerOld ib = tho.getInBracket();
-                    StringBuilder arg = new StringBuilder();
-                    if(ib.isEmpty()) err("Expected arguments");
-
-                    for (KtjMethod.Parameter value : parameter) {
-                        ib.assertToken(value.name);
-                        if (!ib.isNext(",") && ib.hasNext()) {
-                            if (!arg.toString().isEmpty()) arg.append("&&");
-                            arg.append(value.name);
-                            while (!ib.isNext(",") && ib.hasNext()) {
-                                if (ib.isNext("(")) arg.append(ib.getInBracket().toStringNonMarked());
-                                else arg.append(ib.next().s);
-                            }
+            while(th.isNext("(") && !last){
+                StringBuilder arg = new StringBuilder();
+                for (KtjMethod.Parameter value : parameter) {
+                    th.assertToken(value.name);
+                    if(!th.isNext(",")){
+                        if (!arg.toString().isEmpty()) arg.append("&&");
+                        arg.append(value.name);
+                        while (!th.isNext(",")){
+                            if (th.isNext("(")) arg.append(getInBracket());
+                            else arg.append(th.next().s);
                         }
                     }
+                }
 
-                    if(arg.toString().isEmpty()){
-                        last = true;
-                        if(!sb.toString().isEmpty()) sb.append("else ");
-                        sb.append("if(true)");
-                    }else{
-                        if(!sb.toString().isEmpty()) sb.append("else ");
-                        sb.append("if( ").append(arg).append(" )");
-                    }
+                if(arg.toString().isEmpty()){
+                    last = true;
+                    if(!sb.toString().isEmpty()) sb.append("else ");
+                    sb.append("if(true)");
+                }else{
+                    if(!sb.toString().isEmpty()) sb.append("else ");
+                    sb.append("if( ").append(arg).append(" )");
+                }
 
-                    switch(th.assertToken("{", "=", "->").s){
-                        case "->":
-                            sb.append("->");
-                            while(th.hasNext()){
-                                sb.append(" ").append(th.next().s);
-
-                                if(th.current().equals(";")) err("illegal argument ;");
-                            }
-                            sb.append("\n");
-                            break;
-                        case "=":
-                            sb.append("->");
-                            sb.append("return ");
-                            while(th.hasNext()){
-                                sb.append(" ").append(th.next().s);
-
-                                if(th.current().equals(";")) err("illegal argument ;");
-                            }
-                            sb.append("\n");
-                            break;
-                        case "{":
-                            sb = new StringBuilder(parseContent());
-
-                            if(!th.current().equals("}")) err("Expected '}'");
-                            break;
-                    }
+                switch(th.assertToken("{", "=", "->").s){
+                    case "->":
+                        sb.append("->");
+                        while(!th.isEndOfStatement()) sb.append(" ").append(th.next().s);
+                        sb.append("\n");
+                        break;
+                    case "=":
+                        sb.append("-> return ");
+                        while(!th.isEndOfStatement()) sb.append(" ").append(th.next().s);
+                        sb.append("\n");
+                        break;
+                    case "{":
+                        sb = new StringBuilder(getInBracket());
+                        break;
                 }
             }
 
-            if(sb.toString().isEmpty()) err("Expected ( got nothing");
+            if(sb.toString().isEmpty()) err("Expected (");
             if(!last) err("Expected default");
 
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
-        }*/else{
+        }else{
             StringBuilder code = new StringBuilder();
             int _line = th.getLine();
 
@@ -625,7 +610,25 @@ final class Parser {
         }
     }
 
-    private String parseContent(){
+    private String getInBracket(){
+        String openingBracket = th.current().s;
+        String closingBracket;
+        switch(openingBracket){
+            case "(":
+                closingBracket = ")";
+                break;
+            case "[":
+                closingBracket = "]";
+                break;
+            case "{":
+                closingBracket = "}";
+                break;
+            case "<":
+                closingBracket = ">";
+                break;
+            default:
+                throw new RuntimeException();
+        }
         StringBuilder sb = new StringBuilder();
 
         int line = th.getLine();
@@ -638,11 +641,11 @@ final class Parser {
                 sb.append("\n");
             }
             sb.append(th.current()).append(" ");
-            if(th.current().equals("{")) b++;
-            else if(th.current().equals("}")) b--;
+            if(th.current().equals(openingBracket)) b++;
+            else if(th.current().equals(closingBracket)) b--;
         }
 
-        if(b > 0) err("Expected }");
+        if(b > 0) err("Expected "+closingBracket);
 
         return sb.toString();
     }
