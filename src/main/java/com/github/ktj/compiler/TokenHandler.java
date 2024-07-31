@@ -39,7 +39,7 @@ final class TokenHandler{
             i--;
             return token[line][i];
         }else{
-            while(line-- >= 0){
+            while(--line >= 0){
                 if(token[line].length > 0){
                     i = token[line].length - 1;
                     return token[line][i];
@@ -96,6 +96,7 @@ final class TokenHandler{
     }
 
     public boolean isNext(String string){
+        if(!hasNext()) return false;
         if(next().equals(string)) return true;
 
         last();
@@ -117,7 +118,7 @@ final class TokenHandler{
 
     public boolean hasNext(){
         String index = getIndex();
-        if(i + 1 < token[line].length){
+        if(line < token.length && i + 1 < token[line].length){
             setIndex(index);
             return true;
         }else{

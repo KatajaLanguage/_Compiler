@@ -41,24 +41,19 @@ final class Parser {
         statik.superclass = "Object";
 
         while(th.hasNext()){
-            try {
-                switch (th.next().s){
-                    case ";":
-                        break;
-                    case "use":
-                        parseUse();
-                        break;
-                    case "main":
-                        parseMain();
-                        break;
-                    default:
-                        parseModifier(null);
-                        break;
+            switch (th.next().s){
+                case ";":
+                    break;
+                case "use":
+                    parseUse();
+                    break;
+                case "main":
+                    parseMain();
+                    break;
+                default:
+                    parseModifier(null);
+                    break;
                 }
-            }catch (Exception e){
-                if(e instanceof ParsingException) throw e;
-                throw new ParsingException(e.getMessage(), getFileName(), th.getLine());
-            }
         }
 
         if(!statik.isEmpty()){
@@ -273,7 +268,7 @@ final class Parser {
     private void parseClass(Modifier modifier){
         String name = th.assertToken(Token.Type.IDENTIFIER).s;
 
-        if(modifier.accessFlag == AccessFlag.ACC_PRIVATE) err("Illegal modifier private");
+        if(!modifier.isValidForClass()) err("Illegal modifier");
         if(classes.containsKey(name)) err("Class "+name+" is already defined");
 
         ArrayList<GenericType> generics = parseGenerics();
@@ -289,7 +284,6 @@ final class Parser {
             while(th.isNext(",")){
                 String in = th.assertToken(Token.Type.IDENTIFIER).s;
 
-                if(!CompilerUtil.isInterface(in)) err("Expected interface got class "+in);
                 if(interfaces.contains(in) || clazz.superclass.equals(in)) err("interface "+in+" is already extended");
 
                 interfaces.add(in);
@@ -506,25 +500,28 @@ final class Parser {
 
         ArrayList<KtjMethod.Parameter> parameter = new ArrayList<>();
 
-        while(th.hasNext()){
-            boolean constant = th.assertToken(Token.Type.IDENTIFIER).equals("const");
-            String pType = constant ? th.assertToken(Token.Type.IDENTIFIER).s : th.current().s;
-            String pName = th.assertToken(Token.Type.IDENTIFIER, "[").s;
+        if(!th.isNext(")")) {
+            while (true) {
+                boolean constant = th.assertToken(Token.Type.IDENTIFIER).equals("const");
+                String pType = constant ? th.assertToken(Token.Type.IDENTIFIER).s : th.current().s;
+                String pName = th.assertToken(Token.Type.IDENTIFIER, "[").s;
 
-            while(pName.equals("[")){
-                th.assertToken("]");
-                pType = "["+pType;
-                pName = th.assertToken(Token.Type.IDENTIFIER, "[").s;
-            }
+                while (pName.equals("[")) {
+                    th.assertToken("]");
+                    pType = "[" + pType;
+                    pName = th.assertToken(Token.Type.IDENTIFIER, "[").s;
+                }
 
-            for(KtjMethod.Parameter p:parameter) if(pName.equals(p.name)) err("Method "+pName+" is already defined");
+                for (KtjMethod.Parameter p : parameter)
+                    if (pName.equals(p.name)) err("Method " + pName + " is already defined");
 
-            parameter.add(new KtjMethod.Parameter(constant, pType, pName));
+                parameter.add(new KtjMethod.Parameter(constant, pType, pName));
 
-            if(th.isNext(",")) th.assertHasNext();
-            else{
-                th.assertToken(")");
-                break;
+                if (th.isNext(",")) th.assertHasNext();
+                else {
+                    th.assertToken(")");
+                    break;
+                }
             }
         }
 

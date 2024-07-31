@@ -1,6 +1,6 @@
 use java/lang/Comparable
 
-public final class ArrayTest extends String, Comparable{
+public final class ArrayTest extends Object{
 
     private int[] intArray = int[5]
 

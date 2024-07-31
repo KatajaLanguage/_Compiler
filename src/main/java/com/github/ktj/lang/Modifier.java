@@ -19,31 +19,35 @@ public final class Modifier {
     }
 
     public boolean isValidForField(){
-        return !(finaly || abstrakt);
+        return !(finaly || abstrakt || strict);
     }
 
     public boolean isValidForMethod(){
-        return !(finaly || constant) && !(accessFlag == AccessFlag.ACC_PRIVATE && abstrakt);
+        return !(finaly || constant || volatil || transint) && !(accessFlag == AccessFlag.ACC_PRIVATE && abstrakt);
     }
 
     public boolean isValidForInit(){
-        return !(finaly || constant || abstrakt || synchronised || statik);
+        return !(finaly || constant || abstrakt || synchronised || statik || volatil || transint || strict);
     }
 
     public boolean isValidForObject(){
-        return !(abstrakt || synchronised || statik || constant);
+        return !(abstrakt || synchronised || statik || constant || volatil || transint || strict);
     }
 
     public boolean isValidForType(){
-        return !(abstrakt || synchronised || statik);
+        return !(abstrakt || synchronised || statik || volatil || transint || strict);
     }
 
     public boolean isValidForData(){
-        return !(abstrakt || synchronised || statik);
+        return !(abstrakt || synchronised || statik || volatil || transint || strict);
     }
 
     public boolean isValidForInterface(){
-        return !(constant || finaly || synchronised || statik);
+        return !(constant || finaly || synchronised || statik || volatil || transint || strict);
+    }
+
+    public boolean isValidForClass(){
+        return !(constant || synchronised || statik || volatil || transint || strict);
     }
 
     @Override

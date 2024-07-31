@@ -7,7 +7,7 @@ public class ParsingException extends RuntimeException{
 
     public ParsingException(String message, String file, int line){
         super(message);
-        this.file = file;
+        this.file = file.replace(".", "\\");
         this.line = line;
     }
 

@@ -84,7 +84,7 @@ final class Lexer{
                 value.append(chars.get(i));
                 while(i + 1 < chars.size() && isOperator(chars.get(i + 1))){
                     i++;
-                    value.append(chars.get(i + 1));
+                    value.append(chars.get(i));
                 }
                 token.add(new Token(value.toString(), Token.Type.OPERATOR));
             }else if(chars.get(i) == '"'){
@@ -179,7 +179,7 @@ final class Lexer{
                 value.append(chars[i]);
                 while(i + 1 < chars.length && isOperator(chars[i + 1])){
                     i++;
-                    value.append(chars[i + 1]);
+                    value.append(chars[i]);
                 }
                 token.add(new Token(value.toString(), Token.Type.OPERATOR));
             }else if(chars[i] == '"'){

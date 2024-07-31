@@ -123,9 +123,7 @@ public final class Compiler {
                     ((KtjClass) classes.get(name)).validateInit(name);
                 }
             }catch(RuntimeException e){
-                RuntimeException exception = new RuntimeException(e+" in Class "+name);
-                exception.setStackTrace(e.getStackTrace());
-                throw exception;
+                throw new ParsingException(e.getMessage(), name, classes.get(name).line);
             }
         }
 

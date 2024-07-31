@@ -64,6 +64,7 @@ public class KtjClass extends KtjInterface{
 
     public void validateInterfaces(){
         for(String interfaceName:interfaces){
+            if(!CompilerUtil.isInterface(interfaceName)) throw new RuntimeException("Expected "+interfaceName+" to be a interface");
             if(Compiler.Instance().classes.containsKey(interfaceName)) validateKtjInterface((KtjInterface) Compiler.Instance().classes.get(interfaceName));
             else validateJavaInterface(interfaceName);
         }
