@@ -449,7 +449,7 @@ final class Parser {
 
     private void parseField(Modifier mod, String type, String name){
         if(!mod.isValidForField()) err("illegal modifier");
-        if(LexerOld.isOperator(name.toCharArray()[0])) err("illegal argument");
+        if(Lexer.isOperator(name.toCharArray()[0])) err("illegal argument");
 
         String initValue = null;
 
@@ -482,7 +482,7 @@ final class Parser {
             if(!mod.isValidForInit()) err("illegal modifier");
         }else if(!mod.isValidForMethod()) err("illegal modifier");
 
-        if(!name.equals("<init>") && LexerOld.isOperator(name.toCharArray()[0])) {
+        if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) {
             name = CompilerUtil.operatorToIdentifier(name);
             if(type.equals("void")) err("Method should not return void");
             if(mod.statik || current == null) err("Method should not be static");
@@ -523,7 +523,7 @@ final class Parser {
             int _line = th.getLine();
             String code = getInBracket();
 
-            if(!name.equals("<init>") && LexerOld.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) err("To many parameters");
+            if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) err("To many parameters");
             if(name.equals("->")) err("illegal method name");
 
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));

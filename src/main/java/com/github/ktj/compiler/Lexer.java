@@ -109,6 +109,101 @@ final class Lexer{
         return new TokenHandler(result.toArray(new Token[0][0]));
     }
 
+    static TokenHandler lex(String code, String clazzName){
+        List<Token[]> result = new ArrayList<>();
+        List<Token> token = new ArrayList<>();
+
+        char[] chars = code.toCharArray();
+        StringBuilder value;
+        int line = 0;
+
+        for(int i = 0; i < chars.length;i++){
+            if(chars[i] == '\n'){
+                result.add(token.toArray(new Token[0]));
+                token = new ArrayList<>();
+                line++;
+            }else if(chars[i] == '#'){
+                i++;
+                while (i < chars.length && chars[i] != '#' && chars[i] != '\n') i++;
+            }else if(Character.isDigit(chars[i])){
+                value = new StringBuilder();
+                value.append(chars[i]);
+                Token.Type type;
+                while(i + 1 < chars.length && Character.isDigit(chars[i + 1])){
+                    i++;
+                    value.append(chars[i]);
+                }
+                if(i + 1 < chars.length && chars[i + 1] == '.'){
+                    i++;
+                    value.append(chars[i]);
+                    while(i + 1 < chars.length && Character.isDigit(chars[i + 1])){
+                        i++;
+                        value.append(chars[i]);
+                    }
+                    type = Token.Type.DOUBLE;
+                }else type = Token.Type.INTEGER;
+
+                if(i + 1 < chars.length && chars[i + 1] == 'f') {
+                    type = Token.Type.FLOAT;
+                    i++;
+                    value.append("f");
+                }else if(i + 1 < chars.length && chars[i + 1] == 'd'){
+                    type = Token.Type.DOUBLE;
+                    i++;
+                    value.append("d");
+                }else if(i + 1 < chars.length && chars[i + 1] == 'i'){
+                    type = Token.Type.INTEGER;
+                    i++;
+                    value.append("i");
+                }else if(i + 1 < chars.length && chars[i + 1] == 's'){
+                    type = Token.Type.SHORT;
+                    i++;
+                    value.append("s");
+                }else if(i + 1 < chars.length && chars[i + 1] == 'l'){
+                    type = Token.Type.LONG;
+                    i++;
+                    value.append("i");
+                }
+
+                token.add(new Token(value.toString(), type));
+            }else if(Character.isLetter(chars[i])){
+                value = new StringBuilder();
+                value.append(chars[i]);
+                while(i + 1 < chars.length && (Character.isDigit(chars[i + 1]) || Character.isLetter(chars[i + 1]) || chars[i + 1] == '_')){
+                    i++;
+                    value.append(chars[i]);
+                }
+                token.add(new Token(value.toString(), Token.Type.IDENTIFIER));
+            }else if(isOperator(chars[i])){
+                value = new StringBuilder();
+                value.append(chars[i]);
+                while(i + 1 < chars.length && isOperator(chars[i + 1])){
+                    i++;
+                    value.append(chars[i + 1]);
+                }
+                token.add(new Token(value.toString(), Token.Type.OPERATOR));
+            }else if(chars[i] == '"'){
+                value = new StringBuilder();
+                value.append("\"");
+                while(chars[i + 1] != '"'){
+                    i++;
+                    value.append(chars[i]);
+                }
+                value.append("\"");
+                i++;
+                if(chars[i] != '"') throw new LexingException("Expected \"", clazzName, line);
+                token.add(new Token(value.toString(), Token.Type.STRING));
+            }else if(chars[i] == '\''){
+                if(chars.length >= i + 2 && chars[i + 2] == '\''){
+                    token.add(new Token("'"+chars[i + 1]+"'", Token.Type.CHAR));
+                    i += 3;
+                }else throw new LexingException("Expected '", clazzName, line);
+            }else if(!(chars[i] == '\r' || chars[i] == '\t' || chars[i] == ' ')) token.add(new Token(String.valueOf(chars[i]), Token.Type.SIMPLE));
+        }
+
+        return new TokenHandler(result.toArray(new Token[0][0]));
+    }
+
     public static boolean isOperator(char c){
         return String.valueOf(c).matches("[-+*/!=<>%&|^~]");
     }

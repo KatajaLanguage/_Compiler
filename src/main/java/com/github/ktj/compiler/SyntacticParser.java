@@ -47,41 +47,28 @@ final class SyntacticParser {
     }
 
     private HashMap<String, String> typeValues;
-    private TokenHandlerOld th;
+    private TokenHandler th;
     private Compilable clazz;
     private KtjMethod method;
     private Scope scope;
     private String clazzName;
-    private String[] code;
-    private int index;
 
     AST[] parseAst(Compilable clazz, String clazzName, KtjMethod method, String code){
         if(code.trim().isEmpty()) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
 
         this.clazz = clazz;
         this.method = method;
-        scope = new Scope(clazzName, method);
         this.clazzName = clazzName;
-        this.code = code.split("\n");
-        index = -1;
+        this.th = Lexer.lex(code, clazzName);
+        scope = new Scope(clazzName, method);
 
         setUpTypeValues();
         ArrayList<AST> ast = new ArrayList<>();
 
-        if(this.code.length == 0) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
-
-        nextLine();
-
-        while(hasNextStatement()){
-            try {
-                AST e = parseNextStatement(false);
-                if(e != null) ast.add(e);
-                else if(th.isNext("}")) throw new RuntimeException("Illegal argument");
-            }catch(RuntimeException e){
-                RuntimeException exception = new RuntimeException(e.getMessage()+" at "+method.file+":"+method.line);
-                exception.setStackTrace(e.getStackTrace());
-                throw exception;
-            }
+        while(th.hasNext()){
+            AST e = parseNextStatement(false);
+            if(e != null) ast.add(e);
+            else if(th.isNext("}")) err("");
         }
 
         if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.correctType(method.returnType)));
@@ -90,9 +77,7 @@ final class SyntacticParser {
     }
 
     private AST parseNextStatement(boolean inLoop){
-        if(!hasNextStatement()) return null;
-
-        while((!th.hasNext() || th.isEmpty()) && hasNextLine()) nextLine();
+        if(th.isNext(";")) return null;
 
         if(th.isNext("}")){
             th.last();
@@ -101,7 +86,7 @@ final class SyntacticParser {
 
         AST ast;
 
-        switch(th.assertToken("_", Token.Type.IDENTIFIER, Token.Type.OPERATOR).s){
+        switch(th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "_").s){
             case "for":
                 ast = parseFor();
                 break;
@@ -116,7 +101,7 @@ final class SyntacticParser {
                 break;
             case "break":
                 if(!inLoop) throw new RuntimeException("Nothing to break");
-                assertEndOfStatement();
+                th.assertEndOfStatement();
                 ast = new AST.Break();
                 break;
             case "return":
@@ -159,7 +144,7 @@ final class SyntacticParser {
         if(th.hasNext()){
             ast.calc = parseCalc();
             ast.type = ast.calc.type;
-            assertEndOfStatement();
+            th.assertEndOfStatement();
         }else ast.type = "void";
 
         if(!ast.type.equals(method.correctType(method.returnType))  && !(ast.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
@@ -197,7 +182,7 @@ final class SyntacticParser {
 
         th.assertToken("while");
         ast.condition = parseCalc();
-        assertEndOfStatement();
+        th.assertEndOfStatement();
 
         if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
 
@@ -216,12 +201,10 @@ final class SyntacticParser {
         if(th.assertToken("->", "{").equals("->")){
             ast.ast = new AST[]{parseNextStatement(inLoop)};
 
-            if(!th.hasNext() && hasNextLine()){
-                int index = th.getIndex();
-                nextLine();
+            if(th.hasNext()){
+                String index = th.getIndex();
                 if(th.isNext("else")) th.last();
                 else{
-                    lastLine();
                     th.setIndex(index);
                 }
             }
@@ -250,12 +233,10 @@ final class SyntacticParser {
                 current.ast = new AST[]{parseNextStatement(inLoop)};
                 scope = scope.last;
 
-                if(!th.hasNext() && hasNextLine()){
-                    int index = th.getIndex();
-                    nextLine();
+                if(th.hasNext()){
+                    String index = th.getIndex();
                     if(th.isNext("else")) th.last();
                     else{
-                        lastLine();
                         th.setIndex(index);
                     }
                 }
@@ -278,21 +259,18 @@ final class SyntacticParser {
         ast.calc = parseCalc();
         ast.type = ast.calc.type;
         th.assertToken("{");
-        th.assertNull();
 
         if(!(ast.type.equals("int") || ast.type.equals("short") || ast.type.equals("byte") || ast.type.equals("char") || CompilerUtil.isSuperClass(ast.type, "java.lang.Enum") || ast.type.equals("java.lang.String"))) throw new RuntimeException("illegal type "+ast.type);
 
         ArrayList<AST[]> branches = new ArrayList<>();
-        while(hasNextLine()){
-            nextLine();
-
-            if(!th.isEmpty()){
+        while(th.hasNext()){
+            if(!th.isNext(";")){
                 if(th.isNext("}")) break;
 
                 boolean defauld = false;
 
                 do{
-                    Token t = th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR, Token.Type.IDENTIFIER, Token.Type.STRING);
+                    Token t = th.assertTokenTypes(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.CHAR, Token.Type.IDENTIFIER, Token.Type.STRING);
 
                     if(t.equals("default")){
                         defauld = true;
@@ -330,7 +308,7 @@ final class SyntacticParser {
         if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
         th.assertToken("in");
         if(th.isNext("{")){
-            th.assertToken(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.DOUBLE, Token.Type.FLOAT);
+            th.assertTokenTypes(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.DOUBLE, Token.Type.FLOAT);
             Token.Type type = th.current().t;
             ast.from = th.current();
             th.assertToken(",");
@@ -353,7 +331,7 @@ final class SyntacticParser {
         if(th.assertToken("{", "->").equals("->")){
             ast.ast = new AST[]{parseNextStatement(true)};
         }else ast.ast = parseContent(true);
-        assertEndOfStatement();
+        th.assertEndOfStatement();
 
         return ast;
     }
@@ -392,7 +370,7 @@ final class SyntacticParser {
 
         scope = scope.last;
 
-        assertEndOfStatement();
+        th.assertEndOfStatement();
         return ast;
     }
 
@@ -421,7 +399,7 @@ final class SyntacticParser {
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");
             AST.Calc calc = parseCalc();
-            assertEndOfStatement();
+            th.assertEndOfStatement();
 
             if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
             scope.add(name, calc.type, constant);
@@ -451,7 +429,7 @@ final class SyntacticParser {
                 }
             }
 
-            int i = th.getIndex();
+            String i = th.getIndex();
             if(th.isNext("<")){
                 do{
                     if(!(th.isNext(Token.Type.IDENTIFIER) && method.uses.containsKey(th.current().s))){
@@ -498,7 +476,7 @@ final class SyntacticParser {
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
             th.assertToken("=");
             AST.Calc calc = parseCalc();
-            assertEndOfStatement();
+            th.assertEndOfStatement();
 
             if(CompilerUtil.PRIMITIVES.contains(type.toString())){
                 if(!type.toString().equals(calc.type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
@@ -523,15 +501,15 @@ final class SyntacticParser {
     }
 
     private AST parseAssignment(){
-        int i = th.getIndex();
-        if(i > -1 && th.current().equals(Token.Type.OPERATOR)) return parseCalc();
+        String i = th.getIndex();
+        if(th.current().equals(Token.Type.OPERATOR)) return parseCalc();
 
         AST.Load load = parseCall();
-        if(load.finaly) assertEndOfStatement();
+        if(load.finaly) th.assertEndOfStatement();
 
         if(th.isNext("=")){
             AST.Calc calc = parseCalc();
-            assertEndOfStatement();
+            th.assertEndOfStatement();
 
             if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
             if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(load.type)) && !CompilerUtil.isSuperClass(calc.type, load.type)) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
@@ -782,10 +760,10 @@ final class SyntacticParser {
                 break;
             case SIMPLE:
                 if(th.current().equals("{")) return parseArrayCreation();
-                else throw new RuntimeException("illegal argument "+th.current());
+                else throw new RuntimeException("illegal argument "+ th.current());
             case OPERATOR:
                 if(th.current().equals("-") && (th.isNext(Token.Type.INTEGER) || th.isNext(Token.Type.DOUBLE) || th.isNext(Token.Type.LONG) || th.isNext(Token.Type.SHORT) || th.isNext(Token.Type.FLOAT))){
-                    ast.token = new Token("-"+th.current().s, th.current().t);
+                    ast.token = new Token("-"+ th.current().s, th.current().t);
                     ast.type = th.current().t.toString();
                     break;
                 }else{
@@ -803,7 +781,7 @@ final class SyntacticParser {
                     return arg;
                 }
             default:
-                throw new RuntimeException("illegal argument "+th.current());
+                throw new RuntimeException("illegal argument "+ th.current());
         }
 
         return ast;
@@ -1214,27 +1192,7 @@ final class SyntacticParser {
         for(String clazz:method.uses.values()) if(CompilerUtil.isType(clazz)) for(String type:CompilerUtil.getTypes(clazz)) if(!typeValues.containsKey(type)) typeValues.put(type, clazz);
     }
 
-    private void assertEndOfStatement(){
-        if(!th.isNext(";")) th.assertNull();
-    }
-
-    private boolean hasNextStatement(){
-        return th.hasNext() || hasNextLine();
-    }
-
-    private void nextLine(){
-        method.line++;
-        index++;
-        th = LexerOld.lex(code[index]);
-    }
-
-    private void lastLine(){
-        method.line--;
-        index--;
-        th = LexerOld.lex(code[index]);
-    }
-
-    private boolean hasNextLine(){
-        return index < code.length - 1;
+    private void err(String message) throws ParsingException{
+        throw new ParsingException(message, clazzName, th.getLine());
     }
 }
