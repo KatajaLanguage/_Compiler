@@ -56,15 +56,15 @@ final class Parser {
                         break;
                 }
             }catch (Exception e){
-                throw e;
-                //if(e instanceof ParsingException) throw e;
-                //throw new ParsingException(e.getMessage(), getFileName(), th.getLine());
+                if(e instanceof ParsingException) throw e;
+                throw new ParsingException(e.getMessage(), getFileName(), th.getLine());
             }
         }
 
         if(!statik.isEmpty()){
-            statics.add(classes.isEmpty() ? name : "_"+name);
-            classes.put(classes.isEmpty() ? name : "_"+name, statik);
+            if(classes.containsKey(name)) err(name+" is already defined");
+            statics.add(name);
+            classes.put(name, statik);
         }
 
         if(classes.size() == 1 && name.equals(classes.keySet().toArray(new String[0])[0])){
@@ -203,6 +203,9 @@ final class Parser {
         modifier.add("static");
         modifier.add("synchronised");
         modifier.add("const");
+        modifier.add("volatile");
+        modifier.add("transient");
+        modifier.add("strict");
 
         while (modifier.contains(th.next().s)){
             switch (th.current().s){
@@ -225,6 +228,18 @@ final class Parser {
                 case "const":
                     if(mod.constant) err("modifier "+ th.current().s+" is not allowed");
                     mod.constant = true;
+                    break;
+                case "volatile":
+                    if(mod.volatil) err("modifier "+ th.current().s+" is not allowed");
+                    mod.volatil = true;
+                    break;
+                case "transient":
+                    if(mod.transint) err("modifier "+ th.current().s+" is not allowed");
+                    mod.transint = true;
+                    break;
+                case "strict":
+                    if(mod.strict) err("modifier "+ th.current().s+" is not allowed");
+                    mod.strict = true;
                     break;
             }
         }
