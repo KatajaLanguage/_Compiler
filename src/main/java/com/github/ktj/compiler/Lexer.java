@@ -106,10 +106,10 @@ final class Lexer{
             }else if(!(chars.get(i) == '\r' || chars.get(i) == '\t' || chars.get(i) == ' ')) token.add(new Token(String.valueOf(chars.get(i)), Token.Type.SIMPLE));
         }
 
-        return new TokenHandler(result.toArray(new Token[0][0]));
+        return new TokenHandler(result.toArray(new Token[0][0]), file.getPath()+"\\"+file.getName(), 0);
     }
 
-    static TokenHandler lex(String code, String clazzName){
+    static TokenHandler lex(String code, String clazzName, int lineOffset){
         List<Token[]> result = new ArrayList<>();
         List<Token> token = new ArrayList<>();
 
@@ -201,7 +201,7 @@ final class Lexer{
             }else if(!(chars[i] == '\r' || chars[i] == '\t' || chars[i] == ' ')) token.add(new Token(String.valueOf(chars[i]), Token.Type.SIMPLE));
         }
 
-        return new TokenHandler(result.toArray(new Token[0][0]));
+        return new TokenHandler(result.toArray(new Token[0][0]), clazzName, lineOffset);
     }
 
     public static boolean isOperator(char c){

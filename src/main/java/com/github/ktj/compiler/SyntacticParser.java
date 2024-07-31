@@ -59,7 +59,7 @@ final class SyntacticParser {
         this.clazz = clazz;
         this.method = method;
         this.clazzName = clazzName;
-        this.th = Lexer.lex(code, clazzName);
+        this.th = Lexer.lex(code, clazzName, method.line);
         scope = new Scope(clazzName, method);
 
         setUpTypeValues();

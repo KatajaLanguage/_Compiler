@@ -29,7 +29,7 @@ final class Parser {
             uses = new HashMap<>();
             statics = new ArrayList<>();
             th = Lexer.lex(file);
-            statik = new KtjObject(new Modifier(AccessFlag.ACC_PUBLIC), uses, statics, getFileName(), -1);
+            statik = new KtjObject(new Modifier(AccessFlag.ACC_PUBLIC), uses, statics, getFileName(), 0);
         }catch(FileNotFoundException ignored){
             throw new IllegalArgumentException("Unable to find "+file.getPath());
         }catch(IndexOutOfBoundsException ignored){

@@ -1,5 +1,7 @@
 package com.github.ktj.compiler;
 
+import java.io.File;
+
 public class ParsingException extends RuntimeException{
 
     private String file;
@@ -12,13 +14,17 @@ public class ParsingException extends RuntimeException{
     }
 
     @Override
-    public StackTraceElement[] getStackTrace() {
-        return new StackTraceElement[]{new StackTraceElement(file, "", file.substring(file.lastIndexOf("\\") + 1)+".ktj", line)};
+    public StackTraceElement[] getStackTrace(){
+        String className = file;
+        if(file.contains("\\") && !new File(file).exists()) file = file.substring(0, file.lastIndexOf("\\"));
+        return new StackTraceElement[]{new StackTraceElement(className, "", file.substring(file.lastIndexOf("\\") + 1)+".ktj", line)};
     }
 
     @Override
     public void printStackTrace() {
-        setStackTrace(new StackTraceElement[]{new StackTraceElement(file, "", file.substring(file.lastIndexOf("\\") + 1)+".ktj", line)});
+        String className = file;
+        if(file.contains("\\") && !new File(file).exists()) file = file.substring(0, file.lastIndexOf("\\"));
+        setStackTrace(new StackTraceElement[]{new StackTraceElement(className, "", file.substring(file.lastIndexOf("\\") + 1)+".ktj", line)});
         super.printStackTrace();
     }
 }

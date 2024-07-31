@@ -5,16 +5,20 @@ import java.util.Arrays;
 final class TokenHandler{
 
     private final Token[][] token;
+    private final String file;
+    private final int lineOffset;
     private int line;
     private int i;
 
-    TokenHandler(Token[][] token){
+    TokenHandler(Token[][] token, String file, int lineOffset){
         this.token = token;
+        this.file = file;
+        this.lineOffset = lineOffset;
         line = 0;
         i = -1;
     }
 
-    public Token next() throws RuntimeException{
+    public Token next(){
         if(i + 1 < token[line].length){
             i++;
             return token[line][i];
@@ -26,15 +30,15 @@ final class TokenHandler{
                 }
             }
         }
-        throw new RuntimeException("Expected Token got nothing");
+        throw new ParsingException("Expected Token got nothing", file, getLine());
     }
 
-    public Token current() throws RuntimeException{
-        if(i == -1 || i >= token[line].length) throw new RuntimeException("Expected Token got nothing");
+    public Token current(){
+        if(i == -1 || i >= token[line].length) throw new ParsingException("Expected Token got nothing", file, getLine());
         return token[line][i];
     }
 
-    public Token last() throws RuntimeException{
+    public Token last(){
         if(i > 0){
             i--;
             return token[line][i];
@@ -46,36 +50,38 @@ final class TokenHandler{
                 }
             }
         }
-        throw new RuntimeException("Expected Token got nothing");
+        i = -1;
+        line = 0;
+        return null;
     }
 
-    public Token assertToken(String...strings) throws RuntimeException{
+    public Token assertToken(String...strings){
         Token t = next();
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        throw new RuntimeException("Expected one of "+Arrays.toString(strings)+" got "+t.s);
+        throw new ParsingException("Expected one of "+Arrays.toString(strings)+" got "+t.s, file, getLine());
     }
 
-    public Token assertTokenTypes(Token.Type...types) throws RuntimeException{
+    public Token assertTokenTypes(Token.Type...types){
         Token t = next();
 
         for(Token.Type type:types) if(t.equals(type)) return t;
 
-        throw new RuntimeException("Expected one of "+Arrays.toString(types)+" got "+t.t);
+        throw new ParsingException("Expected one of "+Arrays.toString(types)+" got "+t.t, file, getLine());
     }
 
-    public Token assertToken(Token.Type type, String...strings) throws RuntimeException{
+    public Token assertToken(Token.Type type, String...strings){
         Token t = next();
 
         if(t.equals(type)) return t;
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        throw new RuntimeException("Expected one of "+type+", "+Arrays.toString(strings)+" got "+t.s);
+        throw new ParsingException("Expected one of "+type+", "+Arrays.toString(strings)+" got "+t.s, file, getLine());
     }
 
-    public Token assertToken(Token.Type type1, Token.Type type2,String...strings) throws RuntimeException{
+    public Token assertToken(Token.Type type1, Token.Type type2,String...strings){
         Token t = next();
 
         if(t.equals(type1)) return t;
@@ -83,10 +89,10 @@ final class TokenHandler{
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        throw new RuntimeException("Expected one of "+type1+", "+type2+", "+Arrays.toString(strings)+" got "+t.s);
+        throw new ParsingException("Expected one of "+type1+", "+type2+", "+Arrays.toString(strings)+" got "+t.s, file, getLine());
     }
 
-    public void assertEndOfStatement() throws RuntimeException{
+    public void assertEndOfStatement(){
         if(i + 1 != token[line].length) assertToken(";");
     }
 
@@ -134,7 +140,8 @@ final class TokenHandler{
     }
 
     public int getLine(){
-        return line + 1;
+        if(line < 0) return lineOffset;
+        return line + 1 + lineOffset;
     }
 
     public String getIndex(){
