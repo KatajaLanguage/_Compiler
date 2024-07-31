@@ -282,8 +282,9 @@ final class SyntacticParser {
                     if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, clazzName) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
                 }while(th.isNext(","));
 
-                if(th.assertToken("->", "{").equals("->")) branches.add(new AST[]{parseNextStatement(true)});
-                else{
+                if(th.assertToken("->", "{").equals("->")){
+                    branches.add(new AST[]{parseNextStatement(true)});
+                }else{
                     branches.add(parseContent(true));
                     if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
                 }
@@ -331,7 +332,6 @@ final class SyntacticParser {
         if(th.assertToken("{", "->").equals("->")){
             ast.ast = new AST[]{parseNextStatement(true)};
         }else ast.ast = parseContent(true);
-        th.assertEndOfStatement();
 
         return ast;
     }
@@ -362,15 +362,14 @@ final class SyntacticParser {
 
         scope = new Scope(scope);
 
-        if(th.assertToken("->", "{").equals("->")) ast.catchAST = new AST[]{parseNextStatement(inLoop)};
-        else{
+        if(th.assertToken("->", "{").equals("->")){
+            ast.catchAST = new AST[]{parseNextStatement(inLoop)};
+        }else{
             ast.catchAST = parseContent(inLoop);
             if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
         }
 
         scope = scope.last;
-
-        th.assertEndOfStatement();
         return ast;
     }
 
