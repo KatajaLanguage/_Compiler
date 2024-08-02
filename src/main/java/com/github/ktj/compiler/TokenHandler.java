@@ -145,8 +145,8 @@ final class TokenHandler{
     }
 
     public int getLine(){
-        if(line < 0) return lineOffset;
-        return line + 1 + lineOffset;
+        if(lineOffset > 0) return lineOffset + line;
+        return line + 1;
     }
 
     public String getIndex(){
@@ -186,7 +186,7 @@ final class TokenHandler{
             setIndex(index);
         }
 
-        if(i == -1 || i >= token[line].length) throw new ParsingException(sb.toString(), file, line);
+        if(line < 0 || line >= token.length || i == -1 || i >= token[line].length) throw new ParsingException(sb.toString(), file, line);
 
         sb.append(" ").append(current()).append(" ");
         if(hasNext()) sb.append(next());

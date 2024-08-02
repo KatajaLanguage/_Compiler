@@ -399,7 +399,7 @@ final class SyntacticParser {
         if(!th.isNext(Token.Type.IDENTIFIER) && !th.isNext("_") && !th.isNext(Token.Type.OPERATOR)) err("illegal argument");
 
         boolean constant = th.current().equals("const");
-        if(constant) th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "_");
+        if(constant) th.assertToken(Token.Type.IDENTIFIER, "_");
 
         if(th.current().equals("_")){
             String name = th.assertToken(Token.Type.IDENTIFIER).s;
@@ -421,7 +421,6 @@ final class SyntacticParser {
             return ast;
         }else{
             if(th.current().equals(Token.Type.OPERATOR)){
-                if(constant) err("illegal argument");
                 th.last();
                 return parseAssignment();
             }else if(th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
@@ -429,7 +428,6 @@ final class SyntacticParser {
                     th.last();
                 }else{
                     if (constant) err("illegal argument");
-                    th.last();
                     th.last();
                     return parseAssignment();
                 }
@@ -510,6 +508,7 @@ final class SyntacticParser {
         String i = th.getIndex();
         if(th.current().equals(Token.Type.OPERATOR)) return parseCalc();
 
+        th.last();
         AST.Load load = parseCall();
         if(load.finaly) th.assertEndOfStatement();
 
