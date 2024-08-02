@@ -9,12 +9,17 @@ Every Argument has to be a combination of the arguments described below (Note th
 - ``-q`` quits the application after the execution of the current commands
 - ``-d`` enables debug information
 - ``-o String`` set the output folder to the given path
+- ``-dc String...`` decompiles the files or folders with the given paths
 - ``-c String...`` compiles the files or folders with the given paths
 - ``-e String`` executes the main method defined in that file or folder
 - ``-i String`` sets the input to the given File
 
 ### Example:
 
-````-q -d -c src/test/kataja/HelloWorld.ktj -e src/test/kataja/HelloWorld.ktj````
+````-d -c src/test/kataja/HelloWorld.ktj -e src/test/kataja/HelloWorld.ktj````
 
-This Command will enable debug, compile and execute the HelloWorld file in the test folder of the Compiler and the application will be quit after the execution has finished
+This Command will enable debug, compile and execute the HelloWorld file in the test folder of the Compiler
+
+````-q -dc src/test/kataja/HelloWorld.ktj````
+
+This Command will decompile the previous compiled HelloWorld file and quit the application after the decompilation has finished
