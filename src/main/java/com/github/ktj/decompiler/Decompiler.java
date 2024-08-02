@@ -3,10 +3,12 @@ package com.github.ktj.decompiler;
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.Modifier;
 import javassist.bytecode.ClassFile;
+import javassist.bytecode.FieldInfo;
 import javassist.bytecode.MethodInfo;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.ArrayList;
 
 public final class Decompiler{
 
@@ -66,30 +68,33 @@ public final class Decompiler{
             result.createNewFile();
             writer = new FileWriter(result);
 
-            if (cf.isInterface()) decompileInterface(cf, writer);
-            else decompileClass(cf, writer);
+            Modifier mod = Modifier.ofInt(cf.getAccessFlags());
+
+            if(mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE){
+                switch(mod.accessFlag){
+                    case ACC_PUBLIC:
+                        writer.write("public ");
+                        break;
+                    case ACC_PROTECTED:
+                        writer.write("protected ");
+                        break;
+                    case ACC_PRIVATE:
+                        writer.write("private ");
+                        break;
+                }
+            }
+
+            if(cf.isInterface()) decompileInterface(cf, writer, mod);
+            else{
+                if(cf.getSuperclass().equals("java.lang.Enum") && cf.getMethods().size() == 4) decompileType(cf, writer, mod);
+                else decompileClass(cf, writer, mod);
+            }
         }catch(IOException e){
             throw new RuntimeException("failed to decompile "+file.getName());
         }
     }
 
-    private static void decompileInterface(ClassFile cf, FileWriter writer) throws IOException {
-        Modifier mod = Modifier.ofInt(cf.getAccessFlags());
-
-        if(mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE){
-            switch(mod.accessFlag){
-                case ACC_PUBLIC:
-                    writer.write("public ");
-                    break;
-                case ACC_PROTECTED:
-                    writer.write("protected ");
-                    break;
-                case ACC_PRIVATE:
-                    writer.write("private ");
-                    break;
-            }
-        }
-
+    private static void decompileInterface(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
         writer.write("interface ");
         writer.write(cf.getName().substring(cf.getName().lastIndexOf(".") + 1));
         writer.write(" {\n");
@@ -103,23 +108,28 @@ public final class Decompiler{
         writer.close();
     }
 
-    private static void decompileClass(ClassFile cf, FileWriter writer) throws IOException {
-        Modifier mod = Modifier.ofInt(cf.getAccessFlags());
+    private static void decompileType(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
+        writer.write("type ");
 
-        if(mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE){
-            switch(mod.accessFlag){
-                case ACC_PUBLIC:
-                    writer.write("public ");
-                    break;
-                case ACC_PROTECTED:
-                    writer.write("protected ");
-                    break;
-                case ACC_PRIVATE:
-                    writer.write("private ");
-                    break;
+        writer.write(cf.getName().substring(cf.getName().lastIndexOf(".") + 1));
+        writer.write(" = ");
+
+        boolean first = true;
+
+        for(Object field:cf.getFields()){
+            String name = ((FieldInfo)(field)).getName();
+            if(!name.startsWith("$")){
+                if(first){
+                    first = false;
+                }else writer.write("| ");
+                writer.write(name+" ");
             }
         }
 
+        writer.close();
+    }
+
+    private static void decompileClass(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
         writer.write("class ");
         String className = cf.getName().substring(cf.getName().lastIndexOf(".") + 1);
         writer.write(className);
@@ -138,6 +148,12 @@ public final class Decompiler{
 
         writer.write(" {\n");
 
+        for(Object fInfo:cf.getFields()){
+            writer.write("\n");
+            decompileField((FieldInfo) fInfo, writer);
+            writer.write("\n");
+        }
+
         for(Object mInfo:cf.getMethods()){
             writer.write("\n");
             decompileMethod((MethodInfo) mInfo, className, writer);
@@ -146,6 +162,36 @@ public final class Decompiler{
 
         writer.write("\n}");
         writer.close();
+    }
+
+    private static void decompileField(FieldInfo fInfo, FileWriter writer) throws IOException {
+        Modifier mod = Modifier.ofInt(fInfo.getAccessFlags());
+
+        writer.write("\t");
+
+        if(mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE){
+            switch(mod.accessFlag){
+                case ACC_PUBLIC:
+                    writer.write("public ");
+                    break;
+                case ACC_PROTECTED:
+                    writer.write("protected ");
+                    break;
+                case ACC_PRIVATE:
+                    writer.write("private ");
+                    break;
+            }
+        }
+
+        if(mod.statik) writer.write("static ");
+        if(mod.synchronised) writer.write("synchronised ");
+        if(mod.volatil) writer.write("volatile ");
+        if(mod.transint) writer.write("transient ");
+        if(mod.constant) writer.write("const ");
+
+        writer.write(ofDesc(fInfo.getDescriptor()));
+        writer.write(" ");
+        writer.write(fInfo.getName());
     }
 
     private static void decompileMethod(MethodInfo mInfo, String className, FileWriter writer) throws IOException {
@@ -183,6 +229,13 @@ public final class Decompiler{
 
         if(!mInfo.getName().equals("main")) {
             writer.write("(");
+
+            String[] types = ofMethodDesc(mInfo.getDescriptor());
+            for(int i = 0;i < types.length;i++){
+                if(i > 0) writer.write(", ");
+                writer.write(types[i]+" var"+(mod.statik?i:i+1));
+            }
+
             writer.write(")");
         }
 
@@ -211,7 +264,74 @@ public final class Decompiler{
                 return "void";
             default:
                 if(desc.startsWith("[")) return ofDesc(desc.substring(1))+"[]";
-                return desc.substring(1).substring(0, desc.length() - 2);
+                desc = desc.substring(1).substring(0, desc.length() - 2);
+                return desc.substring(desc.lastIndexOf("/") + 1);
         }
+    }
+
+    private static String[] ofMethodDesc(String desc){
+        desc = desc.substring(1, desc.lastIndexOf(")"));
+        ArrayList<String> result = new ArrayList<>();
+
+        while(!desc.isEmpty()){
+            int i = 0;
+
+            while(desc.startsWith("[")){
+                i++;
+                desc = desc.substring(1);
+            }
+
+            if(desc.startsWith("L")){
+                StringBuilder sb = new StringBuilder();
+                desc = desc.substring(1);
+                while(!desc.startsWith(";")){
+                    sb.append(desc.toCharArray()[0]);
+                    desc = desc.substring(1);
+                }
+                desc = desc.substring(1);
+                sb = new StringBuilder(sb.substring(sb.lastIndexOf("/") + 1));
+                while(i > 0){
+                    i--;
+                    sb.append("[]");
+                }
+                result.add(sb.toString());
+            }else{
+                StringBuilder sb = new StringBuilder();
+                switch(desc.toCharArray()[0]){
+                    case 'I':
+                        sb.append("int");
+                        break;
+                    case 'S':
+                        sb.append("short");
+                        break;
+                    case 'J':
+                        sb.append("long");
+                        break;
+                    case 'D':
+                        sb.append("double");
+                        break;
+                    case 'F':
+                        sb.append("float");
+                        break;
+                    case 'Z':
+                        sb.append("boolean");
+                        break;
+                    case 'C':
+                        sb.append("char");
+                        break;
+                    case 'B':
+                        sb.append("byte");
+                        break;
+                }
+                while(i > 0){
+                    i--;
+                    sb.append("[]");
+                }
+                result.add(sb.toString());
+                desc = desc.substring(1);
+            }
+        }
+
+        return result.toArray(new String[0]);
     }
 }

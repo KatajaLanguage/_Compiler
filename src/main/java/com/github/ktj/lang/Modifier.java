@@ -28,27 +28,27 @@ public final class Modifier {
     }
 
     public boolean isValidForInit(){
-        return !(finaly || constant || abstrakt || synchronised || volatil || transint || strict|| natife);
+        return !(finaly || constant || abstrakt || synchronised || volatil || transint || strict || natife);
     }
 
     public boolean isValidForObject(){
-        return !(abstrakt || synchronised || statik || constant || volatil || transint || strict|| natife);
+        return !(abstrakt || synchronised || statik || constant || volatil || transint || strict || natife);
     }
 
     public boolean isValidForType(){
-        return !(abstrakt || synchronised || statik || volatil || transint || strict|| natife);
+        return !(abstrakt || synchronised || statik || volatil || transint || strict || natife);
     }
 
     public boolean isValidForData(){
-        return !(abstrakt || synchronised || statik || volatil || transint || strict|| natife);
+        return !(abstrakt || synchronised || statik || volatil || transint || strict || natife);
     }
 
     public boolean isValidForInterface(){
-        return !(constant || finaly || synchronised || statik || volatil || transint || strict|| natife);
+        return !(constant || finaly || synchronised || statik || volatil || transint || strict || natife);
     }
 
     public boolean isValidForClass(){
-        return !(constant || synchronised || statik || volatil || transint || strict|| natife);
+        return !(constant || synchronised || statik || volatil || transint || strict || natife);
     }
 
     public static Modifier ofInt(int mod){
