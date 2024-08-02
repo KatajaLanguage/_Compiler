@@ -5,10 +5,12 @@ import com.github.ktj.lang.Modifier;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.FieldInfo;
 import javassist.bytecode.MethodInfo;
+import javassist.bytecode.Opcode;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class Decompiler{
 
@@ -68,6 +70,8 @@ public final class Decompiler{
             result.createNewFile();
             writer = new FileWriter(result);
 
+            writer.write("# decompiled from "+cf.getName()+"\n\n");
+
             Modifier mod = Modifier.ofInt(cf.getAccessFlags());
 
             if(mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE){
@@ -117,10 +121,7 @@ public final class Decompiler{
         writer.write(cf.getName().substring(cf.getName().lastIndexOf(".") + 1));
         writer.write(" {\n");
 
-        for(Object mInfo:cf.getMethods()){
-            writer.write("\n");
-            decompileMethod((MethodInfo) mInfo, null, writer);
-        }
+        for(Object mInfo:cf.getMethods()) decompileMethod((MethodInfo) mInfo, null, writer);
 
         writer.write("\n}");
         writer.close();
@@ -139,8 +140,8 @@ public final class Decompiler{
             if(!name.startsWith("$")){
                 if(first){
                     first = false;
-                }else writer.write("| ");
-                writer.write(name+" ");
+                }else writer.write(" | ");
+                writer.write(name);
             }
         }
 
@@ -176,11 +177,7 @@ public final class Decompiler{
             writer.write("\n");
         }
 
-        for(Object mInfo:cf.getMethods()){
-            writer.write("\n");
-            decompileMethod((MethodInfo) mInfo, className, writer);
-            writer.write("\n");
-        }
+        for(Object mInfo:cf.getMethods()) decompileMethod((MethodInfo) mInfo, className, writer);
 
         writer.write("\n}");
         writer.close();
@@ -205,17 +202,9 @@ public final class Decompiler{
 
         writer.write(" {\n");
 
-        for(Object fInfo:cf.getFields()){
-            writer.write("\n");
-            decompileField((FieldInfo) fInfo, writer);
-            writer.write("\n");
-        }
+        for(Object fInfo:cf.getFields()) decompileField((FieldInfo) fInfo, writer);
 
-        for(Object mInfo:cf.getMethods()){
-            writer.write("\n");
-            decompileMethod((MethodInfo) mInfo, className, writer);
-            writer.write("\n");
-        }
+        for(Object mInfo:cf.getMethods()) decompileMethod((MethodInfo) mInfo, className, writer);
 
         writer.write("\n}");
         writer.close();
@@ -224,7 +213,7 @@ public final class Decompiler{
     private static void decompileField(FieldInfo fInfo, FileWriter writer) throws IOException {
         Modifier mod = Modifier.ofInt(fInfo.getAccessFlags());
 
-        writer.write("\t");
+        writer.write("\n\t");
 
         if(mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE){
             switch(mod.accessFlag){
@@ -249,12 +238,22 @@ public final class Decompiler{
         writer.write(ofDesc(fInfo.getDescriptor()));
         writer.write(" ");
         writer.write(fInfo.getName());
+        writer.write("\n");
     }
 
     private static void decompileMethod(MethodInfo mInfo, String className, FileWriter writer) throws IOException {
+        boolean isEmpty = false;
+        if(mInfo.getDescriptor().substring(mInfo.getDescriptor().lastIndexOf(")") + 1).equals("V") && mInfo.getCodeAttribute() != null){
+            byte[] code = mInfo.getCodeAttribute().getCode();
+            if((code.length == 1 && code[0] == (byte) Opcode.RETURN) || (Arrays.equals(code, new byte[]{42, -73, 0, 28, -79}) && mInfo.getName().equals("<init>"))){
+                isEmpty = true;
+                if(mInfo.getName().equals("<init>") || mInfo.getName().equals("<clinit>")) return;
+            }
+        }
+
         Modifier mod = Modifier.ofInt(mInfo.getAccessFlags());
 
-        writer.write("\t");
+        writer.write("\n\t");
 
         if(mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE){
             switch(mod.accessFlag){
@@ -284,19 +283,18 @@ public final class Decompiler{
         if(mInfo.getName().equals("<init>") || mInfo.getName().equals("<clinit>")) writer.write(className);
         else writer.write(mInfo.getName());
 
-        if(!mInfo.getName().equals("main")) {
-            writer.write("(");
+        writer.write("(");
 
-            String[] types = ofMethodDesc(mInfo.getDescriptor());
-            for(int i = 0;i < types.length;i++){
-                if(i > 0) writer.write(", ");
-                writer.write(types[i]+" var"+(mod.statik?i:i+1));
-            }
-
-            writer.write(")");
+        String[] types = ofMethodDesc(mInfo.getDescriptor());
+        for(int i = 0;i < types.length;i++){
+            if(i > 0) writer.write(", ");
+            writer.write(types[i]+" var"+(mod.statik?i:i+1));
         }
 
-        writer.write("{#method code#}");
+        writer.write(")");
+
+        if(isEmpty) writer.write("{}\n");
+        else writer.write("{\n\t\t#method code#\n\t}\n");
     }
 
     private static String ofDesc(String desc){
