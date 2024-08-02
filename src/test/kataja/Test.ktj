@@ -4,7 +4,7 @@ public class Test{
 
     main{Test(5)}
 
-    public Test(int j){;;;;_i = 5;i += j;
+    public Test(const int j){;;;;_i = 5;i += j;
         ;;out.println(i);
     ;;;}
 

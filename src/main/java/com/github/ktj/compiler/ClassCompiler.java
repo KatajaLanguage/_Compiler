@@ -156,6 +156,7 @@ final class ClassCompiler {
         for(String desc:clazz.methods.keySet()){
             MethodInfo mInfo = MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc);
             mInfo.addAttribute(getSignature(clazz.methods.get(desc), cf.getConstPool()));
+            mInfo.addAttribute(getParameterInfo(clazz.methods.get(desc), cf.getConstPool()));
             cf.addMethod2(mInfo);
         }
 
@@ -185,19 +186,16 @@ final class ClassCompiler {
         for(String desc:clazz.methods.keySet()){
             MethodInfo mInfo = MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc);
             mInfo.addAttribute(getSignature(clazz.methods.get(desc), cf.getConstPool()));
+            mInfo.addAttribute(getParameterInfo(clazz.methods.get(desc), cf.getConstPool()));
             cf.addMethod2(mInfo);
         }
-
-        //<clinit>
-        //String clinit = clazz.createClinit();
-        //if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clinit));
 
         Compiler.Instance().compiledClasses.add(cf);
     }
 
     private static SignatureAttribute getSignature(KtjInterface clazz, ConstPool cp){
         StringBuilder signature = new StringBuilder();
-        if(clazz.genericTypes != null){
+        if(clazz.genericTypes != null && !clazz.genericTypes.isEmpty()){
             signature.append("<");
             for(GenericType type: clazz.genericTypes){
                 signature.append(type.name).append(":").append(CompilerUtil.toDesc(type.type));
@@ -226,5 +224,17 @@ final class ClassCompiler {
         int gi = field.genericIndex(field.type);
         if(gi == -1) return new SignatureAttribute(cp, CompilerUtil.toDesc(field.type));
         else return new SignatureAttribute(cp, "T"+field.type+";");
+    }
+
+    private static MethodParametersAttribute getParameterInfo(final KtjMethod method, ConstPool cp){
+        String[] names = new String[method.parameter.length];
+        int[] flags = new int[names.length];
+
+        for(int i = 0;i < names.length;i++){
+            names[i] = method.parameter[i].name;
+            flags[i] = method.parameter[i].constant ? AccessFlag.FINAL : 0;
+        }
+
+        return new MethodParametersAttribute(cp, names, flags);
     }
 }

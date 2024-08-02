@@ -1,5 +1,7 @@
 public interface Test{
 
-    public abstract void test()
+    public abstract void test(int i)
 
 }
+
+#-q -d -c src/test/kataja/InterfaceTest.ktj
