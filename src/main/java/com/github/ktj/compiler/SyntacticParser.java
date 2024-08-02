@@ -52,13 +52,15 @@ final class SyntacticParser {
     private KtjMethod method;
     private Scope scope;
     private String clazzName;
+    private boolean isConstructor;
 
-    AST[] parseAst(Compilable clazz, String clazzName, KtjMethod method, String code){
+    AST[] parseAst(Compilable clazz, String clazzName, boolean isConstructor, KtjMethod method, String code){
         if(code.trim().isEmpty()) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
 
         this.clazz = clazz;
         this.method = method;
         this.clazzName = clazzName;
+        this.isConstructor = isConstructor;
         this.th = Lexer.lex(code, clazzName, method.line);
         scope = new Scope(clazzName, method);
 
@@ -68,10 +70,13 @@ final class SyntacticParser {
         while(th.hasNext()){
             AST e = parseNextStatement(false);
             if(e != null) ast.add(e);
-            else if(th.isNext("}")) err("");
+            else if(th.isNext("}")) err("illegal statement");
         }
 
-        if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)) ast.add(CompilerUtil.getDefaultReturn(method.correctType(method.returnType)));
+        if(ast.isEmpty() || !(ast.get(ast.size() - 1) instanceof AST.Return)){
+            if(isConstructor) ast.add(CompilerUtil.getDefaultReturn("void"));
+            else ast.add(CompilerUtil.getDefaultReturn(method.correctType(method.returnType)));
+        }
 
         return ast.toArray(new AST[0]);
     }
@@ -100,7 +105,7 @@ final class SyntacticParser {
                 ast = parseIf(inLoop);
                 break;
             case "break":
-                if(!inLoop) throw new RuntimeException("Nothing to break");
+                if(!inLoop) err("Nothing to break");
                 th.assertEndOfStatement();
                 ast = new AST.Break();
                 break;
@@ -120,7 +125,7 @@ final class SyntacticParser {
                 th.last();
                 ast = parseStatement();
 
-                if(ast instanceof AST.Load && (((AST.Load)(ast)).call == null || ((AST.Load)(ast)).call.argTypes == null)) throw new RuntimeException("not a statement");
+                if(ast instanceof AST.Load && (((AST.Load)(ast)).call == null || ((AST.Load)(ast)).call.argTypes == null)) err("not a statement");
                 break;
         }
 
@@ -133,7 +138,7 @@ final class SyntacticParser {
 
         ast.calc = parseCalc();
 
-        if(!CompilerUtil.isSuperClass(ast.calc.type, "java.lang.Throwable")) throw new RuntimeException("Expected type java.lang.Throwable got "+ast.calc.type);
+        if(!CompilerUtil.isSuperClass(ast.calc.type, "java.lang.Throwable")) err("Expected type java.lang.Throwable got "+ast.calc.type);
 
         return ast;
     }
@@ -147,7 +152,9 @@ final class SyntacticParser {
             th.assertEndOfStatement();
         }else ast.type = "void";
 
-        if(!ast.type.equals(method.correctType(method.returnType))  && !(ast.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(method.returnType))) throw new RuntimeException("Expected type "+method.returnType+" got "+ast.type);
+        if(isConstructor){
+            if(!ast.type.equals("void")) err("Expected type void got "+ast.type);
+        }else if(!ast.type.equals(method.correctType(method.returnType))  && !(ast.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(method.returnType))) err("Expected type "+method.returnType+" got "+ast.type);
 
         return ast;
     }
@@ -158,7 +165,7 @@ final class SyntacticParser {
         th.assertHasNext();
         ast.condition = parseCalc();
 
-        if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
+        if(!ast.condition.type.equals("boolean")) err("Expected type boolean got "+ast.condition.type);
 
         scope = new Scope(scope);
 
@@ -184,7 +191,7 @@ final class SyntacticParser {
         ast.condition = parseCalc();
         th.assertEndOfStatement();
 
-        if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
+        if(!ast.condition.type.equals("boolean")) err("Expected type boolean got "+ast.condition.type);
 
         return ast;
     }
@@ -194,7 +201,7 @@ final class SyntacticParser {
 
         th.assertHasNext();
         ast.condition = parseCalc();
-        if(!ast.condition.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.condition.type);
+        if(!ast.condition.type.equals("boolean")) err("Expected type boolean got "+ast.condition.type);
 
         scope = new Scope(scope);
 
@@ -210,7 +217,7 @@ final class SyntacticParser {
             }
         }else{
             ast.ast = parseContent(inLoop);
-            if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+            if (!th.current().equals("}")) err("illegal argument");
         }
 
         scope = scope.last;
@@ -224,7 +231,7 @@ final class SyntacticParser {
             if (th.assertToken("if", "{", "->").equals("if")) {
                 current.condition = parseCalc();
                 if (!current.condition.type.equals("boolean"))
-                    throw new RuntimeException("Expected type boolean got " + current.condition.type);
+                    err("Expected type boolean got " + current.condition.type);
                 th.assertToken("{", "->");
             }else end = true;
 
@@ -244,7 +251,7 @@ final class SyntacticParser {
                 scope = new Scope(scope);
 
                 current.ast = parseContent(inLoop);
-                if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+                if (!th.current().equals("}")) err("illegal argument");
 
                 scope = scope.last;
             }
@@ -260,7 +267,7 @@ final class SyntacticParser {
         ast.type = ast.calc.type;
         th.assertToken("{");
 
-        if(!(ast.type.equals("int") || ast.type.equals("short") || ast.type.equals("byte") || ast.type.equals("char") || CompilerUtil.isSuperClass(ast.type, "java.lang.Enum") || ast.type.equals("java.lang.String"))) throw new RuntimeException("illegal type "+ast.type);
+        if(!(ast.type.equals("int") || ast.type.equals("short") || ast.type.equals("byte") || ast.type.equals("char") || CompilerUtil.isSuperClass(ast.type, "java.lang.Enum") || ast.type.equals("java.lang.String"))) err("illegal type "+ast.type);
 
         ArrayList<AST[]> branches = new ArrayList<>();
         while(th.hasNext()){
@@ -279,18 +286,18 @@ final class SyntacticParser {
 
                     ast.values.put(t, branches.size());
 
-                    if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, clazzName) != null))) throw new RuntimeException("Expected type " + ast.type + " got " + t.t.toString());
+                    if (!(t.t.toString().equals(ast.type) || (t.t == Token.Type.IDENTIFIER && CompilerUtil.getFieldType(ast.type, t.s, true, clazzName) != null))) err("Expected type " + ast.type + " got " + t.t.toString());
                 }while(th.isNext(","));
 
                 if(th.assertToken("->", "{").equals("->")){
                     branches.add(new AST[]{parseNextStatement(true)});
                 }else{
                     branches.add(parseContent(true));
-                    if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+                    if (!th.current().equals("}")) err("illegal argument");
                 }
 
                 if(defauld){
-                    if(ast.defauld != null) throw new RuntimeException("default is already defined");
+                    if(ast.defauld != null) err("default is already defined");
                     ast.defauld = branches.get(branches.size() - 1);
                     branches.remove(branches.size() - 1);
                 }
@@ -298,7 +305,7 @@ final class SyntacticParser {
         }
 
         ast.branches = branches.toArray(new AST[0][0]);
-        if(!th.current().equals("}")) throw new RuntimeException("Expected }");
+        if(!th.current().equals("}")) err("Expected }");
 
         return ast;
     }
@@ -306,7 +313,7 @@ final class SyntacticParser {
     private AST.For parseFor(){
         AST.For ast = new AST.For();
         ast.variable = th.assertToken(Token.Type.IDENTIFIER).s;
-        if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
+        if(scope.getType(ast.variable) != null) err("Variable "+ast.variable+" is already defined");
         th.assertToken("in");
         if(th.isNext("{")){
             th.assertTokenTypes(Token.Type.INTEGER, Token.Type.SHORT, Token.Type.DOUBLE, Token.Type.FLOAT);
@@ -317,13 +324,13 @@ final class SyntacticParser {
             th.assertToken(".");
             th.assertToken(".");
             ast.to = parseCalc();
-            if(!ast.to.type.equals(type.toString())) throw new RuntimeException("Expected type "+type+" got " + ast.to.type);
+            if(!ast.to.type.equals(type.toString())) err("Expected type "+type+" got " + ast.to.type);
             ast.type = type.toString();
             th.assertToken("}");
         }else {
             ast.load = parseCall();
             if (!CompilerUtil.isSuperClass(ast.load.type, "java.lang.Iterable") && !ast.load.type.startsWith("["))
-                throw new RuntimeException("Expected type java.lang.Iterable got " + ast.load.type);
+                err("Expected type java.lang.Iterable got " + ast.load.type);
             ast.type = ast.load.type;
         }
 
@@ -344,7 +351,7 @@ final class SyntacticParser {
         if(th.assertToken("->", "{").equals("->")) ast.tryAST = new AST[]{parseNextStatement(inLoop)};
         else{
             ast.tryAST = parseContent(inLoop);
-            if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+            if (!th.current().equals("}")) err("illegal argument");
         }
 
         scope = scope.last;
@@ -352,11 +359,11 @@ final class SyntacticParser {
         th.assertToken("catch");
         th.assertToken("(");
         ast.type = th.assertToken(Token.Type.IDENTIFIER).s;
-        if(!method.uses.containsKey(ast.type)) throw new RuntimeException("Unknown type "+ast.type);
+        if(!method.uses.containsKey(ast.type)) err("Unknown type "+ast.type);
         ast.type = method.uses.get(ast.type);
-        if(!CompilerUtil.isSuperClass(ast.type, "java.lang.Exception")) throw new RuntimeException("Expected type java.lang.Exception got "+ast.type);
+        if(!CompilerUtil.isSuperClass(ast.type, "java.lang.Exception")) err("Expected type java.lang.Exception got "+ast.type);
         ast.variable = th.assertToken(Token.Type.IDENTIFIER).s;
-        if(scope.getType(ast.variable) != null) throw new RuntimeException("Variable "+ast.variable+" is already defined");
+        if(scope.getType(ast.variable) != null) err("Variable "+ast.variable+" is already defined");
         scope.add(ast.variable, ast.type, false);
         th.assertToken(")");
 
@@ -366,7 +373,7 @@ final class SyntacticParser {
             ast.catchAST = new AST[]{parseNextStatement(inLoop)};
         }else{
             ast.catchAST = parseContent(inLoop);
-            if (!th.current().equals("}")) throw new RuntimeException("illegal argument");
+            if (!th.current().equals("}")) err("illegal argument");
         }
 
         scope = scope.last;
@@ -382,14 +389,14 @@ final class SyntacticParser {
             if(current != null) astList.add(current);
         }
 
-        if(!th.current().equals("}")) throw new RuntimeException("Expected }");
+        if(!th.current().equals("}")) err("Expected }");
 
         scope = scope.last;
         return astList.toArray(new AST[0]);
     }
 
     private AST parseStatement(){
-        if(!th.isNext(Token.Type.IDENTIFIER) && !th.isNext("_") && !th.isNext(Token.Type.OPERATOR)) throw new RuntimeException("illegal argument");
+        if(!th.isNext(Token.Type.IDENTIFIER) && !th.isNext("_") && !th.isNext(Token.Type.OPERATOR)) err("illegal argument");
 
         boolean constant = th.current().equals("const");
         if(constant) th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "_");
@@ -400,7 +407,7 @@ final class SyntacticParser {
             AST.Calc calc = parseCalc();
             th.assertEndOfStatement();
 
-            if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
+            if(scope.getType(name) != null) err("variable "+name+" is already defined");
             scope.add(name, calc.type, constant);
 
             AST.VarAssignment ast = new AST.VarAssignment();
@@ -414,14 +421,14 @@ final class SyntacticParser {
             return ast;
         }else{
             if(th.current().equals(Token.Type.OPERATOR)){
-                if(constant) throw new RuntimeException("illegal argument");
+                if(constant) err("illegal argument");
                 th.last();
                 return parseAssignment();
             }else if(th.isNext(Token.Type.OPERATOR) || th.isNext(".") || th.isNext("(")){
                 if(th.current().equals("<")){
                     th.last();
                 }else{
-                    if (constant) throw new RuntimeException("illegal argument");
+                    if (constant) err("illegal argument");
                     th.last();
                     th.last();
                     return parseAssignment();
@@ -442,7 +449,7 @@ final class SyntacticParser {
 
             while(th.isNext("[")){
                 if(!th.isNext("]")){
-                    if(constant) throw new RuntimeException("illegal argument");
+                    if(constant) err("illegal argument");
                     th.setIndex(i);
                     th.last();
                     return parseAssignment();
@@ -462,7 +469,7 @@ final class SyntacticParser {
                 }while(th.isNext(","));
                 th.assertToken(">");
 
-                if(!CompilerUtil.validateGenericTypes(type.toString(), genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+type);
+                if(!CompilerUtil.validateGenericTypes(type.toString(), genericType.toString().split("%"))) err("invalid generic Types "+genericType+" for class "+type);
             }
 
             while(th.isNext("[")){
@@ -478,11 +485,11 @@ final class SyntacticParser {
             th.assertEndOfStatement();
 
             if(CompilerUtil.PRIMITIVES.contains(type.toString())){
-                if(!type.toString().equals(calc.type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+                if(!type.toString().equals(calc.type)) err("Expected type "+type+" got "+calc.type);
             }else if(!calc.type.equals("null")){
-                if(!CompilerUtil.isSuperClass(calc.type, type.toString())) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+                if(!CompilerUtil.isSuperClass(calc.type, type.toString())) err("Expected type "+type+" got "+calc.type);
             }
-            if(scope.getType(name) != null) throw new RuntimeException("variable "+name+" is already defined");
+            if(scope.getType(name) != null) err("variable "+name+" is already defined");
 
             scope.add(name, type.toString(), constant);
 
@@ -510,8 +517,8 @@ final class SyntacticParser {
             AST.Calc calc = parseCalc();
             th.assertEndOfStatement();
 
-            if(load.call == null && load.name != null && scope.isConst(load.name)) throw new RuntimeException(load.name+" is constant and can't be modified");
-            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(load.type)) && !CompilerUtil.isSuperClass(calc.type, load.type)) throw new RuntimeException("Expected type "+load.type+" got "+calc.type);
+            if(load.call == null && load.name != null && scope.isConst(load.name)) err(load.name+" is constant and can't be modified");
+            if(!load.type.equals(calc.type) && !(calc.type.equals("null") && !CompilerUtil.PRIMITIVES.contains(load.type)) && !CompilerUtil.isSuperClass(calc.type, load.type)) err("Expected type "+load.type+" got "+calc.type);
 
             AST.VarAssignment ast = new AST.VarAssignment();
             ast.calc = calc;
@@ -584,13 +591,13 @@ final class SyntacticParser {
 
             if(th.current().equals("?")){
                 AST.InlineIf arg = new AST.InlineIf();
-                if(!ast.type.equals("boolean")) throw new RuntimeException("Expected type boolean got "+ast.type);
+                if(!ast.type.equals("boolean")) err("Expected type boolean got "+ast.type);
                 arg.condition = ast;
                 arg.trueValue = parseCalc();
                 arg.type = arg.trueValue.type;
                 th.assertToken(":");
                 arg.falseValue = parseCalc();
-                if(!arg.type.equals(arg.falseValue.type)) throw new RuntimeException("Expected type "+ast.type+" got "+arg.falseValue.type);
+                if(!arg.type.equals(arg.falseValue.type)) err("Expected type "+ast.type+" got "+arg.falseValue.type);
 
                 ast = new AST.Calc();
                 ast.arg = arg;
@@ -619,7 +626,7 @@ final class SyntacticParser {
                 AST.Value value = new AST.Value();
 
                 value.token = th.current();
-                if(!method.uses.containsKey(value.token.s)) throw new RuntimeException("Class "+value.token.s+" is not defined");
+                if(!method.uses.containsKey(value.token.s)) err("Class "+value.token.s+" is not defined");
                 value.token = new Token(method.uses.get(value.token.s), null);
 
                 ast.arg = value;
@@ -629,7 +636,7 @@ final class SyntacticParser {
                     ast.left = parseCalc();
                     th.assertToken(")");
                     String[] methodSpecs = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
-                    if(methodSpecs == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.left.type);
+                    if(methodSpecs == null) err("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.left.type);
                     ast.type = methodSpecs[0];
                     ast.op = methodSpecs[1];
                 }else{
@@ -680,14 +687,14 @@ final class SyntacticParser {
                     }else{
                         ast.arg = arg;
                         String[] methodSpecs = CompilerUtil.getOperatorReturnType(ast.right.type, ast.arg.type, ast.op);
-                        if(methodSpecs == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);
+                        if(methodSpecs == null) err("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);
                         ast.type = methodSpecs[0];
                         ast.op = methodSpecs[1];
                     }
                 }
             }
 
-            if(ast.type == null) throw new RuntimeException("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);
+            if(ast.type == null) err("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.arg.type);
         }
 
         return ast;
@@ -706,7 +713,7 @@ final class SyntacticParser {
                 ast.calc = parseCalc();
                 ast.type = ast.cast;
 
-                if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) throw new RuntimeException("Unable to cast "+ast.calc.type+" to "+ast.cast);
+                if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) err("Unable to cast "+ast.calc.type+" to "+ast.cast);
 
                 return ast;
             }
@@ -759,7 +766,7 @@ final class SyntacticParser {
                 break;
             case SIMPLE:
                 if(th.current().equals("{")) return parseArrayCreation();
-                else throw new RuntimeException("illegal argument "+ th.current());
+                else err("illegal argument "+ th.current());
             case OPERATOR:
                 if(th.current().equals("-") && (th.isNext(Token.Type.INTEGER) || th.isNext(Token.Type.DOUBLE) || th.isNext(Token.Type.LONG) || th.isNext(Token.Type.SHORT) || th.isNext(Token.Type.FLOAT))){
                     ast.token = new Token("-"+ th.current().s, th.current().t);
@@ -769,25 +776,25 @@ final class SyntacticParser {
                     String op = th.current().s;
                     AST.CalcArg arg = parseValue();
 
-                    if(arg instanceof AST.Cast) throw new RuntimeException("Expected value");
+                    if(arg instanceof AST.Cast) err("Expected value");
 
                     ((AST.Value) arg).op = op;
                     String[] methodsSpecs = CompilerUtil.getOperatorReturnType(arg.type, op);
-                    if(methodsSpecs == null) throw new RuntimeException("Operator "+op+" is not defined for "+arg.type);
+                    if(methodsSpecs == null) err("Operator "+op+" is not defined for "+arg.type);
                     arg.type = methodsSpecs[0];
                     ((AST.Value) arg).op = methodsSpecs[1];
 
                     return arg;
                 }
             default:
-                throw new RuntimeException("illegal argument "+ th.current());
+                err("illegal argument "+ th.current());
         }
 
         return ast;
     }
 
     private AST.ArrayCreation parseArrayCreation(){
-        if(th.isNext("}")) throw new RuntimeException("Expected values");
+        if(th.isNext("}")) err("Expected values");
         ArrayList<AST.Calc> calcs = new ArrayList<>();
 
         AST.Calc calc = parseCalc();
@@ -798,16 +805,16 @@ final class SyntacticParser {
             //if(th.isNext("{")) throw new RuntimeException("illegal argument");
             calc = parseCalc();
             calcs.add(calc);
-            if(!calc.type.equals(type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
+            if(!calc.type.equals(type)) err("Expected type "+type+" got "+calc.type);
         }
 
         if(th.current().equals(".")){
             th.assertToken(".");
-            if(calcs.size() != 2) throw new RuntimeException("Illegal number of arguments");
+            if(calcs.size() != 2) err("Illegal number of arguments");
             calc = parseCalc();
             calcs.add(calc);
-            if(!calc.type.equals(type)) throw new RuntimeException("Expected type "+type+" got "+calc.type);
-            for(AST.Calc c:calcs) if(!c.isSingleValue()) throw new RuntimeException("illegal argument");
+            if(!calc.type.equals(type)) err("Expected type "+type+" got "+calc.type);
+            for(AST.Calc c:calcs) if(!c.isSingleValue()) err("illegal argument");
             switch(type){
                 case "int":
                 case "short":
@@ -815,7 +822,7 @@ final class SyntacticParser {
                     int step = Integer.parseInt(((AST.Value)(calcs.get(1).arg)).token.s) - current;
                     int end = Integer.parseInt(((AST.Value)(calcs.get(2).arg)).token.s);
                     boolean increase = current < end;
-                    if(step == 0 || increase != (step > 0)) throw new RuntimeException("illegal argument");
+                    if(step == 0 || increase != (step > 0)) err("illegal argument");
                     calcs = new ArrayList<>();
                     while(increase ? current <= end : current >= end){
                         calc = new AST.Calc();
@@ -832,7 +839,7 @@ final class SyntacticParser {
                     long stepL = Long.parseLong(((AST.Value)(calcs.get(1).arg)).token.s) - currentL;
                     long endL = Long.parseLong(((AST.Value)(calcs.get(2).arg)).token.s);
                     boolean increaseL = currentL < endL;
-                    if(stepL == 0 || increaseL != (stepL > 0)) throw new RuntimeException("illegal argument");
+                    if(stepL == 0 || increaseL != (stepL > 0)) err("illegal argument");
                     calcs = new ArrayList<>();
                     while(increaseL ? currentL <= endL : currentL >= endL){
                         calc = new AST.Calc();
@@ -849,7 +856,7 @@ final class SyntacticParser {
                     double stepD = Double.parseDouble(((AST.Value)(calcs.get(1).arg)).token.s) - currentD;
                     double endD = Double.parseDouble(((AST.Value)(calcs.get(2).arg)).token.s);
                     boolean increaseD = currentD < endD;
-                    if(stepD == 0 || increaseD != (stepD > 0)) throw new RuntimeException("illegal argument");
+                    if(stepD == 0 || increaseD != (stepD > 0)) err("illegal argument");
                     calcs = new ArrayList<>();
                     while(increaseD ? currentD <= endD : currentD >= endD){
                         calc = new AST.Calc();
@@ -866,7 +873,7 @@ final class SyntacticParser {
                     float stepF = Float.parseFloat(((AST.Value)(calcs.get(1).arg)).token.s) - currentF;
                     float endF = Float.parseFloat(((AST.Value)(calcs.get(2).arg)).token.s);
                     boolean increaseF = currentF < endF;
-                    if(stepF == 0 || increaseF != (stepF > 0)) throw new RuntimeException("illegal argument");
+                    if(stepF == 0 || increaseF != (stepF > 0)) err("illegal argument");
                     calcs = new ArrayList<>();
                     while(increaseF ? currentF <= endF : currentF >= endF){
                         calc = new AST.Calc();
@@ -879,7 +886,7 @@ final class SyntacticParser {
                     }
                     break;
                 default:
-                    throw new RuntimeException("expected number got "+type);
+                    err("expected number got "+type);
             }
 
             th.assertToken("}");
@@ -902,7 +909,7 @@ final class SyntacticParser {
             StringBuilder genericType = new StringBuilder();
 
             if(th.isNext("<")){
-                if(CompilerUtil.PRIMITIVES.contains(call)) throw new RuntimeException("illegal argument");
+                if(CompilerUtil.PRIMITIVES.contains(call)) err("illegal argument");
 
                 do{
                     th.assertToken(Token.Type.IDENTIFIER);
@@ -911,7 +918,7 @@ final class SyntacticParser {
                 }while(th.isNext(","));
                 th.assertToken(">");
 
-                if(!CompilerUtil.validateGenericTypes(method.uses.get(call), genericType.toString().split("%"))) throw new RuntimeException("invalid generic Types "+genericType+" for class "+method.uses.get(call));
+                if(!CompilerUtil.validateGenericTypes(method.uses.get(call), genericType.toString().split("%"))) err("invalid generic Types "+genericType+" for class "+method.uses.get(call));
             }
 
             if(th.isNext("[")){
@@ -926,7 +933,7 @@ final class SyntacticParser {
                     args.add(parseCalc());
                     ast.call.clazz = "["+ast.call.clazz;
 
-                    if(!args.get(args.size() - 1).type.equals("int")) throw new RuntimeException("Expected int got "+args.get(args.size() - 1).type);
+                    if(!args.get(args.size() - 1).type.equals("int")) err("Expected int got "+args.get(args.size() - 1).type);
 
                     th.assertToken("]");
                 }
@@ -935,7 +942,7 @@ final class SyntacticParser {
                 ast.call.type = ast.call.clazz;
                 ast.type = ast.call.type;
             }else if(th.isNext("(")){
-                if(CompilerUtil.PRIMITIVES.contains(call)) throw new RuntimeException("illegal type "+call);
+                if(CompilerUtil.PRIMITIVES.contains(call)) err("illegal type "+call);
 
                 ast.call.clazz = method.uses.get(call);
                 ast.call.name = "<init>";
@@ -955,7 +962,7 @@ final class SyntacticParser {
 
                 String[] methodSpecs = CompilerUtil.getMethod(ast.call.clazz, false, desc.toString(), clazzName);
                 if(methodSpecs == null)
-                    throw new RuntimeException("Method "+desc+" is not defined for class "+ast.call.clazz);
+                    err("Method "+desc+" is not defined for class "+ast.call.clazz);
 
                 ast.call.type = methodSpecs[0];
                 ast.call.signature = methodSpecs[1];
@@ -963,7 +970,7 @@ final class SyntacticParser {
                 if(genericType.length() != 0) ast.call.type = ast.call.type+"|"+genericType;
                 ast.type = ast.call.type;
             }else{
-                if(CompilerUtil.PRIMITIVES.contains(call)) throw new RuntimeException("illegal type "+call);
+                if(CompilerUtil.PRIMITIVES.contains(call)) err("illegal type "+call);
 
                 th.assertToken(".");
                 ast.call.clazz = method.uses.get(call);
@@ -986,7 +993,7 @@ final class SyntacticParser {
 
                     String[] methodSpecs = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
                     if(methodSpecs == null)
-                        throw new RuntimeException("Static Method "+desc+" is not defined for class "+ast.call.clazz);
+                        err("Static Method "+desc+" is not defined for class "+ast.call.clazz);
 
                     ast.call.name = call;
                     ast.call.type = methodSpecs[0];
@@ -998,7 +1005,7 @@ final class SyntacticParser {
                 }else{
                     ast.call.name = call;
                     String[] fieldSpecs = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
-                    if(fieldSpecs == null) throw new RuntimeException("Static Field "+call+" is not defined for class "+ ast.call.clazz);
+                    if(fieldSpecs == null) err("Static Field "+call+" is not defined for class "+ ast.call.clazz);
 
                     ast.call.type = fieldSpecs[1] != null ? fieldSpecs[1] : fieldSpecs[0];
                     ast.call.cast = fieldSpecs[1];
@@ -1041,12 +1048,12 @@ final class SyntacticParser {
                 if(methodSpecs == null){
                     ast.call.clazz = getClazzFromMethod(desc.toString());
                     if(ast.call.clazz == null)
-                        throw new RuntimeException("Method " + desc + " is not defined for class " + clazzName);
+                        err("Method " + desc + " is not defined for class " + clazzName);
                     methodSpecs = CompilerUtil.getMethod(ast.call.clazz, true, desc.toString(), clazzName);
                     ast.call.statik = true;
                 }
 
-                if(methodSpecs == null) throw new RuntimeException("Method "+desc+" is not defined for Class "+ast.call.clazz);
+                if(methodSpecs == null) err("Method "+desc+" is not defined for Class "+ast.call.clazz);
 
                 ast.call.type = methodSpecs[0];
                 ast.call.signature = methodSpecs[1];
@@ -1068,7 +1075,7 @@ final class SyntacticParser {
                 if(fieldSpecs == null){
                     ast.call.clazz = getClazzFromField(call);
                     if(ast.call.clazz == null)
-                        throw new RuntimeException("Field " + call + " is not defined for class " + clazzName);
+                        err("Field " + call + " is not defined for class " + clazzName);
                     fieldSpecs = CompilerUtil.getFieldType(ast.call.clazz, call, true, clazzName);
                     ast.call.statik = true;
                 }
@@ -1086,7 +1093,7 @@ final class SyntacticParser {
                     ast.call.clazz = ast.type;
                 }else {
                     if (!ast.call.type.startsWith("["))
-                        throw new RuntimeException("Expected array got " + ast.call.type);
+                        err("Expected array got " + ast.call.type);
 
                     ast.call.setPrev();
                     ast.call.clazz = ast.call.prev.type;
@@ -1097,7 +1104,7 @@ final class SyntacticParser {
                 ast.call.name = "";
                 th.assertToken("]");
 
-                if(!ast.call.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+ast.call.argTypes[0].type);
+                if(!ast.call.argTypes[0].type.equals("int")) err("Expected type int got "+ast.call.argTypes[0].type);
             }
 
             if(ast.call != null) ast.type = ast.call.type;
@@ -1135,7 +1142,7 @@ final class SyntacticParser {
 
             String[] methodSpecs = CompilerUtil.getMethod(call.clazz, false, desc.toString(), clazzName);
             if(methodSpecs == null)
-                throw new RuntimeException("Method "+desc+" is not defined for class "+currentClass);
+                err("Method "+desc+" is not defined for class "+currentClass);
 
             call.name = name;
             call.type = methodSpecs[0];
@@ -1145,7 +1152,7 @@ final class SyntacticParser {
             call.name = name;
             String[] fieldSpecs = CompilerUtil.getFieldType(call.clazz, name, false, clazzName);
 
-            if(fieldSpecs == null) throw new RuntimeException("Field "+name+" is not defined for class "+currentClass);
+            if(fieldSpecs == null) err("Field "+name+" is not defined for class "+currentClass);
 
             call.cast = fieldSpecs[1];
             call.signature = fieldSpecs[0];
@@ -1153,7 +1160,7 @@ final class SyntacticParser {
         }
 
         while(th.isNext("[")){
-            if(!call.type.startsWith("[")) throw new RuntimeException("Expected array got "+call.type);
+            if(!call.type.startsWith("[")) err("Expected array got "+call.type);
 
             call.setPrev();
             call.clazz = call.prev.type;
@@ -1162,7 +1169,7 @@ final class SyntacticParser {
             call.name = "";
             th.assertToken("]");
 
-            if(!call.argTypes[0].type.equals("int")) throw new RuntimeException("Expected type int got "+call.argTypes[0].type);
+            if(!call.argTypes[0].type.equals("int")) err("Expected type int got "+call.argTypes[0].type);
         }
 
         if(th.isNext(".")) call = parseCallArg(call, call.type);

@@ -530,7 +530,7 @@ final class Parser {
         for(KtjMethod.Parameter p:parameter) desc.append("%").append(p.type);
 
         if(!name.equals("<init>") && !name.equals("<clinit>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) err("To many parameters");
-        if(name.equals("<clinit>") && (!parameter.isEmpty() || mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE)) throw new RuntimeException("Method should not be static");
+        if(name.equals("<clinit>") && (!parameter.isEmpty() || mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE)) err("Method should not be static");
         if(name.equals("->")) err("illegal method name");
 
         if(mod.abstrakt){

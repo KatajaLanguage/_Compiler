@@ -24,12 +24,12 @@ final class MethodCompiler {
         parser = new SyntacticParser();
     }
 
-    private void compileCode(Bytecode code, String ktjCode, KtjInterface clazz, String clazzName, KtjMethod method, ConstPool cp){
+    private void compileCode(Bytecode code, String ktjCode, KtjInterface clazz, String clazzName, boolean isConstructor, KtjMethod method, ConstPool cp){
         this.code = code;
         this.cp = cp;
         this.clazzName = clazzName;
         os = OperandStack.forMethod(method);
-        AST[] ast = parser.parseAst(clazz, clazzName, method, ktjCode);
+        AST[] ast = parser.parseAst(clazz, clazzName, isConstructor, method, ktjCode);
 
         for (AST value : ast) compileAST(value);
     }
@@ -1366,35 +1366,19 @@ final class MethodCompiler {
                 code.addAload(0);
                 code.addInvokespecial("java/lang/Object", "<init>", "()V");
                 String initValues = ((KtjClass) clazz).initValues();
-                getInstance().compileCode(code, (initValues != null ? initValues : "") + ";"+method.code, clazz, clazzName, method, cp);
+                getInstance().compileCode(code, (initValues != null ? initValues : "") + ";"+method.code, clazz, clazzName, true, method, cp);
             }else if(name.equals("<clinit>")) {
                 assert clazz instanceof KtjClass;
 
                 String clinitValues = ((KtjClass) clazz).clinitValues();
-                getInstance().compileCode(code, (clinitValues != null ? clinitValues : "") + ";"+method.code, clazz, clazzName, method, cp);
-            }else getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
+                getInstance().compileCode(code, (clinitValues != null ? clinitValues : "") + ";"+method.code, clazz, clazzName, true, method, cp);
+            }else getInstance().compileCode(code, method.code, clazz, clazzName, false, method, cp);
 
             code.setMaxLocals(code.getMaxLocals() + method.getLocals() + 5);
             code.setMaxStack(code.getMaxStack() * 2 + 5);
 
             mInfo.setCodeAttribute(code.toCodeAttribute());
         }
-
-        return mInfo;
-    }
-
-    static MethodInfo compileClinit(KtjInterface clazz, String clazzName, ConstPool cp, String code){
-        MethodInfo mInfo = new MethodInfo(cp, "<clinit>", "()V");
-        mInfo.setAccessFlags(AccessFlag.STATIC);
-
-        Bytecode bytecode = new Bytecode(cp);
-
-        Modifier mod = new Modifier(AccessFlag.ACC_PRIVATE);
-        mod.statik = true;
-
-        getInstance().compileCode(bytecode, code, clazz, clazzName, new KtjMethod(mod, null, "void", code, new KtjMethod.Parameter[0], clazz.uses, clazz.statics, clazz.file, Integer.MIN_VALUE), cp);
-
-        mInfo.setCodeAttribute(bytecode.toCodeAttribute());
 
         return mInfo;
     }

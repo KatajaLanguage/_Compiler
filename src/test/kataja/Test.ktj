@@ -1,12 +1,19 @@
+use $java/lang/System
+
 public class Test{
-    public Test(int j){
+
+    main{Test()}
+
+    public Test(){
         _i = 5
-        i = j + 3
+        i = i + 3
+        out.println(i)
     }
 
-    public static Test(){
+    static Test(){
         _i = 5
-        i = 7 + 3
+        i += 3
+        out.println(i)
     }
 }
 
