@@ -30,11 +30,12 @@ final class TokenHandler{
                 }
             }
         }
-        throw new ParsingException("Expected Token got nothing", file, getLine());
+        err("Expected Token got nothing");
+        return null; // unreachable statement
     }
 
     public Token current(){
-        if(i == -1 || i >= token[line].length) throw new ParsingException("Expected Token got nothing", file, getLine());
+        if(i == -1 || i >= token[line].length) err("Expected Token got nothing");
         return token[line][i];
     }
 
@@ -60,7 +61,8 @@ final class TokenHandler{
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        throw new ParsingException("Expected one of "+Arrays.toString(strings)+" got "+t.s, file, getLine());
+        err("Expected one of "+Arrays.toString(strings)+" got "+t.s);
+        return null; // unreachable statement
     }
 
     public Token assertTokenTypes(Token.Type...types){
@@ -68,7 +70,8 @@ final class TokenHandler{
 
         for(Token.Type type:types) if(t.equals(type)) return t;
 
-        throw new ParsingException("Expected one of "+Arrays.toString(types)+" got "+t.t, file, getLine());
+        err("Expected one of "+Arrays.toString(types)+" got "+t.t);
+        return null; // unreachable statement
     }
 
     public Token assertToken(Token.Type type, String...strings){
@@ -78,7 +81,8 @@ final class TokenHandler{
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        throw new ParsingException("Expected one of "+type+", "+Arrays.toString(strings)+" got "+t.s, file, getLine());
+        err("Expected one of "+type+", "+Arrays.toString(strings)+" got "+t.s);
+        return null; // unreachable statement
     }
 
     public Token assertToken(Token.Type type1, Token.Type type2,String...strings){
@@ -89,7 +93,8 @@ final class TokenHandler{
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        throw new ParsingException("Expected one of "+type1+", "+type2+", "+Arrays.toString(strings)+" got "+t.s, file, getLine());
+        err("Expected one of "+type1+", "+type2+", "+Arrays.toString(strings)+" got "+t.s);
+        return null; // unreachable statement
     }
 
     public void assertEndOfStatement(){
@@ -164,5 +169,28 @@ final class TokenHandler{
         }
 
         return sb.toString();
+    }
+
+    private void err(String message) throws ParsingException{
+        int line = getLine();
+
+        StringBuilder sb = new StringBuilder(message);
+        sb.append(" near ");
+
+        String index = getIndex();
+        try{
+            if(last() == null) throw new ParsingException("", "", 0);
+            sb.append(current());
+            next();
+        }catch(ParsingException ignored){
+            setIndex(index);
+        }
+
+        if(i == -1 || i >= token[line].length) throw new ParsingException(sb.toString(), file, line);
+
+        sb.append(" ").append(current()).append(" ");
+        if(hasNext()) sb.append(next());
+
+        throw new ParsingException(sb.toString(), file, line);
     }
 }

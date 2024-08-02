@@ -201,6 +201,8 @@ final class Lexer{
             }else if(!(chars[i] == '\r' || chars[i] == '\t' || chars[i] == ' ')) token.add(new Token(String.valueOf(chars[i]), Token.Type.SIMPLE));
         }
 
+        if(!token.isEmpty()) result.add(token.toArray(new Token[0]));
+
         return new TokenHandler(result.toArray(new Token[0][0]), clazzName, lineOffset);
     }
 

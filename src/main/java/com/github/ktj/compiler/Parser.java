@@ -654,9 +654,9 @@ final class Parser {
                 line++;
                 sb.append("\n");
             }
-            sb.append(th.current()).append(" ");
             if(th.current().equals(openingBracket)) b++;
             else if(th.current().equals(closingBracket)) b--;
+            if(b > 0) sb.append(th.current()).append(" ");
         }
 
         if(b > 0) err("Expected "+closingBracket);
