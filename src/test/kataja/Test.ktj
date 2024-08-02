@@ -4,17 +4,17 @@ public class Test{
 
     main{Test(5)}
 
-    public Test(int j){
-        _i = 5
-        i += j
-        out.println(i)
-    }
+    public Test(int j){;;;;_i = 5;i += j;
+        ;;out.println(i);
+    ;;;}
 
     static Test(){
         _i = 5
         i += 3
         out.println(i)
     }
+
+    native test(int j)
 }
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj

@@ -201,6 +201,7 @@ final class Parser {
         modifier.add("volatile");
         modifier.add("transient");
         modifier.add("strict");
+        modifier.add("native");
 
         while (modifier.contains(th.next().s)){
             switch (th.current().s){
@@ -235,6 +236,10 @@ final class Parser {
                 case "strict":
                     if(mod.strict) err("modifier "+ th.current().s+" is not allowed");
                     mod.strict = true;
+                    break;
+                case "native":
+                    if(mod.natife) err("modifier "+ th.current().s+" is not allowed");
+                    mod.natife = true;
                     break;
             }
         }
@@ -533,7 +538,7 @@ final class Parser {
         if(name.equals("<clinit>") && (!parameter.isEmpty() || mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE)) err("Method should not be static");
         if(name.equals("->")) err("illegal method name");
 
-        if(mod.abstrakt){
+        if(mod.abstrakt || mod.natife){
             th.assertEndOfStatement();
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, null, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), th.getLine()));
         }else if(th.isNext("{")){

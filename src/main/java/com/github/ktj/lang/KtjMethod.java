@@ -37,7 +37,7 @@ public class KtjMethod extends Compilable{
     }
 
     public boolean isAbstract(){
-        return modifier.abstrakt;
+        return modifier.abstrakt || modifier.natife;
     }
 
     public int getLocals(){

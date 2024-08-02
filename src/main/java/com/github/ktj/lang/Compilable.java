@@ -92,6 +92,7 @@ public abstract class Compilable {
         if(modifier.volatil) accessFlag += AccessFlag.VOLATILE;
         if(modifier.transint) accessFlag += AccessFlag.TRANSIENT;
         if(modifier.strict) accessFlag += AccessFlag.STRICT;
+        if(modifier.natife) accessFlag += AccessFlag.NATIVE;
 
         return accessFlag;
     }

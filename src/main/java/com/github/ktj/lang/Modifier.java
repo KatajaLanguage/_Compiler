@@ -13,13 +13,14 @@ public final class Modifier {
     public boolean volatil = false;
     public boolean transint = false;
     public boolean strict = false;
+    public boolean natife = false;
 
     public Modifier(AccessFlag accessFlag){
         this.accessFlag = accessFlag;
     }
 
     public boolean isValidForField(){
-        return !(finaly || abstrakt || strict);
+        return !(finaly || abstrakt || strict || natife);
     }
 
     public boolean isValidForMethod(){
@@ -27,27 +28,27 @@ public final class Modifier {
     }
 
     public boolean isValidForInit(){
-        return !(finaly || constant || abstrakt || synchronised || volatil || transint || strict);
+        return !(finaly || constant || abstrakt || synchronised || volatil || transint || strict|| natife);
     }
 
     public boolean isValidForObject(){
-        return !(abstrakt || synchronised || statik || constant || volatil || transint || strict);
+        return !(abstrakt || synchronised || statik || constant || volatil || transint || strict|| natife);
     }
 
     public boolean isValidForType(){
-        return !(abstrakt || synchronised || statik || volatil || transint || strict);
+        return !(abstrakt || synchronised || statik || volatil || transint || strict|| natife);
     }
 
     public boolean isValidForData(){
-        return !(abstrakt || synchronised || statik || volatil || transint || strict);
+        return !(abstrakt || synchronised || statik || volatil || transint || strict|| natife);
     }
 
     public boolean isValidForInterface(){
-        return !(constant || finaly || synchronised || statik || volatil || transint || strict);
+        return !(constant || finaly || synchronised || statik || volatil || transint || strict|| natife);
     }
 
     public boolean isValidForClass(){
-        return !(constant || synchronised || statik || volatil || transint || strict);
+        return !(constant || synchronised || statik || volatil || transint || strict|| natife);
     }
 
     @Override
