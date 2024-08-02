@@ -51,31 +51,24 @@ public final class Modifier {
         return !(constant || synchronised || statik || volatil || transint || strict|| natife);
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
+    public static Modifier ofInt(int mod){
+        Modifier result = new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE);
+        if((mod & AccessFlag.PUBLIC) != 0) result = new Modifier(AccessFlag.ACC_PUBLIC);
+        else if((mod & AccessFlag.PROTECTED) != 0) result = new Modifier(AccessFlag.ACC_PROTECTED);
+        else if((mod & AccessFlag.PRIVATE) != 0) result = new Modifier(AccessFlag.ACC_PRIVATE);
 
-        switch(accessFlag){
-            case ACC_PACKAGE_PRIVATE:
-                sb.append(0);
-                break;
-            case ACC_PUBLIC:
-                sb.append(1);
-                break;
-            case ACC_PROTECTED:
-                sb.append(2);
-                break;
-            case ACC_PRIVATE:
-                sb.append(3);
-                break;
+        if((mod & AccessFlag.FINAL) != 0){
+            result.finaly = true;
+            result.constant = true;
         }
+        if((mod & AccessFlag.ABSTRACT) != 0) result.abstrakt = true;
+        if((mod & AccessFlag.SYNCHRONIZED) != 0) result.synchronised = true;
+        if((mod & AccessFlag.STATIC) != 0) result.statik = true;
+        if((mod & AccessFlag.VOLATILE) != 0) result.volatil = true;
+        if((mod & AccessFlag.TRANSIENT) != 0) result.transint = true;
+        if((mod & AccessFlag.STRICT) != 0) result.strict = true;
+        if((mod & AccessFlag.NATIVE) != 0) result.natife = true;
 
-        sb.append(finaly ? 't' : 'f');
-        sb.append(constant ? 't' : 'f');
-        sb.append(abstrakt ? 't' : 'f');
-        sb.append(synchronised ? 't' : 'f');
-        sb.append(statik ? 't' : 'f');
-
-        return sb.toString();
+        return result;
     }
 }

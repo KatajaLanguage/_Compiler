@@ -5,3 +5,4 @@ public interface Test{
 }
 
 #-q -d -c src/test/kataja/InterfaceTest.ktj
+#-q -dc out/src/test/kataja/InterfaceTest/Test.class

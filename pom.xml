@@ -47,7 +47,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.github.ktj.compiler.Main</mainClass>
+                                    <mainClass>com.github.ktj.Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
