@@ -87,6 +87,7 @@ public final class Decompiler{
             if(cf.isInterface()) decompileInterface(cf, writer, mod);
             else{
                 if(cf.getSuperclass().equals("java.lang.Enum") && cf.getMethods().size() == 4) decompileType(cf, writer, mod);
+                else if(cf.getMethods().size() == 1 && ((MethodInfo)(cf.getMethods().get(0))).getName().equals("<init>")) decompileData(cf, writer, mod);
                 else decompileClass(cf, writer, mod);
             }
         }catch(IOException e){
@@ -126,6 +127,23 @@ public final class Decompiler{
             }
         }
 
+        writer.close();
+    }
+
+    private static void decompileData(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
+        writer.write("data ");
+
+        writer.write(cf.getName().substring(cf.getName().lastIndexOf(".") + 1));
+        writer.write(" = (");
+
+        MethodInfo mInfo = (MethodInfo) cf.getMethods().get(0);
+        String[] types = ofMethodDesc(mInfo.getDescriptor());
+        for(int i = 0;i < types.length;i++){
+            if(i > 0) writer.write(", ");
+            writer.write(types[i]+" var"+(i + 1));
+        }
+
+        writer.write(")");
         writer.close();
     }
 
