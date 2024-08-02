@@ -88,7 +88,24 @@ public final class Decompiler{
             else{
                 if(cf.getSuperclass().equals("java.lang.Enum") && cf.getMethods().size() == 4) decompileType(cf, writer, mod);
                 else if(cf.getMethods().size() == 1 && ((MethodInfo)(cf.getMethods().get(0))).getName().equals("<init>")) decompileData(cf, writer, mod);
-                else decompileClass(cf, writer, mod);
+                else{
+                    boolean isObject = true;
+
+                    for(Object field:cf.getFields()) if((((FieldInfo)(field)).getAccessFlags() & AccessFlag.STATIC) == 0){
+                        isObject = false;
+                        break;
+                    }
+
+                    if(isObject){
+                        for(Object method:cf.getMethods()) if((((MethodInfo)(method)).getAccessFlags() & AccessFlag.STATIC) == 0){
+                            isObject = false;
+                            break;
+                        }
+                    }
+
+                    if(isObject) decompileObject(cf, writer, mod);
+                    else decompileClass(cf, writer, mod);
+                }
             }
         }catch(IOException e){
             throw new RuntimeException("failed to decompile "+file.getName());
@@ -144,6 +161,28 @@ public final class Decompiler{
         }
 
         writer.write(")");
+        writer.close();
+    }
+
+    private static void decompileObject(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
+        writer.write("object ");
+        String className = cf.getName().substring(cf.getName().lastIndexOf(".") + 1);
+        writer.write(className);
+        writer.write(" {\n");
+
+        for(Object fInfo:cf.getFields()){
+            writer.write("\n");
+            decompileField((FieldInfo) fInfo, writer);
+            writer.write("\n");
+        }
+
+        for(Object mInfo:cf.getMethods()){
+            writer.write("\n");
+            decompileMethod((MethodInfo) mInfo, className, writer);
+            writer.write("\n");
+        }
+
+        writer.write("\n}");
         writer.close();
     }
 
