@@ -2,11 +2,11 @@ use $java/lang/System
 
 public class Test{
 
-    main{Test()}
+    main{Test(5)}
 
-    public Test(){
+    public Test(int j){
         _i = 5
-        i = i + 3
+        i += j
         out.println(i)
     }
 

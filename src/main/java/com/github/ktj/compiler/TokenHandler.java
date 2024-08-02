@@ -81,7 +81,7 @@ final class TokenHandler{
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        err("Expected one of "+type+", "+Arrays.toString(strings)+" got "+t.s);
+        err("Expected one of "+type+(strings.length != 0 ? ", "+Arrays.toString(strings) : "")+" got "+t.s);
         return null; // unreachable statement
     }
 
@@ -93,7 +93,7 @@ final class TokenHandler{
 
         for(String string:strings) if(t.equals(string)) return t;
 
-        err("Expected one of "+type1+", "+type2+", "+Arrays.toString(strings)+" got "+t.s);
+        err("Expected one of "+type1+", "+type2+(strings.length != 0 ? ", "+Arrays.toString(strings) : "")+" got "+t.s);
         return null; // unreachable statement
     }
 

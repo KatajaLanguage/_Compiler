@@ -1,10 +1,8 @@
 package com.github.ktj.compiler;
 
-import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.KtjClass;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
-import com.github.ktj.lang.Modifier;
 import javassist.bytecode.*;
 
 import java.util.ArrayList;
@@ -24,12 +22,12 @@ final class MethodCompiler {
         parser = new SyntacticParser();
     }
 
-    private void compileCode(Bytecode code, String ktjCode, KtjInterface clazz, String clazzName, boolean isConstructor, KtjMethod method, ConstPool cp){
+    private void compileCode(Bytecode code, String ktjCode, String clazzName, boolean isConstructor, KtjMethod method, ConstPool cp){
         this.code = code;
         this.cp = cp;
         this.clazzName = clazzName;
         os = OperandStack.forMethod(method);
-        AST[] ast = parser.parseAst(clazz, clazzName, isConstructor, method, ktjCode);
+        AST[] ast = parser.parseAst(clazzName, isConstructor, method, ktjCode);
 
         for (AST value : ast) compileAST(value);
     }
@@ -1366,13 +1364,13 @@ final class MethodCompiler {
                 code.addAload(0);
                 code.addInvokespecial("java/lang/Object", "<init>", "()V");
                 String initValues = ((KtjClass) clazz).initValues();
-                getInstance().compileCode(code, (initValues != null ? initValues : "") + ";"+method.code, clazz, clazzName, true, method, cp);
+                getInstance().compileCode(code, (initValues != null ? initValues : "") + ";"+method.code, clazzName, true, method, cp);
             }else if(name.equals("<clinit>")) {
                 assert clazz instanceof KtjClass;
 
                 String clinitValues = ((KtjClass) clazz).clinitValues();
-                getInstance().compileCode(code, (clinitValues != null ? clinitValues : "") + ";"+method.code, clazz, clazzName, true, method, cp);
-            }else getInstance().compileCode(code, method.code, clazz, clazzName, false, method, cp);
+                getInstance().compileCode(code, (clinitValues != null ? clinitValues : "") + ";"+method.code, clazzName, true, method, cp);
+            }else getInstance().compileCode(code, method.code, clazzName, false, method, cp);
 
             code.setMaxLocals(code.getMaxLocals() + method.getLocals() + 5);
             code.setMaxStack(code.getMaxStack() * 2 + 5);

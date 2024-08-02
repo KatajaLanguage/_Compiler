@@ -211,6 +211,8 @@ public final class Compiler {
 
             try (FileOutputStream fos = new FileOutputStream(file)){
                 fos.write(writer.toByteArray());
+            }catch(IOException e){
+                throw new RuntimeException("Failed to write ClassFile for " + cf.getName() + (debug ? " : " + e.getMessage() : ""));
             }
         }catch(IOException | CannotCompileException e){
             throw new RuntimeException("Failed to write ClassFile for " + cf.getName() + (debug ? " : " + e.getMessage() : ""));

@@ -48,16 +48,14 @@ final class SyntacticParser {
 
     private HashMap<String, String> typeValues;
     private TokenHandler th;
-    private Compilable clazz;
     private KtjMethod method;
     private Scope scope;
     private String clazzName;
     private boolean isConstructor;
 
-    AST[] parseAst(Compilable clazz, String clazzName, boolean isConstructor, KtjMethod method, String code){
+    AST[] parseAst(String clazzName, boolean isConstructor, KtjMethod method, String code){
         if(code.trim().isEmpty()) return new AST[]{CompilerUtil.getDefaultReturn(method.returnType)};
 
-        this.clazz = clazz;
         this.method = method;
         this.clazzName = clazzName;
         this.isConstructor = isConstructor;
@@ -505,10 +503,10 @@ final class SyntacticParser {
     }
 
     private AST parseAssignment(){
-        String i = th.getIndex();
         if(th.current().equals(Token.Type.OPERATOR)) return parseCalc();
 
         th.last();
+        String i = th.getIndex();
         AST.Load load = parseCall();
         if(load.finaly) th.assertEndOfStatement();
 
