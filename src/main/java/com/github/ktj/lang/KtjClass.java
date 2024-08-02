@@ -31,18 +31,18 @@ public class KtjClass extends KtjInterface{
         return fields.isEmpty() && methods.isEmpty();
     }
 
-    public String createClinit(){
+    public String initValues(){
         StringBuilder sb = new StringBuilder();
 
-        for(String field: fields.keySet()) if(fields.get(field).initValue != null && fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append("\n");
+        for(String field: fields.keySet()) if(fields.get(field).initValue != null && !fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append(";");
 
         return sb.length() == 0 ? null : sb.toString();
     }
 
-    public String initValues(){
+    public String clinitValues(){
         StringBuilder sb = new StringBuilder();
 
-        for(String field: fields.keySet()) if(fields.get(field).initValue != null && !fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append("\n");
+        for(String field: fields.keySet()) if(fields.get(field).initValue != null && fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append(";");
 
         return sb.length() == 0 ? null : sb.toString();
     }
@@ -59,6 +59,23 @@ public class KtjClass extends KtjInterface{
 
         if(!initExist){
             methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PUBLIC), genericTypes, className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
+        }
+    }
+
+    public void validateClinit(String className){
+        boolean clinitExist = false;
+
+        for(String method: methods.keySet()) {
+            if(method.startsWith("<clinit>")) {
+                clinitExist = true;
+                break;
+            }
+        }
+
+        if(!clinitExist){
+            Modifier mod = new Modifier(AccessFlag.ACC_PACKAGE_PRIVATE);
+            mod.statik = true;
+            methods.put("<clinit>", new KtjMethod(mod, genericTypes, className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
         }
     }
 

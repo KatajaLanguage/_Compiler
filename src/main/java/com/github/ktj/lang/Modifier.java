@@ -27,7 +27,7 @@ public final class Modifier {
     }
 
     public boolean isValidForInit(){
-        return !(finaly || constant || abstrakt || synchronised || statik || volatil || transint || strict);
+        return !(finaly || constant || abstrakt || synchronised || volatil || transint || strict);
     }
 
     public boolean isValidForObject(){

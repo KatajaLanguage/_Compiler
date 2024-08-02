@@ -1352,7 +1352,8 @@ final class MethodCompiler {
 
         for(KtjMethod.Parameter p:method.parameter) descBuilder.append(CompilerUtil.toDesc(clazz.correctType(p.type)));
 
-        descBuilder.append(")").append(CompilerUtil.toDesc(clazz.correctType(method.returnType)));
+        if(name.equals("<init>") || name.equals("<clinit>")) descBuilder.append(")V");
+        else descBuilder.append(")").append(CompilerUtil.toDesc(clazz.correctType(method.returnType)));
 
         MethodInfo mInfo = new MethodInfo(cp, name, descBuilder.toString());
         mInfo.setAccessFlags(method.getAccessFlag());
@@ -1361,15 +1362,16 @@ final class MethodCompiler {
             Bytecode code = new Bytecode(cp);
 
             if(name.equals("<init>")){
+                assert clazz instanceof KtjClass;
                 code.addAload(0);
                 code.addInvokespecial("java/lang/Object", "<init>", "()V");
-            }
-
-            if(name.equals("<init>")) {
+                String initValues = ((KtjClass) clazz).initValues();
+                getInstance().compileCode(code, (initValues != null ? initValues : "") + ";"+method.code, clazz, clazzName, method, cp);
+            }else if(name.equals("<clinit>")) {
                 assert clazz instanceof KtjClass;
 
-                String initValues = ((KtjClass) clazz).initValues();
-                getInstance().compileCode(code, (initValues != null ? initValues : "") + "\n"+method.code, clazz, clazzName, method, cp);
+                String clinitValues = ((KtjClass) clazz).clinitValues();
+                getInstance().compileCode(code, (clinitValues != null ? clinitValues : "") + ";"+method.code, clazz, clazzName, method, cp);
             }else getInstance().compileCode(code, method.code, clazz, clazzName, method, cp);
 
             code.setMaxLocals(code.getMaxLocals() + method.getLocals() + 5);

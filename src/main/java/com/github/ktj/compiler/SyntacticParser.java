@@ -77,7 +77,7 @@ final class SyntacticParser {
     }
 
     private AST parseNextStatement(boolean inLoop){
-        if(th.isNext(";")) return null;
+        if(th.isNext(";") || !th.hasNext()) return null;
 
         if(th.isNext("}")){
             th.last();

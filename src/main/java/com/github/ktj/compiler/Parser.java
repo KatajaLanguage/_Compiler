@@ -489,9 +489,10 @@ final class Parser {
     private void parseMethod(Modifier mod, String type, String name){
         if(name.equals("<init>")){
             if(!mod.isValidForInit()) err("illegal modifier");
+            if(mod.statik) name = "<clinit>";
         }else if(!mod.isValidForMethod()) err("illegal modifier");
 
-        if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) {
+        if(!name.equals("<init>") && !name.equals("<clinit>") && Lexer.isOperator(name.toCharArray()[0])) {
             name = CompilerUtil.operatorToIdentifier(name);
             if(type.equals("void")) err("Method should not return void");
             if(mod.statik || current == null) err("Method should not be static");
@@ -528,15 +529,16 @@ final class Parser {
         StringBuilder desc = new StringBuilder(name);
         for(KtjMethod.Parameter p:parameter) desc.append("%").append(p.type);
 
+        if(!name.equals("<init>") && !name.equals("<clinit>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) err("To many parameters");
+        if(name.equals("<clinit>") && (!parameter.isEmpty() || mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE)) throw new RuntimeException("Method should not be static");
+        if(name.equals("->")) err("illegal method name");
+
         if(mod.abstrakt){
             th.assertEndOfStatement();
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, null, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), th.getLine()));
         }else if(th.isNext("{")){
             int _line = th.getLine();
             String code = getInBracket();
-
-            if(!name.equals("<init>") && Lexer.isOperator(name.toCharArray()[0])) if(parameter.size() > 1) err("To many parameters");
-            if(name.equals("->")) err("illegal method name");
 
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }else if(th.isNext(":")){

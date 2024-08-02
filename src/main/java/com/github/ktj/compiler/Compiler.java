@@ -121,6 +121,7 @@ public final class Compiler {
                 if(classes.get(name) instanceof KtjClass){
                     ((KtjClass) classes.get(name)).validateInterfaces();
                     ((KtjClass) classes.get(name)).validateInit(name);
+                    ((KtjClass) classes.get(name)).validateClinit(name);
                 }
             }catch(RuntimeException e){
                 throw new ParsingException(e.getMessage(), name, classes.get(name).line);

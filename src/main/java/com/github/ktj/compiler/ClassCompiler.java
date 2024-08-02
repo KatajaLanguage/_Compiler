@@ -189,8 +189,8 @@ final class ClassCompiler {
         }
 
         //<clinit>
-        String clinit = clazz.createClinit();
-        if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clinit));
+        //String clinit = clazz.createClinit();
+        //if(clinit != null) cf.addMethod2(MethodCompiler.compileClinit(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clinit));
 
         Compiler.Instance().compiledClasses.add(cf);
     }
