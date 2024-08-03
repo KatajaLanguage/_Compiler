@@ -110,10 +110,17 @@ final class ClassCompiler {
         code.addAload(0);
         code.addInvokespecial("java.lang.Object", "<init>", "()V");
 
+        String[] names = new String[clazz.fields.size()];
+        int[] flags = new int[names.length];
+
         int i = 1;
         for(String field:clazz.fields.keySet()){
             code.addAload(0);
             String desc = CompilerUtil.toDesc(clazz.fields.get(field).type);
+
+            names[i - 1] = field;
+            flags[i - 1] = clazz.fields.get(field).modifier.constant ? AccessFlag.FINAL : 0;
+
             switch(desc){
                 case "J":
                     code.addLload(i);
@@ -140,6 +147,8 @@ final class ClassCompiler {
         }
         code.add(Opcode.RETURN);
         mInfo.setCodeAttribute(code.toCodeAttribute());
+        mInfo.addAttribute(new MethodParametersAttribute(cf.getConstPool(), names, flags));
+
         cf.addMethod2(mInfo);
 
         Compiler.Instance().compiledClasses.add(cf);
