@@ -99,8 +99,10 @@ public final class Decompiler{
 
                     if(isObject){
                         for(Object method:cf.getMethods()) if((((MethodInfo)(method)).getAccessFlags() & AccessFlag.STATIC) == 0){
-                            isObject = false;
-                            break;
+                            if(!((MethodInfo)(method)).getName().equals("<init>") || (((MethodInfo)(method)).getAccessFlags() & AccessFlag.PRIVATE) == 0) {
+                                isObject = false;
+                                break;
+                            }
                         }
                     }
 
