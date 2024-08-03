@@ -2,10 +2,7 @@ package com.github.ktj.decompiler;
 
 import com.github.ktj.bytecode.AccessFlag;
 import com.github.ktj.lang.Modifier;
-import javassist.bytecode.ClassFile;
-import javassist.bytecode.FieldInfo;
-import javassist.bytecode.MethodInfo;
-import javassist.bytecode.Opcode;
+import javassist.bytecode.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -121,7 +118,7 @@ public final class Decompiler{
         writer.write(cf.getName().substring(cf.getName().lastIndexOf(".") + 1));
         writer.write(" {\n");
 
-        for(Object mInfo:cf.getMethods()) decompileMethod((MethodInfo) mInfo, null, writer);
+        for(Object mInfo:cf.getMethods()) decompileMethod(cf, (MethodInfo) mInfo, null, writer);
 
         writer.write("\n}");
         writer.close();
@@ -156,9 +153,17 @@ public final class Decompiler{
 
         MethodInfo mInfo = (MethodInfo) cf.getMethods().get(0);
         String[] types = ofMethodDesc(mInfo.getDescriptor());
-        for(int i = 0;i < types.length;i++){
-            if(i > 0) writer.write(", ");
-            writer.write(types[i]+" var"+(i + 1));
+        MethodParametersAttribute attribute = (MethodParametersAttribute) mInfo.getAttribute("MethodParameters");
+        if(attribute != null) {
+            for(int i = 0; i < types.length; i++) {
+                if (i > 0) writer.write(", ");
+                writer.write(((attribute.accessFlags(i) & AccessFlag.FINAL) != 0 ? "const ":"")+types[i] + " " + cf.getConstPool().getUtf8Info(attribute.name(i)));
+            }
+        }else {
+            for (int i = 0; i < types.length; i++) {
+                if (i > 0) writer.write(", ");
+                writer.write(types[i] + " var" + (mod.statik ? i : i + 1));
+            }
         }
 
         writer.write(")");
@@ -166,6 +171,7 @@ public final class Decompiler{
     }
 
     private static void decompileObject(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
+        if(mod.finaly)writer.write("final ");
         writer.write("object ");
         String className = cf.getName().substring(cf.getName().lastIndexOf(".") + 1);
         writer.write(className);
@@ -177,13 +183,15 @@ public final class Decompiler{
             writer.write("\n");
         }
 
-        for(Object mInfo:cf.getMethods()) decompileMethod((MethodInfo) mInfo, className, writer);
+        for(Object mInfo:cf.getMethods()) decompileMethod(cf, (MethodInfo) mInfo, className, writer);
 
         writer.write("\n}");
         writer.close();
     }
 
     private static void decompileClass(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
+        if(mod.finaly)writer.write("final ");
+        if(mod.abstrakt) writer.write("abstract ");
         writer.write("class ");
         String className = cf.getName().substring(cf.getName().lastIndexOf(".") + 1);
         writer.write(className);
@@ -204,7 +212,7 @@ public final class Decompiler{
 
         for(Object fInfo:cf.getFields()) decompileField((FieldInfo) fInfo, writer);
 
-        for(Object mInfo:cf.getMethods()) decompileMethod((MethodInfo) mInfo, className, writer);
+        for(Object mInfo:cf.getMethods()) decompileMethod(cf, (MethodInfo) mInfo, className, writer);
 
         writer.write("\n}");
         writer.close();
@@ -241,7 +249,7 @@ public final class Decompiler{
         writer.write("\n");
     }
 
-    private static void decompileMethod(MethodInfo mInfo, String className, FileWriter writer) throws IOException {
+    private static void decompileMethod(ClassFile cf, MethodInfo mInfo, String className, FileWriter writer) throws IOException {
         boolean isEmpty = false;
         if(mInfo.getDescriptor().substring(mInfo.getDescriptor().lastIndexOf(")") + 1).equals("V") && mInfo.getCodeAttribute() != null){
             byte[] code = mInfo.getCodeAttribute().getCode();
@@ -286,15 +294,23 @@ public final class Decompiler{
         writer.write("(");
 
         String[] types = ofMethodDesc(mInfo.getDescriptor());
-        for(int i = 0;i < types.length;i++){
-            if(i > 0) writer.write(", ");
-            writer.write(types[i]+" var"+(mod.statik?i:i+1));
+        MethodParametersAttribute attribute = (MethodParametersAttribute) mInfo.getAttribute("MethodParameters");
+        if(attribute != null) {
+            for(int i = 0; i < types.length; i++) {
+                if (i > 0) writer.write(", ");
+                writer.write(((attribute.accessFlags(i) & AccessFlag.FINAL) != 0 ? "const ":"")+types[i] + " " + cf.getConstPool().getUtf8Info(attribute.name(i)));
+            }
+        }else {
+            for (int i = 0; i < types.length; i++) {
+                if (i > 0) writer.write(", ");
+                writer.write(types[i] + " var" + (mod.statik ? i : i + 1));
+            }
         }
 
         writer.write(")");
 
         if(isEmpty) writer.write("{}\n");
-        else writer.write("{\n\t\t#method code#\n\t}\n");
+        else writer.write("{\n\t\t#method code\n\t}\n");
     }
 
     private static String ofDesc(String desc){
