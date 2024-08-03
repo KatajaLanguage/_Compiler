@@ -2,19 +2,10 @@ use $java/lang/System
 
 public class Test<E extends System>{
 
-    main{Test(5)}
+    public E test
 
-    public Test(const int j){;;;;_i = 5;i += j;
-        ;;out.println(i);
-    ;;;}
-
-    static Test(){
-        _i = 5
-        i += 3
-        out.println(i)
-    }
-
-    native test(int j)
+    public E test(E e){}
 }
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
+# -q -dc out/src/test/kataja/Test.class

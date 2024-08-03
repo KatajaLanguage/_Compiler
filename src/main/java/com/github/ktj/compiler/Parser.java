@@ -454,7 +454,7 @@ final class Parser {
                 parseMethod(mod, clazzName, "<init>");
             }else parseMethod(mod, "void", type);
         }else{
-            if(th.hasNext() && th.assertToken("=", "(").equals("(")){
+            if(th.isNext("(")){
                 if(name.equals("<init>")) err("illegal method name");
                 parseMethod(mod, type, name);
             }else parseField(mod, type, name);

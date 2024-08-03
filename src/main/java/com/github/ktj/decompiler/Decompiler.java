@@ -182,7 +182,7 @@ public final class Decompiler{
 
         for(Object fInfo:cf.getFields()){
             writer.write("\n");
-            decompileField((FieldInfo) fInfo, writer);
+            decompileField(cf, (FieldInfo) fInfo, writer);
             writer.write("\n");
         }
 
@@ -215,7 +215,7 @@ public final class Decompiler{
 
         writer.write(" {\n");
 
-        for(Object fInfo:cf.getFields()) decompileField((FieldInfo) fInfo, writer);
+        for(Object fInfo:cf.getFields()) decompileField(cf, (FieldInfo) fInfo, writer);
 
         for(Object mInfo:cf.getMethods()) decompileMethod(cf, (MethodInfo) mInfo, className, writer);
 
@@ -223,7 +223,7 @@ public final class Decompiler{
         writer.close();
     }
 
-    private static void decompileField(FieldInfo fInfo, FileWriter writer) throws IOException {
+    private static void decompileField(ClassFile cf, FieldInfo fInfo, FileWriter writer) throws IOException {
         Modifier mod = Modifier.ofInt(fInfo.getAccessFlags());
 
         writer.write("\n\t");
@@ -248,7 +248,9 @@ public final class Decompiler{
         if(mod.transint) writer.write("transient ");
         if(mod.constant) writer.write("const ");
 
-        writer.write(ofDesc(fInfo.getDescriptor()));
+        AttributeInfo attribute = fInfo.getAttribute("Signature");
+        String desc = attribute == null ? fInfo.getDescriptor() : ((SignatureAttribute)(attribute)).getSignature();
+        writer.write(ofDesc(desc));
         writer.write(" ");
         writer.write(fInfo.getName());
         writer.write("\n");
@@ -289,7 +291,8 @@ public final class Decompiler{
         if(mod.strict) writer.write("strict ");
 
         if(!mInfo.getName().equals("<init>") && !mInfo.getName().equals("<clinit>")){
-            writer.write(ofDesc(mInfo.getDescriptor().substring(mInfo.getDescriptor().lastIndexOf(")") + 1)));
+            String signature = mInfo.getAttribute("Signature") == null ? mInfo.getDescriptor() : ((SignatureAttribute)(mInfo.getAttribute("Signature"))).getSignature();
+            writer.write(ofDesc(signature.substring(signature.lastIndexOf(")") + 1)));
             writer.write(" ");
         }
 
@@ -298,7 +301,8 @@ public final class Decompiler{
 
         writer.write("(");
 
-        String[] types = ofMethodDesc(mInfo.getDescriptor());
+        String desc = mInfo.getAttribute("Signature") == null ? mInfo.getDescriptor() : ((SignatureAttribute)(mInfo.getAttribute("Signature"))).getSignature();
+        String[] types = ofMethodDesc(desc);
         MethodParametersAttribute attribute = (MethodParametersAttribute) mInfo.getAttribute("MethodParameters");
         if(attribute != null) {
             for(int i = 0; i < types.length; i++) {
@@ -376,7 +380,7 @@ public final class Decompiler{
                 desc = desc.substring(1);
             }
 
-            if(desc.startsWith("L")){
+            if(desc.startsWith("L") || desc.startsWith("T")){
                 StringBuilder sb = new StringBuilder();
                 desc = desc.substring(1);
                 while(!desc.startsWith(";")){
