@@ -1,4 +1,4 @@
-public interface Test{
+public interface Test<E>{
 
     public abstract void test(int i)
 

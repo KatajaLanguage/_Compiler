@@ -1,6 +1,6 @@
 use $java/lang/System
 
-public class Test{
+public class Test<E extends System>{
 
     main{Test(5)}
 

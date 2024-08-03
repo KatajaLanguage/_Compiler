@@ -116,6 +116,7 @@ public final class Decompiler{
     private static void decompileInterface(ClassFile cf, FileWriter writer, Modifier mod) throws IOException {
         writer.write("interface ");
         writer.write(cf.getName().substring(cf.getName().lastIndexOf(".") + 1));
+        decompileGenerics((SignatureAttribute) cf.getAttribute("Signature"), writer);
         writer.write(" {\n");
 
         for(Object mInfo:cf.getMethods()) decompileMethod(cf, (MethodInfo) mInfo, null, writer);
@@ -195,6 +196,8 @@ public final class Decompiler{
         writer.write("class ");
         String className = cf.getName().substring(cf.getName().lastIndexOf(".") + 1);
         writer.write(className);
+
+        decompileGenerics((SignatureAttribute) cf.getAttribute("Signature"), writer);
 
         if(!cf.getSuperclass().equals("java.lang.Object") || cf.getInterfaces().length != 0){
             writer.write(" extends ");
@@ -311,6 +314,25 @@ public final class Decompiler{
 
         if(isEmpty) writer.write("{}\n");
         else writer.write("{\n\t\t#method code\n\t}\n");
+    }
+
+    private static void decompileGenerics(SignatureAttribute attribute, FileWriter writer) throws IOException {
+        if(attribute == null || !attribute.getSignature().contains("<")) return;
+
+        writer.write("<");
+        String signature = attribute.getSignature();
+        signature = signature.substring(1, signature.lastIndexOf(">"));
+
+        String[] types = signature.split(";");
+        for(String type:types){
+            if(!type.isEmpty()){
+                writer.write(type.split(":L")[0]);
+                if(!type.split(":L")[1].equals("java/lang/Object")){
+                    writer.write(" extends "+type.split(":L")[1].split("/")[type.split(":L")[1].split("/").length - 1]);
+                }
+            }
+        }
+        writer.write(">");
     }
 
     private static String ofDesc(String desc){
