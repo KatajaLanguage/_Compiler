@@ -9,3 +9,5 @@ public class Test<E extends System>{
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
 # -q -dc out/src/test/kataja/Test.class
+
+# -q -dc target/classes/com/github/ktj/compiler/Compiler.class

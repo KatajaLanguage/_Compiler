@@ -34,7 +34,18 @@ public final class Decompiler{
         if(!outFolder.exists() && !outFolder.mkdirs()) throw new RuntimeException("Failed to create out Folder");
     }
 
+    private static void clearFolder(File folder){
+        if(folder.exists() && folder.isDirectory() && folder.listFiles() != null){
+            for(File file:folder.listFiles()){
+                if(file.isDirectory()) clearFolder(file);
+                if(!file.delete()) throw new RuntimeException("Failed to delete "+file.getPath());
+            }
+        }
+    }
+
     public static void decompile(String... files){
+        validateOutFolder();
+        clearFolder(outFolder);
         for(String file:files) {
             File f = new File(file);
 
@@ -67,7 +78,7 @@ public final class Decompiler{
             result.createNewFile();
             writer = new FileWriter(result);
 
-            writer.write("# decompiled from "+cf.getName()+"\n\n");
+            writer.write("# decompiled from "+cf.getName()+"\n\n# uses\n\n");
 
             Modifier mod = Modifier.ofInt(cf.getAccessFlags());
 
@@ -363,8 +374,29 @@ public final class Decompiler{
                 return "void";
             default:
                 if(desc.startsWith("[")) return ofDesc(desc.substring(1))+"[]";
-                desc = desc.substring(1).substring(0, desc.length() - 2);
-                return desc.substring(desc.lastIndexOf("/") + 1);
+                if(!desc.contains("<")){
+                    desc = desc.substring(1).substring(0, desc.length() - 2);
+                    return desc.substring(desc.lastIndexOf("/") + 1);
+                }else{
+                    StringBuilder sb = new StringBuilder();
+
+                    sb.append(desc.split("<")[0].substring(desc.split("<")[0].lastIndexOf("/") + 1)).append("<");
+                    desc = desc.split("<")[1];
+                    desc = desc.substring(0, desc.length() - 1);
+
+                    boolean first = true;
+                    while(!desc.equals(">")){
+                        if(!first) sb.append(", ");
+                        else first = false;
+                        if(desc.contains("<")) throw new RuntimeException("not supported bytecode");
+
+                        String type = desc.split(";")[0].substring(1);
+                        sb.append(type.substring(type.lastIndexOf("/") + 1));
+                        desc = desc.split(";", 2)[1];
+                    }
+
+                    return sb.append(">").toString();
+                }
         }
     }
 

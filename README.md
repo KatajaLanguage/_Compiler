@@ -14,6 +14,9 @@ Every Argument has to be a combination of the arguments described below (Note th
 - ``-e String`` executes the main method defined in that file or folder
 - ``-i String`` sets the input to the given File
 
+# !!! IMPORTANT !!!
+Note that every time before writing in a folder, while compiling or decompiling, all files and folders that the folder contains will be deleted first.
+
 ### Example:
 
 ````-d -c src/test/kataja/HelloWorld.ktj -e src/test/kataja/HelloWorld.ktj````
