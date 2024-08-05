@@ -443,6 +443,11 @@ final class Parser {
         String type = th.assertToken(Token.Type.IDENTIFIER).s;
         String name = th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "[", "(").s;
 
+        if(name.equals("<")){
+            getInBracket();
+            name = th.assertToken(Token.Type.IDENTIFIER, Token.Type.OPERATOR, "[").s;
+        }
+
         while(name.equals("[")){
             th.assertToken("]");
             type = "["+type;

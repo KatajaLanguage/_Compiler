@@ -29,7 +29,7 @@ public final class Compiler {
     private File outFolder;
     public HashMap<String, Compilable> classes;
 
-    private boolean debug;
+    boolean debug;
 
     ArrayList<ClassFile> compiledClasses;
 

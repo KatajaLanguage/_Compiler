@@ -1,6 +1,8 @@
 package com.github.ktj.compiler;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class ParsingException extends RuntimeException{
 
@@ -17,14 +19,20 @@ public class ParsingException extends RuntimeException{
     public StackTraceElement[] getStackTrace(){
         String className = file;
         if(file.contains("\\") && !new File(file+".ktj").exists()) file = file.substring(0, file.lastIndexOf("\\"));
-        return new StackTraceElement[]{new StackTraceElement(className, "", file.substring(file.lastIndexOf("\\") + 1)+".ktj", line)};
+        StackTraceElement element = new StackTraceElement(className, "", file.substring(file.lastIndexOf("\\") + 1)+".ktj", line);
+
+        if(!Compiler.Instance().debug) return new StackTraceElement[]{element};
+        else{
+            ArrayList<StackTraceElement> stackTrace = new ArrayList<>();
+            stackTrace.add(element);
+            Collections.addAll(stackTrace, super.getStackTrace());
+            return stackTrace.toArray(new StackTraceElement[0]);
+        }
     }
 
     @Override
     public void printStackTrace() {
-        String className = file;
-        if(file.contains("\\") && !new File(file+".ktj").exists()) file = file.substring(0, file.lastIndexOf("\\"));
-        setStackTrace(new StackTraceElement[]{new StackTraceElement(className, "", file.substring(file.lastIndexOf("\\") + 1)+".ktj", line)});
+        setStackTrace(getStackTrace());
         super.printStackTrace();
     }
 }

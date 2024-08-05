@@ -1,11 +1,7 @@
-use $java/lang/System
+use java/util/ArrayList
 
-public class Test<E extends System>{
-
-    public E test
-
-    public E test(E e){}
-}
+Object[] array
+ArrayList<ArrayList<String[]> >[] list
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
 # -q -dc out/src/test/kataja/Test.class
