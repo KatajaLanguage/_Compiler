@@ -639,7 +639,9 @@ final class MethodCompiler {
             first = false;
         }
 
-        if(call.argTypes == null) {
+        if(call.calc != null){
+            compileCalc(call.calc, false);
+        }else if(call.argTypes == null) {
             if(call.clazz.startsWith("[")) code.add(Opcode.ARRAYLENGTH);
             else if (call.statik) code.addGetstatic(call.clazz, call.name, CompilerUtil.toDesc(call.signature));
             else {

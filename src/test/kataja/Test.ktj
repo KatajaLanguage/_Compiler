@@ -1,7 +1,4 @@
-use java/util/ArrayList
-
-Object[] array
-ArrayList<ArrayList<String[]> >[] list
+main -> _v = (Object "Test").equals(Object()) == (Object "abc").equals(Object())
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
 # -q -dc out/src/test/kataja/Test.class

@@ -537,6 +537,22 @@ final class SyntacticParser {
         if(th.isNext("(")){
             ast = parseCalc();
             th.assertToken(")");
+
+            if(th.isNext(".")){
+                AST.Call call = new AST.Call();
+                call.calc = ast;
+                call.type = ast.type;
+                call = parseCallArg(call, call.type);
+
+                AST.Value value = new AST.Value();
+                value.load = new AST.Load();
+                value.load.call = call;
+                value.load.type = call.type;
+
+                ast = new AST.Calc();
+                ast.arg = value;
+                ast.type = call.type;
+            }
         }else{
             AST.CalcArg arg = parseValue();
 
@@ -632,10 +648,28 @@ final class SyntacticParser {
                 if(th.isNext("(")){
                     ast.left = parseCalc();
                     th.assertToken(")");
-                    String[] methodSpecs = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
-                    if(methodSpecs == null) err("Operator "+ast.op+" is not defined for "+ast.right.type+" and "+ast.left.type);
-                    ast.type = methodSpecs[0];
-                    ast.op = methodSpecs[1];
+
+                    if(th.isNext(".")){
+                        AST.Call call = new AST.Call();
+                        call.calc = ast.left;
+                        call.type = ast.left.type;
+                        call = parseCallArg(call, call.type);
+
+                        AST.Value value = new AST.Value();
+                        value.load = new AST.Load();
+                        value.load.call = call;
+                        value.load.type = call.type;
+
+                        ast.left = new AST.Calc();
+                        ast.left.arg = value;
+                        ast.left.type = call.type;
+                    }else {
+                        String[] methodSpecs = CompilerUtil.getOperatorReturnType(ast.right.type, ast.left.type, ast.op);
+                        if (methodSpecs == null)
+                            err("Operator " + ast.op + " is not defined for " + ast.right.type + " and " + ast.left.type);
+                        ast.type = methodSpecs[0];
+                        ast.op = methodSpecs[1];
+                    }
                 }else{
                     AST.CalcArg arg = parseValue();
 

@@ -81,6 +81,7 @@ abstract class AST {
         String cast = null;
         String signature = null;
         Call prev = null;
+        Calc calc = null;
         Calc[] argTypes = null;
 
         void setPrev(){
@@ -89,6 +90,7 @@ abstract class AST {
             prev.prev = help;
             prev.name = name;
             prev.type = type;
+            prev.calc = calc;
             prev.clazz = clazz;
             prev.statik = statik;
             prev.argTypes = argTypes;
@@ -100,6 +102,7 @@ abstract class AST {
             signature = null;
             argTypes = null;
             type = null;
+            calc = null;
         }
     }
 
