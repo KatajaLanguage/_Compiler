@@ -472,7 +472,7 @@ final class Parser {
 
         String initValue = null;
 
-        if(th.current().equals("=")){
+        if(th.isNext("=")){
             StringBuilder sb = new StringBuilder();
             th.assertHasNext();
 

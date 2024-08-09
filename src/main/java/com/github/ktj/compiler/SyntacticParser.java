@@ -35,7 +35,9 @@ final class SyntacticParser {
         }
 
         boolean isConst(String name){
-            return constants.contains(name);
+            if(constants.contains(name)) return true;
+
+            return last != null && last.isConst(name);
         }
 
         void add(String name, String type, boolean constant){
