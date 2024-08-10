@@ -1364,7 +1364,7 @@ final class MethodCompiler {
             if(name.equals("<init>")){
                 assert clazz instanceof KtjClass;
                 code.addAload(0);
-                code.addInvokespecial("java/lang/Object", "<init>", "()V");
+                code.addInvokespecial(((KtjClass) clazz).superclass, "<init>", "()V");
                 String initValues = ((KtjClass) clazz).initValues();
                 getInstance().compileCode(code, (initValues != null ? initValues : "") + ";"+method.code, clazzName, true, method, cp);
             }else if(name.equals("<clinit>")) {
