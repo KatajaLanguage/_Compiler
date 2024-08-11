@@ -164,7 +164,7 @@ final class ClassCompiler {
         //Methods
         for(String desc:clazz.methods.keySet()){
             MethodInfo mInfo = MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc);
-            mInfo.addAttribute(getSignature(clazz.methods.get(desc), cf.getConstPool()));
+            mInfo.addAttribute(getSignature(clazz.methods.get(desc), false, cf.getConstPool()));
             mInfo.addAttribute(getParameterInfo(clazz.methods.get(desc), cf.getConstPool()));
             cf.addMethod2(mInfo);
         }
@@ -194,7 +194,7 @@ final class ClassCompiler {
         //Methods
         for(String desc:clazz.methods.keySet()){
             MethodInfo mInfo = MethodCompiler.compileMethod(clazz, path.isEmpty() ? name : path+"."+name, cf.getConstPool(), clazz.methods.get(desc), desc);
-            mInfo.addAttribute(getSignature(clazz.methods.get(desc), cf.getConstPool()));
+            mInfo.addAttribute(getSignature(clazz.methods.get(desc), desc.contains("init>"), cf.getConstPool()));
             mInfo.addAttribute(getParameterInfo(clazz.methods.get(desc), cf.getConstPool()));
             cf.addMethod2(mInfo);
         }
@@ -216,14 +216,14 @@ final class ClassCompiler {
         return new SignatureAttribute(cp, signature.toString());
     }
 
-    private static SignatureAttribute getSignature(KtjMethod method, ConstPool cp){
+    private static SignatureAttribute getSignature(KtjMethod method, boolean isConstructor, ConstPool cp){
         StringBuilder signature = new StringBuilder("(");
         for(KtjMethod.Parameter parameter:method.parameter){
             int gi = method.genericIndex(parameter.type);
             if(gi == -1) signature.append(CompilerUtil.toDesc(parameter.type));
             else signature.append("T").append(parameter.type).append(";");
         }
-        if(method instanceof KtjConstructor) signature.append(")V");
+        if(isConstructor) signature.append(")V");
         else {
             int gi = method.genericIndex(method.returnType);
             if (gi == -1) signature.append(")").append(CompilerUtil.toDesc(method.returnType));

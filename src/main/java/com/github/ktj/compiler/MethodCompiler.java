@@ -24,7 +24,7 @@ final class MethodCompiler {
         parser = new SyntacticParser();
     }
 
-    private void compileCode(Bytecode code, String ktjCode, KtjInterface clazz, String clazzName, KtjMethod method, ConstPool cp){
+    private void compileCode(Bytecode code, String ktjCode, KtjInterface clazz, String clazzName, KtjMethod method, boolean isConstructor, ConstPool cp){
         this.code = code;
         this.clazz = clazz;
         this.cp = cp;
@@ -36,7 +36,7 @@ final class MethodCompiler {
 
         String initValues = "";
         if(method instanceof KtjConstructor) initValues = ((KtjClass) clazz).initValues();
-        AST[] ast = parser.parseAst(clazzName, method instanceof KtjConstructor, method, initValues+";"+ktjCode);
+        AST[] ast = parser.parseAst(clazzName, isConstructor, method, initValues+";"+ktjCode);
 
         for (AST value : ast) compileAST(value);
     }
@@ -1394,7 +1394,7 @@ final class MethodCompiler {
             String clinitValues = "";
             if(name.equals("<clinit>")) clinitValues = ((KtjClass) clazz).clinitValues();
 
-            getInstance().compileCode(code, clinitValues+";"+method.code, clazz, clazzName, method, cp);
+            getInstance().compileCode(code, clinitValues+";"+method.code, clazz, clazzName, method, name.endsWith("init>"), cp);
 
             code.setMaxLocals(code.getMaxLocals() + method.getLocals() + 5);
             code.setMaxStack(code.getMaxStack() * 2 + 5);
