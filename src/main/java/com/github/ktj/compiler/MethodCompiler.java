@@ -976,6 +976,7 @@ final class MethodCompiler {
                 }
                 break;
             default:
+                while(ast.cast.startsWith("[")) ast.cast = ast.cast.substring(1)+"[]";
                 code.addCheckcast(ast.cast);
         }
     }

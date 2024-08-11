@@ -518,7 +518,12 @@ public class CompilerUtil {
     }
 
     public static boolean canCast(String type, String to){
-        if(PRIMITIVES.contains(type) && PRIMITIVES.contains(to)) return true;
+        if(PRIMITIVES.contains(type) && PRIMITIVES.contains(to)) return !type.equals("boolean") && !to.equals("boolean");
+
+        if(type.startsWith("[")){
+            if(!to.startsWith("[")) return false;
+            return canCast(type.substring(1), to.substring(1));
+        }
 
         return isSuperClass(type, to) || isSuperClass(to, type);
     }

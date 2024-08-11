@@ -735,23 +735,31 @@ final class SyntacticParser {
 
     private AST.CalcArg parseValue(){
         th.next();
+        String index = th.getIndex();
 
         if(th.current().equals(Token.Type.IDENTIFIER) && (CompilerUtil.PRIMITIVES.contains(th.current().s) || method.uses.containsKey(th.current().s))){
-            if(th.isNext(Token.Type.OPERATOR) || th.isNext(Token.Type.SIMPLE)){
-                th.last();
-            }else{
+            String type = CompilerUtil.PRIMITIVES.contains(th.current().s) ? th.current().s : method.uses.get(th.current().s);
+            if(th.isNext("[")){
+                if(th.isNext("]")){
+                    type = "["+type;
+                }else type = null;
+            }
+
+            if(type != null) {
                 AST.Cast ast = new AST.Cast();
 
-                ast.cast = CompilerUtil.PRIMITIVES.contains(th.current().s) ? th.current().s : method.uses.get(th.current().s);
+                ast.cast = type;
                 ast.calc = parseCalc();
                 ast.type = ast.cast;
 
-                if(!CompilerUtil.canCast(ast.calc.type, ast.cast)) err("Unable to cast "+ast.calc.type+" to "+ast.cast);
+                if (!CompilerUtil.canCast(ast.calc.type, ast.cast))
+                    err("Unable to cast " + ast.calc.type + " to " + ast.cast);
 
                 return ast;
             }
         }
 
+        th.setIndex(index);
         AST.Value ast = new AST.Value();
 
         switch(th.current().t){

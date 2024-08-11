@@ -198,6 +198,7 @@ public final class Compiler {
 
     private void writeFile(ClassFile cf){
         try{
+            //ClassPool.getDefault().makeClass(cf).writeFile(outFolder.getPath());
             byte[] classBytecode = ClassPool.getDefault().makeClass(cf).toBytecode();
 
             ClassReader reader = new ClassReader(classBytecode);
