@@ -1,6 +1,7 @@
 package com.github.ktj.compiler;
 
 import com.github.ktj.lang.KtjClass;
+import com.github.ktj.lang.KtjConstructor;
 import com.github.ktj.lang.KtjInterface;
 import com.github.ktj.lang.KtjMethod;
 import javassist.bytecode.*;
@@ -13,6 +14,7 @@ final class MethodCompiler {
     private static MethodCompiler INSTANCE = null;
     private final SyntacticParser parser;
     private KtjInterface clazz;
+    private KtjMethod method;
     private OperandStack os;
     private Bytecode code;
     private ConstPool cp;
@@ -22,14 +24,41 @@ final class MethodCompiler {
         parser = new SyntacticParser();
     }
 
-    private void compileCode(Bytecode code, String ktjCode, String clazzName, boolean isConstructor, KtjMethod method, ConstPool cp){
+    private void compileCode(Bytecode code, String ktjCode, KtjInterface clazz, String clazzName, KtjMethod method, ConstPool cp){
         this.code = code;
+        this.clazz = clazz;
         this.cp = cp;
+        this.method = method;
         this.clazzName = clazzName;
         os = OperandStack.forMethod(method);
-        AST[] ast = parser.parseAst(clazzName, isConstructor, method, ktjCode);
+
+        if(method instanceof KtjConstructor) compileSuperConstructorCall();
+
+        String initValues = "";
+        if(method instanceof KtjConstructor) initValues = ((KtjClass) clazz).initValues();
+        AST[] ast = parser.parseAst(clazzName, method instanceof KtjConstructor, method, initValues+";"+ktjCode);
 
         for (AST value : ast) compileAST(value);
+    }
+
+    private void compileSuperConstructorCall(){
+        assert clazz instanceof KtjClass;
+        assert method instanceof KtjConstructor;
+
+        code.addAload(0);
+        if(((KtjConstructor) method).superCall.isEmpty()){
+            code.addInvokespecial(((KtjClass) clazz).superclass, "<init>", "()V");
+        }else{
+            AST ast = parser.parseAst(clazzName, true, method, ((KtjConstructor) method).superCall)[0];
+            assert ast instanceof AST.Load;
+            StringBuilder desc = new StringBuilder("(");
+            for(AST.Calc arg:((AST.Load) ast).call.argTypes){
+                compileCalc(arg, false);
+                desc.append(CompilerUtil.toDesc(arg.type));
+            }
+            desc.append(")V");
+            code.addInvokespecial(((KtjClass) clazz).superclass, "<init>", desc.toString());
+        }
     }
 
     private ArrayList<Integer> compileAST(AST ast){
@@ -1361,18 +1390,10 @@ final class MethodCompiler {
         if(!method.isAbstract()){
             Bytecode code = new Bytecode(cp);
 
-            if(name.equals("<init>")){
-                assert clazz instanceof KtjClass;
-                code.addAload(0);
-                code.addInvokespecial(((KtjClass) clazz).superclass, "<init>", "()V");
-                String initValues = ((KtjClass) clazz).initValues();
-                getInstance().compileCode(code, (initValues != null ? initValues : "") + ";"+method.code, clazzName, true, method, cp);
-            }else if(name.equals("<clinit>")) {
-                assert clazz instanceof KtjClass;
+            String clinitValues = "";
+            if(name.equals("<clinit>")) clinitValues = ((KtjClass) clazz).clinitValues();
 
-                String clinitValues = ((KtjClass) clazz).clinitValues();
-                getInstance().compileCode(code, (clinitValues != null ? clinitValues : "") + ";"+method.code, clazzName, true, method, cp);
-            }else getInstance().compileCode(code, method.code, clazzName, false, method, cp);
+            getInstance().compileCode(code, clinitValues+";"+method.code, clazz, clazzName, method, cp);
 
             code.setMaxLocals(code.getMaxLocals() + method.getLocals() + 5);
             code.setMaxStack(code.getMaxStack() * 2 + 5);

@@ -23,7 +23,7 @@ final class TokenHandler{
             i++;
             return token[line][i];
         }else{
-            while(line++ < token.length){
+            while(++line < token.length){
                 if(token[line].length > 0){
                     i = 0;
                     return token[line][i];
@@ -31,7 +31,7 @@ final class TokenHandler{
             }
         }
         err("Expected Token got nothing");
-        return null; // unreachable statement
+        return new Token(null, null); // unreachable statement
     }
 
     public Token current(){
@@ -53,7 +53,7 @@ final class TokenHandler{
         }
         i = -1;
         line = 0;
-        return null;
+        return new Token(null, null);
     }
 
     public Token assertToken(String...strings){
@@ -62,7 +62,7 @@ final class TokenHandler{
         for(String string:strings) if(t.equals(string)) return t;
 
         err("Expected one of "+Arrays.toString(strings)+" got "+t.s);
-        return null; // unreachable statement
+        return new Token(null, null); // unreachable statement
     }
 
     public Token assertTokenTypes(Token.Type...types){
@@ -71,7 +71,7 @@ final class TokenHandler{
         for(Token.Type type:types) if(t.equals(type)) return t;
 
         err("Expected one of "+Arrays.toString(types)+" got "+t.t);
-        return null; // unreachable statement
+        return new Token(null, null); // unreachable statement
     }
 
     public Token assertToken(Token.Type type, String...strings){
@@ -82,7 +82,7 @@ final class TokenHandler{
         for(String string:strings) if(t.equals(string)) return t;
 
         err("Expected one of "+type+(strings.length != 0 ? ", "+Arrays.toString(strings) : "")+" got "+t.s);
-        return null; // unreachable statement
+        return new Token(null, null); // unreachable statement
     }
 
     public Token assertToken(Token.Type type1, Token.Type type2,String...strings){
@@ -94,7 +94,7 @@ final class TokenHandler{
         for(String string:strings) if(t.equals(string)) return t;
 
         err("Expected one of "+type1+", "+type2+(strings.length != 0 ? ", "+Arrays.toString(strings) : "")+" got "+t.s);
-        return null; // unreachable statement
+        return new Token(null, null); // unreachable statement
     }
 
     public void assertEndOfStatement(){

@@ -543,14 +543,26 @@ final class Parser {
         if(name.equals("<clinit>") && (!parameter.isEmpty() || mod.accessFlag != AccessFlag.ACC_PACKAGE_PRIVATE)) err("Method should not be static");
         if(name.equals("->")) err("illegal method name");
 
+        StringBuilder superConstructorCall = new StringBuilder();
+        if(th.isNext(":")){
+            if(th.isNext(":")){
+                if(!name.equals("<init>")) err("illegal argument");
+                superConstructorCall.append(th.assertTokenTypes(Token.Type.IDENTIFIER)).append("(");
+                th.assertToken("(");
+                superConstructorCall.append(getInBracket()).append(")");
+            }else th.last();
+        }
+
         if(mod.abstrakt || mod.natife){
             th.assertEndOfStatement();
+            if(mod.abstrakt && (name.contains("init>"))) err("method should not be abstract");
             addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, null, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), th.getLine()));
         }else if(th.isNext("{")){
             int _line = th.getLine();
             String code = getInBracket();
 
-            addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            if(name.contains("<init>")) addMethod(desc.toString(), new KtjConstructor(mod, current != null ? current.genericTypes : null, type, superConstructorCall.toString(), code, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            else addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code, parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }else if(th.isNext(":")){
             if(parameter.isEmpty()) err("Expected parameter");
 
@@ -601,7 +613,8 @@ final class Parser {
             if(sb.toString().isEmpty()) err("Expected (");
             if(!last) err("Expected default");
 
-            addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            if(name.contains("<init>")) addMethod(desc.toString(), new KtjConstructor(mod, current != null ? current.genericTypes : null, type, superConstructorCall.toString(), sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            else addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, sb.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }else{
             StringBuilder code = new StringBuilder();
             int _line = th.getLine();
@@ -610,7 +623,8 @@ final class Parser {
 
             while(th.hasNext() && !th.isEndOfStatement()) code.append(" ").append(th.next());
 
-            addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            if(name.contains("<init>")) addMethod(desc.toString(), new KtjConstructor(mod, current != null ? current.genericTypes : null, type, superConstructorCall.toString(), code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
+            else addMethod(desc.toString(), new KtjMethod(mod, current != null ? current.genericTypes : null, type, code.toString(), parameter.toArray(new KtjMethod.Parameter[0]), uses, statics, getFileName(), _line));
         }
     }
 

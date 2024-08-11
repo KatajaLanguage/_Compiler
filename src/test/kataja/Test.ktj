@@ -1,4 +1,10 @@
-class Test{}
+public class Test extends TTest{
+    public Test() :: TTest(5){}
+}
+
+public class TTest{
+    public TTest(int i){}
+}
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
 # -q -dc out/src/test/kataja/Test.class

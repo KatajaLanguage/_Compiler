@@ -36,7 +36,7 @@ public class KtjClass extends KtjInterface{
 
         for(String field: fields.keySet()) if(fields.get(field).initValue != null && !fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append(";");
 
-        return sb.length() == 0 ? null : sb.toString();
+        return sb.toString();
     }
 
     public String clinitValues(){
@@ -44,7 +44,7 @@ public class KtjClass extends KtjInterface{
 
         for(String field: fields.keySet()) if(fields.get(field).initValue != null && fields.get(field).modifier.statik) sb.append(field).append(" = ").append(fields.get(field).initValue).append(";");
 
-        return sb.length() == 0 ? null : sb.toString();
+        return sb.toString();
     }
 
     public void validateInit(String className){
@@ -134,6 +134,8 @@ public class KtjClass extends KtjInterface{
                 superclass = "java.lang.Object";
             }
         }else superclass = "java.lang.Object";
+
+        for(KtjMethod method: methods.values()) if(method instanceof KtjConstructor) ((KtjConstructor) method).validate(superclass);
     }
 
     public int getAccessFlag(){
