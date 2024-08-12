@@ -26,3 +26,9 @@ This Command will enable debug, compile and execute the HelloWorld file in the t
 ````-q -dc out/src/test/kataja/HelloWorld.class````
 
 This Command will decompile the previous compiled HelloWorld file and quit the application after the decompilation has finished
+
+### Licenses
+
+This Compiler is under the AGPL-3.0 License.
+
+The Compiler uses the [Javassist](https://github.com/jboss-javassist/javassist) Library, which is under [Mozilla Public License](https://www.mozilla.org/en-US/MPL/1.1/), and [ASM](https://asm.ow2.io/) Library, which is under [3-Clause BSD License](https://asm.ow2.io/license.html). All Librarys are used unchanged and all files of the library are under the license of the library.
