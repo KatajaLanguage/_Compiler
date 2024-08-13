@@ -1,3 +1,4 @@
+![Build](https://github.com/KatajaLanguage/Compiler/actions/workflows/maven.yml/badge.svg)
 # Kataja Compiler
 Compiler for Kataja Programming Language
 
