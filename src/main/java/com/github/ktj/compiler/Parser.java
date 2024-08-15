@@ -150,6 +150,7 @@ final class Parser {
     }
 
     private void addUse(String name, String path){
+        if(CompilerUtil.PRIMITIVES.contains(name)) err("illegal type "+name);
         if(path.contains("$")){
             StringBuilder sb = new StringBuilder();
 

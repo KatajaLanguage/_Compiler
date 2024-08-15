@@ -598,4 +598,27 @@ public class CompilerUtil {
 
         return ast;
     }
+
+    public static String getDefaultValue(String type){
+        switch(type){
+            case "int":
+                return "0i";
+            case "short":
+                return "0s";
+            case "long":
+                return "0l";
+            case "double":
+                return "0.0d";
+            case "float":
+                return "0.0f";
+            case "char":
+                return "' '";
+            case "boolean":
+                return "false";
+            case "java.lang.String":
+                return "\"\"";
+            default:
+                return "null";
+        }
+    }
 }
