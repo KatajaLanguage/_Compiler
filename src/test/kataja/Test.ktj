@@ -1,4 +1,8 @@
-main -> _oa = Object[] args
+use java/util/ArrayList
+
+main{
+    _list = ArrayList()
+}
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
 # -q -dc out/src/test/kataja/Test.class

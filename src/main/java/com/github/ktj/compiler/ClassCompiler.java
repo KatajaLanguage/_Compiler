@@ -28,6 +28,7 @@ final class ClassCompiler {
         ClassFile cf = new ClassFile(false, name, "java/lang/Enum");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
+        cf.addAttribute(new SourceFileAttribute(cf.getConstPool(), name+".ktj"));
 
         //Types
         for(String value: clazz.values){
@@ -109,6 +110,7 @@ final class ClassCompiler {
         ClassFile cf = new ClassFile(false, name, "java/lang/Object");
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
+        cf.addAttribute(new SourceFileAttribute(cf.getConstPool(), name+".ktj"));
 
         //Fields
         for(String fieldName:clazz.fields.keySet()){
@@ -176,6 +178,7 @@ final class ClassCompiler {
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
         cf.addAttribute(getSignature(clazz, cf.getConstPool()));
+        cf.addAttribute(new SourceFileAttribute(cf.getConstPool(), name+".ktj"));
 
         //Methods
         for(String desc:clazz.methods.keySet()){
@@ -193,6 +196,7 @@ final class ClassCompiler {
         cf.setMajorVersion(ClassFile.JAVA_8);
         cf.setAccessFlags(clazz.getAccessFlag());
         cf.addAttribute(getSignature(clazz, cf.getConstPool()));
+        cf.addAttribute(new SourceFileAttribute(cf.getConstPool(), name+".ktj"));
 
         for(String interfaceName: clazz.interfaces)
             cf.addInterface(interfaceName);
