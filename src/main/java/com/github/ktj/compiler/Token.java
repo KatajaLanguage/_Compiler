@@ -53,6 +53,11 @@ class Token{
         this.t = t;
     }
 
+    public String getWithOutExtension(){
+        if(Character.isDigit(s.charAt(0)) && Character.isLetter(s.charAt(s.length() - 1))) return s.substring(0, s.length() - 1);
+        else return s;
+    }
+
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Token && ((Token) obj).t == t && ((Token) obj).equals(s);
@@ -63,7 +68,8 @@ class Token{
     }
 
     public boolean equals(String s){
-        return this.s.equals(s);
+        if(Character.isDigit(s.charAt(0)) && Character.isLetter(s.charAt(s.length() - 1))) s = s.substring(0, s.length() - 2);
+        return getWithOutExtension().equals(s);
     }
 
     public boolean equals(Type t){

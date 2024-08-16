@@ -1249,7 +1249,7 @@ final class MethodCompiler {
                     if (ast.type.equals("char"))
                         intValue = ast.token.s.toCharArray()[1];
                     else
-                        intValue = Integer.parseInt(ast.token.s);
+                        intValue = Integer.parseInt(ast.token.getWithOutExtension());
 
                     if (intValue < 6 && intValue >= 0)
                         code.addIconst(intValue);
@@ -1259,7 +1259,7 @@ final class MethodCompiler {
                     break;
                 case "float":
                     index = 0;
-                    float floatValue = Float.parseFloat(ast.token.s);
+                    float floatValue = Float.parseFloat(ast.token.getWithOutExtension());
                     cp.addFloatInfo(floatValue);
                     while (index < cp.getSize()) {
                         try {
@@ -1273,7 +1273,7 @@ final class MethodCompiler {
                     break;
                 case "double":
                     index = 0;
-                    double doubleValue = Double.parseDouble(ast.token.s);
+                    double doubleValue = Double.parseDouble(ast.token.getWithOutExtension());
                     cp.addDoubleInfo(doubleValue);
                     while (index < cp.getSize()) {
                         try {
@@ -1287,7 +1287,7 @@ final class MethodCompiler {
                     break;
                 case "long":
                     index = 0;
-                    long longValue = Long.parseLong(ast.token.s);
+                    long longValue = Long.parseLong(ast.token.getWithOutExtension());
                     cp.addLongInfo(longValue);
                     while (index < cp.getSize()) {
                         try {

@@ -133,7 +133,10 @@ public class KtjClass extends KtjInterface{
     public void validateTypes() {
         super.validateTypes();
 
-        for(KtjField field:fields.values()) field.validateTypes();
+        for(KtjField field:fields.values()){
+            field.validateTypes();
+            if(field.initValue == null) field.initValue = CompilerUtil.getDefaultValue(field.type);
+        }
 
         Arrays.stream(interfaces).forEach(type -> validateType(type, true));
 
