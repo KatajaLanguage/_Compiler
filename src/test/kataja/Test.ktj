@@ -1,10 +1,10 @@
 use java/util/ArrayList
 
-int test
+#int test
 
-#main{
-#    _list = ArrayList()
-#}
+main{
+    _list = 5
+}
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
 # -q -dc out/src/test/kataja/Test.class

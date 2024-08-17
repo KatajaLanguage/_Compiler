@@ -121,10 +121,10 @@ public final class Compiler {
             if (f.isDirectory()) {
                 for (File folderEntry : f.listFiles()) {
                     if (!folderEntry.isDirectory() && getExtension(folderEntry.getName()).equals("ktj"))
-                        classes.putAll(parser.parseFile(folderEntry));
+                        classes.putAll(parser.parseFile(folderEntry, file));
                 }
             } else if (getExtension(f.getName()).equals("ktj")) {
-                classes.putAll(parser.parseFile(f));
+                classes.putAll(parser.parseFile(f, file));
             } else
                 throw new IllegalArgumentException("Expected kataja (.ktj) File, got ." + getExtension(f.getName()) + " file");
         }

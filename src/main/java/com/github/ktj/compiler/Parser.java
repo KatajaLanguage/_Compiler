@@ -34,12 +34,13 @@ final class Parser {
     private Compilable current = null;
     private KtjObject statik;
 
-    public HashMap<String, Compilable> parseFile(File file) throws IllegalArgumentException{
+    public HashMap<String, Compilable> parseFile(File file, String givenPath) throws IllegalArgumentException{
         if(!file.exists()) throw new IllegalArgumentException("File "+file.getPath()+" did not exist");
 
         try{
             if(0 < file.getPath().length() - file.getName().length() - 1) path = file.getPath().substring(0, file.getPath().length() - file.getName().length() - 1);
             else path = "";
+            if(path.startsWith(givenPath.replace("/", "\\"))) path = path.substring(givenPath.length());
             name = file.getName().substring(0, file.getName().length() - 4);
             classes = new HashMap<>();
             uses = new HashMap<>();
