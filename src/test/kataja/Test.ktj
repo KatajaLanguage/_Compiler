@@ -1,10 +1,12 @@
 use java/util/ArrayList
+use java/util/HashMap
 
-#int test
+#ArrayList<ArrayList<String[]>>[] test
+HashMap<String, String> map
 
-main{
-    _list = 5
-}
+#main{
+#    _list = ArrayList()
+#}
 
 # -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
 # -q -dc out/src/test/kataja/Test.class

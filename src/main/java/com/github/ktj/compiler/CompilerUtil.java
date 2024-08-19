@@ -441,8 +441,8 @@ public class CompilerUtil {
         if(flag == AccessFlag.ACC_PRIVATE) return type1.equals(type2);
         if(flag == AccessFlag.ACC_PROTECTED) return isSuperClass(type1, type2);
 
-        String pakage1 = type1.substring(0, type1.lastIndexOf('.'));
-        String pakage2 = type2.substring(0, type2.lastIndexOf('.'));
+        String pakage1 = type1.contains(".") ? type1.substring(0, type1.lastIndexOf('.')) : "";
+        String pakage2 = type2.contains(".") ? type2.substring(0, type2.lastIndexOf('.')) : "";
         return pakage1.equals(pakage2);
     }
 

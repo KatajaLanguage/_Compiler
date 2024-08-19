@@ -32,7 +32,8 @@ public final class Main {
         if(execute(args)) return;
 
         Scanner sc = new Scanner(System.in);
-        while(!execute(sc.nextLine().split(" ")));
+        System.out.print("> ");
+        while(!execute(sc.nextLine().split(" "))) System.out.print("> ");
     }
 
     private static boolean execute(String[] args){

@@ -41,6 +41,7 @@ final class Parser {
             if(0 < file.getPath().length() - file.getName().length() - 1) path = file.getPath().substring(0, file.getPath().length() - file.getName().length() - 1);
             else path = "";
             if(path.startsWith(givenPath.replace("/", "\\"))) path = path.substring(givenPath.length());
+            else if(givenPath.endsWith(".ktj")) path = "";
             name = file.getName().substring(0, file.getName().length() - 4);
             classes = new HashMap<>();
             uses = new HashMap<>();
@@ -698,6 +699,7 @@ final class Parser {
             }
             if(th.current().equals(openingBracket)) b++;
             else if(th.current().equals(closingBracket)) b--;
+            else if(th.current().s.split(closingBracket).length == th.current().s.length()) b -= th.current().s.length();
             if(b > 0) sb.append(th.current()).append(" ");
         }
 
