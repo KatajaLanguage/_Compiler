@@ -1,3 +1,5 @@
 use $java/lang/System
 
 main -> out.println("Hello World!")
+
+# -q -d -c src/test/kataja/HelloWorld.ktj -e HelloWorld

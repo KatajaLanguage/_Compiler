@@ -38,7 +38,7 @@ public class KtjObject extends KtjClass{
         }
 
         if(!initExist){
-            methods.put("<init>", new KtjMethod(new Modifier(AccessFlag.ACC_PRIVATE), null,className, "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
+            methods.put("<init>", new KtjConstructor(new Modifier(AccessFlag.ACC_PRIVATE), null,className, "", "", new KtjMethod.Parameter[0], uses, statics, file, Integer.MIN_VALUE));
         }
     }
 }
