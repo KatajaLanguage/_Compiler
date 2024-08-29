@@ -47,7 +47,7 @@ final class Lexer{
                 i++;
                 if(chars.get(i) != '#') while (i < chars.size() && chars.get(i) != '#' && chars.get(i) != '\n') i++;
                 else{
-                    while(i < chars.size()){
+                    while(i + 1 < chars.size()){
                         i++;
                         if(chars.get(i) == '#' && chars.get(i - 1) == '#') break;
                     }

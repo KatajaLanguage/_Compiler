@@ -17,4 +17,3 @@ main{
  -q -dc out/src/test/kataja/Test.class
 
  -q -dc target/classes/com/github/ktj/compiler/Compiler.class
-##
