@@ -45,7 +45,13 @@ final class Lexer{
                 line++;
             }else if(chars.get(i) == '#'){
                 i++;
-                while (i < chars.size() && chars.get(i) != '#' && chars.get(i) != '\n') i++;
+                if(chars.get(i) != '#') while (i < chars.size() && chars.get(i) != '#' && chars.get(i) != '\n') i++;
+                else{
+                    while(i < chars.size()){
+                        i++;
+                        if(chars.get(i) == '#' && chars.get(i - 1) == '#') break;
+                    }
+                }
             }else if(Character.isDigit(chars.get(i))){
                 value = new StringBuilder();
                 value.append(chars.get(i));

@@ -1,14 +1,20 @@
 use java/util/ArrayList
 use java/util/HashMap
-
+use java/lang/Comparable
+##
 #ArrayList<ArrayList<String[]>>[] test
 HashMap<String, String> map
 
-#main{
-#    _list = ArrayList()
-#}
+class Test extends Comparable<String>{
+}
 
-# -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
-# -q -dc out/src/test/kataja/Test.class
 
-# -q -dc target/classes/com/github/ktj/compiler/Compiler.class
+main{
+    _list = ArrayList()
+}
+
+ -q -d -c src/test/kataja/Test.ktj -e src/test/kataja/Test.ktj
+ -q -dc out/src/test/kataja/Test.class
+
+ -q -dc target/classes/com/github/ktj/compiler/Compiler.class
+##
