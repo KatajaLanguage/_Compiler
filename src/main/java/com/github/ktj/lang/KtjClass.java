@@ -112,6 +112,8 @@ public class KtjClass extends KtjInterface{
 
             if(mod1.accessFlag != mod2.accessFlag) throw new RuntimeException("Expected "+method+" to be "+mod2.accessFlag);
             if(mod1.synchronised) throw new RuntimeException("Expected "+method+" to be synchronised");
+
+            else if(!methods.get(method).returnType.equals(i.methods.get(method).returnType)) throw new RuntimeException("Expected "+method+" to have return type "+i.methods.get(method).returnType+" got "+methods.get(method));
         }
     }
 
@@ -125,6 +127,7 @@ public class KtjClass extends KtjInterface{
                 for(Class<?> p:method.getParameterTypes()) desc.append("%").append(p.toString().split(" ")[1]);
 
                 if(!methods.containsKey(desc.toString())) throw new RuntimeException("No implementation for "+desc+" found");
+                else if(!methods.get(desc.toString()).returnType.equals(method.getReturnType().getName())) throw new RuntimeException("Expected "+method.getName()+" to have return type "+method.getReturnType().getName()+" got "+methods.get(desc.toString()).returnType);
             }
         }catch(ClassNotFoundException ignored){}
     }

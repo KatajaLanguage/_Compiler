@@ -4,12 +4,13 @@ use java/lang/Comparable
 
 class Test extends Comparable<String>{
 
-    native compareTo(Object o){}
+    HashMap<String, String> map
+
+    int compareTo(Object o){}
 
 }
 ##
 ArrayList<ArrayList<String[]>>[] test
-HashMap<String, String> map
 
 main{
     _list = ArrayList()
