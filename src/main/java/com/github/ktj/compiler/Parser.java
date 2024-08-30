@@ -220,7 +220,7 @@ final class Parser {
         modifier.add("volatile");
         modifier.add("transient");
         modifier.add("strict");
-        modifier.add("native");
+        //modifier.add("native"); TODO
 
         while (modifier.contains(th.next().s)){
             switch (th.current().s){
@@ -316,7 +316,12 @@ final class Parser {
             if(!interfaces.isEmpty()) clazz.interfaces = interfaces.toArray(new String[0]);
         }
 
-        th.assertToken("{");
+        if(th.assertToken("{", "<").equals("<")){
+            while(!th.isNext(">")){
+                th.next();
+            }
+            th.assertToken("{");
+        }
 
         while (th.hasNext()){
             if (th.next().s.equals("}")) {

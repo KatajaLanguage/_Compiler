@@ -1,13 +1,15 @@
 use java/util/ArrayList
 use java/util/HashMap
 use java/lang/Comparable
-##
-#ArrayList<ArrayList<String[]>>[] test
-HashMap<String, String> map
 
 class Test extends Comparable<String>{
-}
 
+    native compareTo(Object o){}
+
+}
+##
+ArrayList<ArrayList<String[]>>[] test
+HashMap<String, String> map
 
 main{
     _list = ArrayList()
